@@ -158,6 +158,78 @@ export const ModelLaboratoryView: React.FC<ModelLaboratoryViewProps> = ({
               </button>
             </div>
 
+            {/* Available Checkpoints on Disk */}
+            {modelStatus?.available_checkpoints && modelStatus.available_checkpoints.length > 0 && (
+              <div style={{ marginBottom: '1rem', padding: '0.65rem 0.85rem', backgroundColor: 'var(--charcoal-900)', border: '1px solid var(--border-light)' }}>
+                <div style={{ color: 'var(--muted-olive)', fontSize: '0.7rem', fontWeight: 700, marginBottom: '0.5rem', letterSpacing: '0.05em' }}>
+                  DETECTED CHECKPOINTS IN /backend/checkpoints/
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                  {modelStatus.available_checkpoints.map((ckpt) => {
+                    const isActive = modelStatus.checkpoint_path && modelStatus.checkpoint_path.endsWith(ckpt.filename);
+                    return (
+                      <div 
+                        key={ckpt.filename}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          padding: '0.35rem 0.5rem',
+                          backgroundColor: isActive ? 'rgba(104,133,68,0.12)' : 'var(--charcoal-800)',
+                          border: `1px solid ${isActive ? 'var(--status-green)' : 'var(--border-light)'}`,
+                          fontSize: '0.72rem',
+                          fontFamily: 'var(--font-mono)',
+                        }}
+                      >
+                        <div>
+                          <span style={{ color: isActive ? 'var(--status-green)' : 'var(--warm-ivory)', fontWeight: isActive ? 700 : 500 }}>
+                            {ckpt.filename}
+                          </span>
+                          <span style={{ color: 'var(--warm-ivory-dim)', marginLeft: '0.5rem', fontSize: '0.65rem' }}>
+                            ({ckpt.size_mb} MB)
+                          </span>
+                          {isActive && (
+                            <span className="badge badge-green" style={{ marginLeft: '0.5rem', fontSize: '0.6rem', padding: '0.1rem 0.35rem' }}>
+                              ACTIVE
+                            </span>
+                          )}
+                        </div>
+
+                        {!isActive ? (
+                          <button
+                            className="btn btn-secondary"
+                            style={{ padding: '0.2rem 0.5rem', fontSize: '0.68rem' }}
+                            disabled={uploadLoading}
+                            onClick={async () => {
+                              setUploadLoading(true);
+                              setConfigMessage(null);
+                              try {
+                                const res = await configureModel({ checkpoint_path: ckpt.path });
+                                if (res.reload_result && !res.reload_result.success) {
+                                  setConfigMessage({ text: res.reload_result.message, isError: true });
+                                } else {
+                                  setConfigMessage({ text: `Activated ${ckpt.filename} successfully`, isError: false });
+                                }
+                                onRefreshStatus();
+                              } catch (err: any) {
+                                setConfigMessage({ text: err.message || 'Failed to switch model', isError: true });
+                              } finally {
+                                setUploadLoading(false);
+                              }
+                            }}
+                          >
+                            Activate
+                          </button>
+                        ) : (
+                          <span style={{ color: 'var(--status-green)', fontSize: '0.68rem' }}>● In Use</span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             <div style={{ display: 'flex', gap: '0.5rem' }}>
               <input
                 type="text"
