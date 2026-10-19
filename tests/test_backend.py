@@ -11,6 +11,7 @@ Verifies:
 import os
 import shutil
 import tempfile
+import cv2
 import numpy as np
 import pytest
 import torch
@@ -170,3 +171,61 @@ class TestApiEndpoints:
         assert "run_id" in data
         assert "detections" in data
         assert "annotated_url" in data
+
+    def test_checkpoint_strict_loading(self):
+        ckpt_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "backend", "checkpoints", "improved_v2_best.pth")
+        assert os.path.exists(ckpt_path), f"Checkpoint missing at {ckpt_path}"
+        model = ImprovedCenterNet(num_classes=4, feature_dim=64)
+        state_dict = torch.load(ckpt_path, map_location="cpu", weights_only=True)
+        incompatible = model.load_state_dict(state_dict, strict=True)
+        assert len(incompatible.missing_keys) == 0
+        assert len(incompatible.unexpected_keys) == 0
+
+    def test_detector_real_inference_and_four_classes(self):
+        from backend.inference.detector import VehicleDetector
+        detector = VehicleDetector()
+        assert detector.weights_loaded is True
+        assert detector.model_status == "CONFIGURED_ACTIVE"
+
+        # Generate or load realistic test image
+        test_img = np.zeros((288, 512, 3), dtype=np.uint8)
+        # Synthetic road with vehicles
+        test_img[100:288, :] = 50
+        cv2.rectangle(test_img, (150, 150), (230, 200), (120, 130, 180), -1)
+
+        result = detector.detect(test_img, conf_thresh=0.1)
+        assert "detections" in result
+        assert "latency_ms" in result
+        assert result["latency_ms"] > 0
+        assert result["is_trained_weights_loaded"] is True
+        valid_classes = {"car", "van", "bus", "others"}
+        for det in result["detections"]:
+            assert det["class_name"] in valid_classes
+            assert 0 <= det["class_id"] <= 3
+            x1, y1, x2, y2 = det["bbox"]
+            assert 0 <= x1 <= x2 <= 512
+            assert 0 <= y1 <= y2 <= 288
+
+    def test_invalid_upload_handling(self):
+        client = TestClient(app)
+        # Attempt to upload an invalid file type (.txt)
+        files = {"file": ("malicious.txt", b"not an image", "text/plain")}
+        res = client.post("/api/detect/image", files=files)
+        assert res.status_code == 400
+        assert "Unsupported image format" in res.json()["detail"]
+
+    def test_image_upload_endpoint(self):
+        client = TestClient(app)
+        # Create a valid JPEG in memory
+        img = np.zeros((100, 100, 3), dtype=np.uint8)
+        _, img_encoded = cv2.imencode(".jpg", img)
+        files = {"file": ("test_road.jpg", img_encoded.tobytes(), "image/jpeg")}
+        res = client.post("/api/detect/image", files=files, data={"conf_thresh": "0.35"})
+        assert res.status_code == 200
+        data = res.json()
+        assert "run_id" in data
+        assert "annotated_url" in data
+        assert "total_detections" in data
+        assert "class_counts" in data
+        assert "latency_ms" in data
+

@@ -2,83 +2,109 @@
 Bidirectional Feature Pyramid Network (BiFPN)
 Enables multi-scale feature fusion with learned weighting for vehicle detection
 across varying scales (e.g. distant small cars to close large buses).
+Matches the exact architecture of improved_v2_best.pth.
 """
+from typing import List, Optional, Tuple, Union
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
 
-class FastNormalizedFusion(nn.Module):
+class ConvBNAct(nn.Sequential):
+    def __init__(self, in_channels: int, out_channels: int, kernel_size: int = 3):
+        super().__init__(
+            nn.Conv2d(
+                in_channels,
+                out_channels,
+                kernel_size,
+                padding=kernel_size // 2,
+                bias=False,
+            ),
+            nn.BatchNorm2d(out_channels),
+            nn.ReLU(inplace=True),
+        )
+
+
+class FastFusion(nn.Module):
     """
     Fast normalized feature fusion with learnable positive weights:
     Output = sum_i(w_i * Input_i) / (sum_i(w_i) + eps)
     """
-    def __init__(self, num_inputs: int, eps: float = 1e-4):
+    def __init__(self, n_inputs: int):
         super().__init__()
-        self.num_inputs = num_inputs
-        self.eps = eps
-        self.weights = nn.Parameter(torch.ones(num_inputs, dtype=torch.float32))
+        self.weights = nn.Parameter(torch.ones(n_inputs))
 
-    def forward(self, inputs: list) -> torch.Tensor:
-        w = F.relu(self.weights)
-        w_sum = torch.sum(w) + self.eps
-        out = sum(w[i] * inputs[i] for i in range(self.num_inputs))
-        return out / w_sum
-
-
-class DepthwiseSeparableConv(nn.Module):
-    """Depthwise separable convolution with BatchNorm and Swish / ReLU for parameter efficiency."""
-    def __init__(self, in_channels: int, out_channels: int):
-        super().__init__()
-        self.depthwise = nn.Conv2d(in_channels, in_channels, kernel_size=3, padding=1, groups=in_channels, bias=False)
-        self.pointwise = nn.Conv2d(in_channels, out_channels, kernel_size=1, bias=False)
-        self.bn = nn.BatchNorm2d(out_channels)
-        self.act = nn.SiLU(inplace=True)
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return self.act(self.bn(self.pointwise(self.depthwise(x))))
+    def forward(self, inputs: List[torch.Tensor]) -> torch.Tensor:
+        weights = F.relu(self.weights)
+        weights = weights / (weights.sum() + 1e-4)
+        return sum(w * x for w, x in zip(weights, inputs))
 
 
 class BiFPNBlock(nn.Module):
     """
-    Single BiFPN Layer fusing P3 (stride 8), P4 (stride 16), P5 (stride 32).
-    Top-down followed by bottom-up bidirectional flow.
+    BiFPN Layer fusing multi-scale feature levels (P2 stride 4, P3 stride 8, P4 stride 16, P5 stride 32).
+    Top-down followed by bottom-up bidirectional flow with learned feature fusion.
     """
-    def __init__(self, feature_dim: int = 128):
+    def __init__(self, channels: int = 64, feature_dim: Optional[int] = None):
         super().__init__()
-        self.feature_dim = feature_dim
+        c = feature_dim if feature_dim is not None else channels
 
-        # Top-down fusion
-        self.fuse_td_p4 = FastNormalizedFusion(2)
-        self.conv_td_p4 = DepthwiseSeparableConv(feature_dim, feature_dim)
+        self.fuse4 = FastFusion(2)
+        self.fuse3 = FastFusion(2)
+        self.fuse2 = FastFusion(2)
+        self.fuse3_out = FastFusion(3)
+        self.fuse4_out = FastFusion(3)
+        self.fuse5_out = FastFusion(2)
 
-        self.fuse_td_p3 = FastNormalizedFusion(2)
-        self.conv_td_p3 = DepthwiseSeparableConv(feature_dim, feature_dim)
+        self.conv4 = ConvBNAct(c, c)
+        self.conv3 = ConvBNAct(c, c)
+        self.conv2 = ConvBNAct(c, c)
+        self.conv3_out = ConvBNAct(c, c)
+        self.conv4_out = ConvBNAct(c, c)
+        self.conv5_out = ConvBNAct(c, c)
 
-        # Bottom-up fusion
-        self.fuse_bu_p4 = FastNormalizedFusion(3)
-        self.conv_bu_p4 = DepthwiseSeparableConv(feature_dim, feature_dim)
+    @staticmethod
+    def resize(x: torch.Tensor, ref: torch.Tensor) -> torch.Tensor:
+        return F.interpolate(x, size=ref.shape[-2:], mode="nearest")
 
-        self.fuse_bu_p5 = FastNormalizedFusion(2)
-        self.conv_bu_p5 = DepthwiseSeparableConv(feature_dim, feature_dim)
+    def forward(self, *args) -> Union[Tuple[torch.Tensor, ...], List[torch.Tensor]]:
+        if len(args) == 1 and isinstance(args[0], (list, tuple)):
+            features = list(args[0])
+        else:
+            features = list(args)
 
-    def forward(self, p3: torch.Tensor, p4: torch.Tensor, p5: torch.Tensor):
-        # Top-down pathway
-        # Resize p5 to p4 size
-        p5_td = F.interpolate(p5, size=p4.shape[-2:], mode="nearest")
-        p4_td = self.conv_td_p4(self.fuse_td_p4([p4, p5_td]))
+        if len(features) == 4:
+            p2, p3, p4, p5 = features
 
-        # Resize p4_td to p3 size
-        p4_td_resized = F.interpolate(p4_td, size=p3.shape[-2:], mode="nearest")
-        p3_out = self.conv_td_p3(self.fuse_td_p3([p3, p4_td_resized]))
+            p4_td = self.conv4(self.fuse4([
+                p4, self.resize(p5, p4)
+            ]))
+            p3_td = self.conv3(self.fuse3([
+                p3, self.resize(p4_td, p3)
+            ]))
+            p2_td = self.conv2(self.fuse2([
+                p2, self.resize(p3_td, p2)
+            ]))
 
-        # Bottom-up pathway
-        # Resize p3_out to p4 size via maxpool or strided conv
-        p3_down = F.max_pool2d(p3_out, kernel_size=2, stride=2)
-        p4_out = self.conv_bu_p4(self.fuse_bu_p4([p4, p4_td, p3_down]))
+            p3_out = self.conv3_out(self.fuse3_out([
+                p3, p3_td, self.resize(p2_td, p3)
+            ]))
+            p4_out = self.conv4_out(self.fuse4_out([
+                p4, p4_td, self.resize(p3_out, p4)
+            ]))
+            p5_out = self.conv5_out(self.fuse5_out([
+                p5, self.resize(p4_out, p5)
+            ]))
 
-        # Resize p4_out to p5 size
-        p4_down = F.max_pool2d(p4_out, kernel_size=2, stride=2)
-        p5_out = self.conv_bu_p5(self.fuse_bu_p5([p5, p4_down]))
-
-        return p3_out, p4_out, p5_out
+            return p2_td, p3_out, p4_out, p5_out
+        elif len(features) == 3:
+            # Flexible support for 3 features (p3, p4, p5)
+            p3, p4, p5 = features
+            p4_td = self.conv4(self.fuse4([p4, self.resize(p5, p4)]))
+            p3_td = self.conv3(self.fuse3([p3, self.resize(p4_td, p3)]))
+            p3_out = self.conv3_out(self.fuse3_out([p3, p3_td, p3]))
+            p4_out = self.conv4_out(self.fuse4_out([p4, p4_td, self.resize(p3_out, p4)]))
+            p5_out = self.conv5_out(self.fuse5_out([p5, self.resize(p4_out, p5)]))
+            return p3_out, p4_out, p5_out
+        else:
+            raise ValueError(f"Expected 3 or 4 feature tensors, got {len(features)}")
