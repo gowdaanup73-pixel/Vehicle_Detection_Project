@@ -112,23 +112,29 @@ class VehicleDetector:
 
     def get_system_status(self) -> Dict[str, any]:
         """Returns comprehensive diagnostic metadata about runtime and model configuration."""
+        import platform
+        is_cuda = torch.cuda.is_available()
+        cpu_info = platform.processor() or "Host CPU"
+        device_display = f"CUDA ({torch.cuda.get_device_name(0)})" if is_cuda else f"CPU ({cpu_info})"
         return {
-            "model_name": "Improved CenterNet (ResNet-18 + CBAM + BiFPN)",
+            "model_name": "Improved CenterNet V2 (ResNet-18 + CBAM + 2x BiFPN)",
             "architecture": {
                 "backbone": "ResNet-18",
-                "attention_module": "CBAM (Channel & Spatial)",
-                "neck": "BiFPN (Two blocks with learned feature fusion)",
+                "attention_module": "CBAM (Channel & Spatial Attention)",
+                "neck": "BiFPN (Two blocks with learned weighted feature fusion)",
                 "heads": ["Heatmap (4 classes)", "WH (Size)", "Off (Subpixel Offset)"],
                 "classes": VEHICLE_CLASSES,
                 "downsample_ratio": 4,
                 "input_resolution": f"{self.input_size[0]}x{self.input_size[1]}",
             },
             "device": str(self.device),
-            "is_cuda_available": torch.cuda.is_available(),
-            "gpu_name": torch.cuda.get_device_name(0) if torch.cuda.is_available() else "N/A (CPU Mode)",
+            "device_display": device_display,
+            "is_cuda_available": is_cuda,
+            "gpu_name": torch.cuda.get_device_name(0) if is_cuda else "None (CPU Execution)",
             "weights_loaded": self.weights_loaded,
             "model_status": self.model_status,
             "checkpoint_path": self.checkpoint_path,
+            "checkpoint_name": os.path.basename(self.checkpoint_path),
             "last_load_error": self.last_load_error,
             "confidence_threshold": self.conf_thresh,
         }

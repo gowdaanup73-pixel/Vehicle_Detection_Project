@@ -154,7 +154,20 @@ class TestApiEndpoints:
         res = client.get("/api/experiments")
         assert res.status_code == 200
         data = res.json()
-        assert len(data["experiments"]) >= 4
+        assert len(data["experiments"]) == 3  # Baseline, V1, V2 (fabricated INT8 pruned model removed)
+        v2 = next(e for e in data["experiments"] if e["id"] == "exp_improved_centernet_v2")
+        assert v2["map_50"] == 0.5982
+        assert v2["map_50_95"] == 0.3479
+        assert v2["ap_75"] == 0.3636
+        assert v2["class_ap_50"]["car"] == 0.4778
+        assert v2["class_ap_50"]["van"] == 0.4182
+        assert v2["class_ap_50"]["bus"] == 0.4481
+        assert v2["class_ap_50"]["others"] == 0.0476
+        assert v2["precision"] is None  # Unmeasured marked as Not evaluated
+        assert v2["recall"] is None
+        assert v2["f1_score"] is None
+        assert v2["evaluation_type"] == "Validation Split"
+        assert "2,092" in v2["evaluation_split"]
 
     def test_api_dataset_info(self):
         client = TestClient(app)
@@ -162,6 +175,16 @@ class TestApiEndpoints:
         assert res.status_code == 200
         data = res.json()
         assert "UA-DETRAC" in data["name"]
+        assert data["training_sequences"] == 51
+        assert data["validation_sequences"] == 9
+        assert data["test_sequences"] == 40
+        assert data["training_sampled_images"] == 14317
+        assert data["validation_sampled_images"] == 2092
+        assert data["total_sampled_images"] == 16409
+        assert data["training_boxes"] == 104492
+        assert data["validation_boxes"] == 14121
+        assert data["total_annotated_boxes"] == 118613
+        assert data["input_specifications"]["model_input_resolution"] == "512x288"
 
     def test_api_detect_sample(self):
         client = TestClient(app)
@@ -171,6 +194,8 @@ class TestApiEndpoints:
         assert "run_id" in data
         assert "detections" in data
         assert "annotated_url" in data
+        assert data["is_sample"] is True
+        assert data["saved_run"] is None  # Sample runs are never inserted into production database history
 
     def test_checkpoint_strict_loading(self):
         ckpt_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "backend", "checkpoints", "improved_v2_best.pth")
@@ -276,5 +301,69 @@ class TestApiEndpoints:
         # Dimensions must match the respective uploaded image dimensions
         assert ann1.shape == (320, 480, 3)
         assert ann2.shape == (400, 600, 3)
+
+    def test_empty_database_and_sample_exclusion(self):
+        import tempfile
+        from backend.database.store import RunsDatabase
+        temp_dir = tempfile.mkdtemp()
+        db_path = os.path.join(temp_dir, "empty_test.db")
+        empty_db = RunsDatabase(db_path=db_path)
+
+        # Verify empty state
+        assert len(empty_db.list_runs()) == 0
+        summary = empty_db.get_analytics_summary()
+        assert summary["total_runs"] == 0
+        assert summary["total_detections"] == 0
+        assert summary["total_unique_vehicles"] == 0
+        assert summary["total_line_crossings"] == 0
+        assert summary["average_latency_ms"] == 0.0
+
+        # Attempt to save a sample media run - must be rejected and not inserted
+        sample_saved = empty_db.save_run(
+            run_id="run_sample_test",
+            media_type="image",
+            filename="sample_highway_traffic.jpg",
+            input_url="/media/uploads/sample_highway_traffic.jpg",
+            annotated_url="/media/outputs/sample_annotated.jpg",
+            model_name="Improved CenterNet",
+            weights_status="CONFIGURED_ACTIVE",
+            latency_ms=25.0,
+            fps=40.0,
+            total_detections=5,
+            unique_vehicles=5,
+            line_crossings=0,
+            class_counts={"car": 5},
+            metadata={"is_sample_media": True},
+        )
+        assert sample_saved is None
+        assert len(empty_db.list_runs()) == 0
+        assert empty_db.get_analytics_summary()["total_runs"] == 0
+
+        shutil.rmtree(temp_dir, ignore_errors=True)
+
+    def test_meaningful_error_without_mock_success_fallback(self):
+        client = TestClient(app)
+        # Pass completely corrupted image bytes
+        corrupt_bytes = b"\xFF\xD8\xFF\xE0\x00\x10JFIF" + b"\x00" * 20
+        res = client.post("/api/detect/image", files={"file": ("corrupt.jpg", corrupt_bytes, "image/jpeg")})
+        assert res.status_code == 400
+        data = res.json()
+        assert "decode" in data["detail"].lower()
+        # Must never return a fake 200 with fabricated bounding boxes
+        assert res.status_code != 200
+
+    def test_device_and_active_model_reporting(self):
+        from backend.inference.detector import VehicleDetector
+        detector = VehicleDetector()
+        status = detector.get_system_status()
+        assert "device" in status
+        assert "device_display" in status
+        if not torch.cuda.is_available():
+            assert "CPU" in status["device_display"]
+            assert status["is_cuda_available"] is False
+            assert "None" in status["gpu_name"]
+        assert status["architecture"]["input_resolution"] == "512x288"
+        assert status["architecture"]["downsample_ratio"] == 4
+
 
 

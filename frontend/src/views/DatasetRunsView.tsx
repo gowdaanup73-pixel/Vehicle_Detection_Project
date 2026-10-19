@@ -72,27 +72,38 @@ export const DatasetRunsView: React.FC<DatasetRunsViewProps> = ({
         <div className="command-card">
           <div className="command-card-header">
             <span className="card-title">
-              UA-DETRAC Benchmark Specifications (Traffic Surveillance)
+              UA-DETRAC Benchmark Specifications (V3 Development Setup)
             </span>
-            <span className="label-tactical">100 SEQUENCES // 24 INTERSECTIONS</span>
+            <span className="label-tactical">100 SEQUENCES // 51 TRAIN / 9 VAL / 40 TEST</span>
           </div>
+
+          {datasetInfo.sampling_interval_note && (
+            <div style={{ padding: '0.65rem 0.85rem', backgroundColor: 'var(--charcoal-900)', border: '1px solid var(--border-light)', fontFamily: 'var(--font-mono)', fontSize: '0.72rem', color: 'var(--warm-ivory-dim)', marginBottom: '1rem' }}>
+              <strong style={{ color: 'var(--burnt-orange)' }}>SAMPLING INTERVAL SPECIFICATION: </strong>
+              {datasetInfo.sampling_interval_note} Native video sequences contain ~139,095 uncompressed frames.
+            </div>
+          )}
 
           {/* Quick Metrics */}
           <div className="grid-4" style={{ marginBottom: '1.25rem' }}>
             <div style={{ padding: '0.75rem', backgroundColor: 'var(--charcoal-900)', border: '1px solid var(--border-light)' }}>
-              <div className="label-tactical" style={{ fontSize: '0.65rem' }}>TOTAL FRAMES</div>
+              <div className="label-tactical" style={{ fontSize: '0.65rem' }}>SAMPLED BENCHMARK IMAGES</div>
               <div style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--warm-ivory)', fontFamily: 'var(--font-display)' }}>
-                {datasetInfo.total_frames.toLocaleString()}
+                {(datasetInfo.total_sampled_images || 16409).toLocaleString()}
               </div>
-              <div style={{ fontSize: '0.7rem', color: 'var(--warm-ivory-dim)' }}>Across 100 sequences</div>
+              <div style={{ fontSize: '0.7rem', color: 'var(--warm-ivory-dim)' }}>
+                14,317 train + 2,092 val frames
+              </div>
             </div>
 
             <div style={{ padding: '0.75rem', backgroundColor: 'var(--charcoal-900)', border: '1px solid var(--border-light)' }}>
-              <div className="label-tactical" style={{ fontSize: '0.65rem' }}>MANUAL BOUNDING BOXES</div>
+              <div className="label-tactical" style={{ fontSize: '0.65rem' }}>ANNOTATED BOUNDING BOXES</div>
               <div style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--warm-ivory)', fontFamily: 'var(--font-display)' }}>
-                {(datasetInfo.total_annotated_boxes / 1000000).toFixed(2)}M
+                {(datasetInfo.total_annotated_boxes || 118613).toLocaleString()}
               </div>
-              <div style={{ fontSize: '0.7rem', color: 'var(--warm-ivory-dim)' }}>8,250 unique vehicles</div>
+              <div style={{ fontSize: '0.7rem', color: 'var(--warm-ivory-dim)' }}>
+                104,492 train + 14,121 val boxes
+              </div>
             </div>
 
             <div style={{ padding: '0.75rem', backgroundColor: 'var(--charcoal-900)', border: '1px solid var(--border-light)' }}>
@@ -104,15 +115,15 @@ export const DatasetRunsView: React.FC<DatasetRunsViewProps> = ({
             </div>
 
             <div style={{ padding: '0.75rem', backgroundColor: 'var(--charcoal-900)', border: '1px solid var(--border-light)' }}>
-              <div className="label-tactical" style={{ fontSize: '0.65rem' }}>NATIVE RESOLUTION</div>
+              <div className="label-tactical" style={{ fontSize: '0.65rem' }}>MODEL INPUT RESOLUTION</div>
               <div style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--muted-olive)', fontFamily: 'var(--font-display)' }}>
-                960 × 540
+                {datasetInfo.input_specifications?.model_input_resolution || '512 × 288'}
               </div>
-              <div style={{ fontSize: '0.7rem', color: 'var(--warm-ivory-dim)' }}>Model input: 512×512</div>
+              <div style={{ fontSize: '0.7rem', color: 'var(--warm-ivory-dim)' }}>Native capture: 960 × 540</div>
             </div>
           </div>
 
-          {/* Splits and Weather Grid */}
+          {/* Splits Grid */}
           <div className="grid-2">
             {/* Splits */}
             <div style={{ padding: '0.85rem', backgroundColor: 'var(--charcoal-900)', border: '1px solid var(--border-light)' }}>
@@ -122,60 +133,62 @@ export const DatasetRunsView: React.FC<DatasetRunsViewProps> = ({
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem', fontFamily: 'var(--font-mono)', fontSize: '0.76rem' }}>
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.2rem' }}>
-                    <span style={{ color: 'var(--warm-ivory)' }}>TRAINING SET (60 sequences)</span>
+                    <span style={{ color: 'var(--warm-ivory)' }}>TRAINING SET (51 sequences)</span>
                     <span style={{ color: 'var(--warm-ivory-dim)' }}>
-                      {datasetInfo.splits.train.frames.toLocaleString()} frames ({datasetInfo.splits.train.percentage}%)
+                      14,317 images (104,492 boxes)
                     </span>
                   </div>
                   <div style={{ height: '6px', backgroundColor: 'var(--charcoal-800)' }}>
-                    <div style={{ width: `${datasetInfo.splits.train.percentage}%`, height: '100%', backgroundColor: 'var(--burnt-orange)' }} />
+                    <div style={{ width: '87.3%', height: '100%', backgroundColor: 'var(--burnt-orange)' }} />
                   </div>
                 </div>
 
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.2rem' }}>
-                    <span style={{ color: 'var(--warm-ivory)' }}>VALIDATION SET (15 sequences)</span>
+                    <span style={{ color: 'var(--warm-ivory)' }}>VALIDATION SET (9 sequences)</span>
                     <span style={{ color: 'var(--warm-ivory-dim)' }}>
-                      {datasetInfo.splits.val.frames.toLocaleString()} frames ({datasetInfo.splits.val.percentage}%)
+                      2,092 images (14,121 boxes)
                     </span>
                   </div>
                   <div style={{ height: '6px', backgroundColor: 'var(--charcoal-800)' }}>
-                    <div style={{ width: `${datasetInfo.splits.val.percentage}%`, height: '100%', backgroundColor: '#D9822B' }} />
+                    <div style={{ width: '12.7%', height: '100%', backgroundColor: '#D9822B' }} />
                   </div>
                 </div>
 
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.2rem' }}>
-                    <span style={{ color: 'var(--warm-ivory)' }}>TEST SET (25 sequences)</span>
+                    <span style={{ color: 'var(--warm-ivory)' }}>TEST SET (40 sequences)</span>
                     <span style={{ color: 'var(--warm-ivory-dim)' }}>
-                      {datasetInfo.splits.test.frames.toLocaleString()} frames ({datasetInfo.splits.test.percentage}%)
+                      Held-out benchmark sequences
                     </span>
                   </div>
                   <div style={{ height: '6px', backgroundColor: 'var(--charcoal-800)' }}>
-                    <div style={{ width: `${datasetInfo.splits.test.percentage}%`, height: '100%', backgroundColor: 'var(--muted-olive)' }} />
+                    <div style={{ width: '100%', height: '100%', backgroundColor: 'var(--muted-olive)' }} />
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Weather Breakdown */}
-            <div style={{ padding: '0.85rem', backgroundColor: 'var(--charcoal-900)', border: '1px solid var(--border-light)' }}>
-              <div className="label-tactical" style={{ marginBottom: '0.5rem', color: 'var(--muted-olive)' }}>
-                ENVIRONMENTAL TEST CONDITIONS
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.5rem', fontFamily: 'var(--font-mono)', fontSize: '0.74rem' }}>
-                {datasetInfo.weather_conditions.map((w, idx) => (
-                  <div key={idx} style={{ padding: '0.45rem', backgroundColor: 'var(--charcoal-800)', border: '1px solid var(--border-light)' }}>
-                    <div style={{ color: 'var(--warm-ivory)', fontWeight: 700 }}>
-                      {w.condition} ({w.percentage}%)
+            {/* Weather Breakdown if present */}
+            {datasetInfo.weather_conditions && datasetInfo.weather_conditions.length > 0 && (
+              <div style={{ padding: '0.85rem', backgroundColor: 'var(--charcoal-900)', border: '1px solid var(--border-light)' }}>
+                <div className="label-tactical" style={{ marginBottom: '0.5rem', color: 'var(--muted-olive)' }}>
+                  ENVIRONMENTAL TEST CONDITIONS
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.5rem', fontFamily: 'var(--font-mono)', fontSize: '0.74rem' }}>
+                  {datasetInfo.weather_conditions.map((w, idx) => (
+                    <div key={idx} style={{ padding: '0.45rem', backgroundColor: 'var(--charcoal-800)', border: '1px solid var(--border-light)' }}>
+                      <div style={{ color: 'var(--warm-ivory)', fontWeight: 700 }}>
+                        {w.condition} ({w.percentage}%)
+                      </div>
+                      <div style={{ fontSize: '0.68rem', color: 'var(--warm-ivory-dim)', marginTop: '0.15rem' }}>
+                        {w.challenges}
+                      </div>
                     </div>
-                    <div style={{ fontSize: '0.68rem', color: 'var(--warm-ivory-dim)', marginTop: '0.15rem' }}>
-                      {w.challenges}
-                    </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       )}
@@ -217,7 +230,17 @@ export const DatasetRunsView: React.FC<DatasetRunsViewProps> = ({
           </div>
         </div>
 
-        {filteredRuns.length === 0 ? (
+        {runs.length === 0 ? (
+          <div style={{ padding: '3.5rem 2rem', textAlign: 'center', color: 'var(--warm-ivory-dim)', fontFamily: 'var(--font-mono)' }}>
+            <Database size={32} style={{ color: 'var(--muted-olive)', margin: '0 auto 0.75rem auto' }} />
+            <div style={{ color: 'var(--warm-ivory)', fontWeight: 700, fontSize: '0.9rem', marginBottom: '0.4rem' }}>
+              NO PERSISTED OPERATIONAL RUNS FOUND
+            </div>
+            <div style={{ fontSize: '0.74rem', maxWidth: '480px', margin: '0 auto', lineHeight: 1.6 }}>
+              Upload image or video files in Detection Studio to record authentic PyTorch inference results. Demo highway benchmarks are isolated and not inserted into production audit logs.
+            </div>
+          </div>
+        ) : filteredRuns.length === 0 ? (
           <div style={{ padding: '2.5rem', textAlign: 'center', color: 'var(--warm-ivory-dim)', fontFamily: 'var(--font-mono)' }}>
             NO AUDIT RECORDS MATCH CURRENT FILTER.
           </div>

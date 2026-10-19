@@ -400,19 +400,30 @@ export const DetectionStudioView: React.FC<DetectionStudioViewProps> = ({
 
                 {/* View Switcher if Result Exists */}
                 {currentResult && (
-                  <div className="segmented-toggle">
-                    <button
-                      className={`segment-btn ${viewMode === 'annotated' ? 'active' : ''}`}
-                      onClick={() => setViewMode('annotated')}
-                    >
-                      Annotated
-                    </button>
-                    <button
-                      className={`segment-btn ${viewMode === 'original' ? 'active' : ''}`}
-                      onClick={() => setViewMode('original')}
-                    >
-                      Original
-                    </button>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                    <div className="segmented-toggle">
+                      <button
+                        className={`segment-btn ${viewMode === 'annotated' ? 'active' : ''}`}
+                        onClick={() => setViewMode('annotated')}
+                      >
+                        Annotated
+                      </button>
+                      <button
+                        className={`segment-btn ${viewMode === 'original' ? 'active' : ''}`}
+                        onClick={() => setViewMode('original')}
+                      >
+                        Original
+                      </button>
+                    </div>
+                    {currentResult.is_sample ? (
+                      <span className="badge badge-orange" style={{ fontSize: '0.62rem' }}>
+                        DEMO SAMPLE (NOT IN AUDIT HISTORY)
+                      </span>
+                    ) : (
+                      <span className="badge badge-olive" style={{ fontSize: '0.62rem' }}>
+                        REAL UPLOAD // INFERENCE
+                      </span>
+                    )}
                   </div>
                 )}
               </div>

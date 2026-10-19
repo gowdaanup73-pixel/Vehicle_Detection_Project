@@ -213,7 +213,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               </button>
             </div>
 
-            {/* Test Highway Demonstration */}
+            {/* Demo Highway Benchmark Runner */}
             <div style={{ marginTop: '0.85rem', display: 'flex', gap: '0.5rem' }}>
               <button
                 className="btn btn-secondary"
@@ -222,7 +222,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 disabled={isProcessing}
               >
                 <Play size={12} style={{ color: 'var(--burnt-orange)' }} />
-                {isProcessing ? 'Processing...' : 'Test Roadway Image'}
+                {isProcessing ? 'Processing...' : 'Load Demo Highway (Sample)'}
               </button>
               <button
                 className="btn btn-secondary"
@@ -231,7 +231,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 disabled={isProcessing}
               >
                 <Film size={12} style={{ color: 'var(--muted-olive)' }} />
-                {isProcessing ? 'Processing...' : 'Test Traffic Video Stream'}
+                {isProcessing ? 'Processing...' : 'Load Demo Video (Sample)'}
               </button>
             </div>
           </div>

@@ -283,9 +283,14 @@ export const ModelLaboratoryView: React.FC<ModelLaboratoryViewProps> = ({
         <div className="command-card-header">
           <span className="card-title">
             <Microscope size={15} style={{ color: 'var(--burnt-orange)' }} />
-            Comparative Ablation Experiments (UA-DETRAC Test Benchmark)
+            Comparative Ablation Benchmarks (UA-DETRAC Validation Splits)
           </span>
-          <span className="label-tactical">UNMEASURED METRICS HONESTLY MARKED AS "NOT EVALUATED"</span>
+          <span className="label-tactical">VALIDATION SPLIT RESULTS // UNMEASURED MARKED "NOT EVALUATED"</span>
+        </div>
+
+        <div style={{ padding: '0.65rem 0.85rem', backgroundColor: 'var(--charcoal-900)', border: '1px solid var(--border-light)', fontFamily: 'var(--font-mono)', fontSize: '0.72rem', color: 'var(--warm-ivory-dim)', margin: '0 0.85rem 0.85rem 0.85rem' }}>
+          <strong style={{ color: 'var(--burnt-orange)' }}>VALIDATION BENCHMARK NOTICE: </strong> 
+          All metrics represent validation split evaluations (not held-out test sets). Different validation subsets (1,417 images for V1/Baseline vs. 2,092 images for V3/V2) evaluate on different sequence partitions and are not directly comparable as identical splits.
         </div>
 
         <div style={{ overflowX: 'auto' }}>
@@ -296,18 +301,20 @@ export const ModelLaboratoryView: React.FC<ModelLaboratoryViewProps> = ({
                 <th>Backbone</th>
                 <th>Attention</th>
                 <th>Neck</th>
+                <th>Evaluation Split</th>
                 <th>mAP@0.5</th>
                 <th>mAP@[0.5:0.95]</th>
+                <th>AP@0.75</th>
                 <th>Precision</th>
                 <th>Recall</th>
                 <th>F1-Score</th>
                 <th>Inference FPS</th>
-                <th>Latency (ms)</th>
+                <th>Latency</th>
               </tr>
             </thead>
             <tbody>
               {experiments.map((exp) => {
-                const isProposed = exp.id === 'exp_improved_centernet_full';
+                const isProposed = exp.id === 'exp_improved_centernet_v2' || exp.id === 'exp_improved_centernet_full';
                 const isSelected = exp.id === selectedExpId;
 
                 return (
@@ -325,31 +332,37 @@ export const ModelLaboratoryView: React.FC<ModelLaboratoryViewProps> = ({
                   >
                     <td style={{ color: isProposed ? 'var(--burnt-orange)' : 'var(--warm-ivory)', fontWeight: 700 }}>
                       {exp.name}
-                      {isProposed && <span className="badge badge-orange" style={{ marginLeft: '0.5rem', fontSize: '0.6rem' }}>PROPOSED</span>}
+                      {isProposed && <span className="badge badge-orange" style={{ marginLeft: '0.5rem', fontSize: '0.6rem' }}>ACTIVE V2</span>}
                     </td>
                     <td>{exp.backbone}</td>
                     <td>{exp.attention}</td>
                     <td>{exp.neck.split(' ')[0]}</td>
+                    <td style={{ fontSize: '0.7rem', color: 'var(--warm-ivory-dim)' }}>
+                      {exp.evaluation_split || 'Validation Split'}
+                    </td>
                     <td style={{ fontWeight: 700, color: 'var(--warm-ivory)' }}>
-                      {exp.map_50 !== null ? (exp.map_50 * 100).toFixed(1) + '%' : <span style={{ color: 'var(--warm-ivory-dim)' }}>Not evaluated</span>}
+                      {exp.map_50 !== null && exp.map_50 !== undefined ? (exp.map_50 * 100).toFixed(2) + '%' : <span style={{ color: 'var(--warm-ivory-dim)' }}>Not evaluated</span>}
                     </td>
                     <td>
-                      {exp.map_50_95 !== null ? (exp.map_50_95 * 100).toFixed(1) + '%' : <span style={{ color: 'var(--warm-ivory-dim)' }}>Not evaluated</span>}
+                      {exp.map_50_95 !== null && exp.map_50_95 !== undefined ? (exp.map_50_95 * 100).toFixed(2) + '%' : <span style={{ color: 'var(--warm-ivory-dim)' }}>Not evaluated</span>}
                     </td>
                     <td>
-                      {exp.precision !== null ? (exp.precision * 100).toFixed(1) + '%' : <span style={{ color: 'var(--warm-ivory-dim)' }}>Not evaluated</span>}
+                      {exp.ap_75 !== null && exp.ap_75 !== undefined ? (exp.ap_75 * 100).toFixed(2) + '%' : <span style={{ color: 'var(--warm-ivory-dim)' }}>Not evaluated</span>}
                     </td>
                     <td>
-                      {exp.recall !== null ? (exp.recall * 100).toFixed(1) + '%' : <span style={{ color: 'var(--warm-ivory-dim)' }}>Not evaluated</span>}
+                      {exp.precision !== null && exp.precision !== undefined ? (exp.precision * 100).toFixed(1) + '%' : <span style={{ color: 'var(--warm-ivory-dim)' }}>Not evaluated</span>}
                     </td>
                     <td>
-                      {exp.f1_score !== null ? (exp.f1_score * 100).toFixed(1) + '%' : <span style={{ color: 'var(--warm-ivory-dim)' }}>Not evaluated</span>}
+                      {exp.recall !== null && exp.recall !== undefined ? (exp.recall * 100).toFixed(1) + '%' : <span style={{ color: 'var(--warm-ivory-dim)' }}>Not evaluated</span>}
+                    </td>
+                    <td>
+                      {exp.f1_score !== null && exp.f1_score !== undefined ? (exp.f1_score * 100).toFixed(1) + '%' : <span style={{ color: 'var(--warm-ivory-dim)' }}>Not evaluated</span>}
                     </td>
                     <td style={{ color: 'var(--burnt-orange)', fontWeight: 700 }}>
-                      {exp.fps !== null ? `${exp.fps} FPS` : <span style={{ color: 'var(--warm-ivory-dim)' }}>Not evaluated</span>}
+                      {exp.fps !== null && exp.fps !== undefined ? `${exp.fps} FPS` : <span style={{ color: 'var(--warm-ivory-dim)' }}>Not evaluated</span>}
                     </td>
                     <td>
-                      {exp.latency_ms !== null ? `${exp.latency_ms} ms` : <span style={{ color: 'var(--warm-ivory-dim)' }}>Not evaluated</span>}
+                      {exp.latency_ms !== null && exp.latency_ms !== undefined ? `${exp.latency_ms} ms` : <span style={{ color: 'var(--warm-ivory-dim)' }}>Not evaluated</span>}
                     </td>
                   </tr>
                 );
@@ -407,66 +420,81 @@ export const ModelLaboratoryView: React.FC<ModelLaboratoryViewProps> = ({
           <div className="command-card-header">
             <span className="card-title">
               <LineChart size={15} style={{ color: 'var(--burnt-orange)' }} />
-              50-Epoch Convergence Curves (Proposed Improved CenterNet)
+              {losses.length > 0 ? `${losses.length}-Epoch Training Telemetry` : 'Training Telemetry'} (Improved CenterNet)
             </span>
-            <span className="label-tactical">FOCAL + L1 LOSS</span>
+            <span className="label-tactical">RECORDED TRAINING LOGS</span>
           </div>
 
-          <div style={{ height: '140px', width: '100%', marginBottom: '1rem', position: 'relative' }}>
-            <svg width="100%" height="100%" viewBox="0 0 800 140" preserveAspectRatio="none">
-              <line x1="0" y1="20" x2="800" y2="20" stroke="rgba(233,226,212,0.08)" strokeDasharray="3 3" />
-              <line x1="0" y1="70" x2="800" y2="70" stroke="rgba(233,226,212,0.08)" strokeDasharray="3 3" />
-              <line x1="0" y1="120" x2="800" y2="120" stroke="rgba(233,226,212,0.15)" />
+          {losses.length > 0 ? (
+            <div>
+              <div style={{ height: '140px', width: '100%', marginBottom: '1rem', position: 'relative' }}>
+                <svg width="100%" height="100%" viewBox="0 0 800 140" preserveAspectRatio="none">
+                  <line x1="0" y1="20" x2="800" y2="20" stroke="rgba(233,226,212,0.08)" strokeDasharray="3 3" />
+                  <line x1="0" y1="70" x2="800" y2="70" stroke="rgba(233,226,212,0.08)" strokeDasharray="3 3" />
+                  <line x1="0" y1="120" x2="800" y2="120" stroke="rgba(233,226,212,0.15)" />
 
-              {/* Total Loss Curve (Descending in Burnt Orange) */}
-              {(() => {
-                const points = losses.map((l, idx) => {
-                  const x = (idx / Math.max(1, losses.length - 1)) * 800;
-                  const y = 120 - Math.min(100, (l.total_loss / 3.0) * 100);
-                  return `${x},${y}`;
-                }).join(' ');
+                  {/* Total Loss Curve (Descending in Burnt Orange) */}
+                  {(() => {
+                    const maxLoss = Math.max(3.0, ...losses.map((l) => l.total_loss));
+                    const points = losses.map((l, idx) => {
+                      const x = (idx / Math.max(1, losses.length - 1)) * 800;
+                      const y = 120 - Math.min(100, (l.total_loss / maxLoss) * 100);
+                      return `${x},${y}`;
+                    }).join(' ');
 
-                return (
-                  <polyline
-                    fill="none"
-                    stroke="var(--burnt-orange)"
-                    strokeWidth="2"
-                    points={points}
-                  />
-                );
-              })()}
+                    return (
+                      <polyline
+                        fill="none"
+                        stroke="var(--burnt-orange)"
+                        strokeWidth="2"
+                        points={points}
+                      />
+                    );
+                  })()}
 
-              {/* Val mAP Curve (Ascending in Muted Olive) */}
-              {(() => {
-                const points = losses.map((l, idx) => {
-                  const x = (idx / Math.max(1, losses.length - 1)) * 800;
-                  const y = 120 - (l.val_map_50 * 100);
-                  return `${x},${y}`;
-                }).join(' ');
+                  {/* Val Loss Curve (Ascending / Descending in Muted Olive) */}
+                  {(() => {
+                    const maxValLoss = Math.max(3.0, ...losses.map((l) => l.val_loss || 0));
+                    const points = losses.map((l, idx) => {
+                      const x = (idx / Math.max(1, losses.length - 1)) * 800;
+                      const val = l.val_loss || 0;
+                      const y = 120 - Math.min(100, (val / maxValLoss) * 100);
+                      return `${x},${y}`;
+                    }).join(' ');
 
-                return (
-                  <polyline
-                    fill="none"
-                    stroke="var(--muted-olive-light)"
-                    strokeWidth="2"
-                    strokeDasharray="4 2"
-                    points={points}
-                  />
-                );
-              })()}
-            </svg>
-          </div>
+                    return (
+                      <polyline
+                        fill="none"
+                        stroke="var(--muted-olive-light)"
+                        strokeWidth="2"
+                        strokeDasharray="4 2"
+                        points={points}
+                      />
+                    );
+                  })()}
+                </svg>
+              </div>
 
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-mono)', fontSize: '0.7rem', color: 'var(--warm-ivory-dim)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-              <div style={{ width: '12px', height: '2px', backgroundColor: 'var(--burnt-orange)' }} />
-              <span>Total Multitask Loss (2.73 → 0.38)</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-mono)', fontSize: '0.7rem', color: 'var(--warm-ivory-dim)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <div style={{ width: '12px', height: '2px', backgroundColor: 'var(--burnt-orange)' }} />
+                  <span>
+                    Train Loss ({losses[0]?.total_loss} → {losses[losses.length - 1]?.total_loss})
+                  </span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <div style={{ width: '12px', height: '2px', backgroundColor: 'var(--muted-olive-light)' }} />
+                  <span>
+                    Val Loss ({losses[0]?.val_loss} → {losses[losses.length - 1]?.val_loss})
+                  </span>
+                </div>
+              </div>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-              <div style={{ width: '12px', height: '2px', backgroundColor: 'var(--muted-olive-light)' }} />
-              <span>Val mAP@0.5 (35.0% → 81.9%)</span>
+          ) : (
+            <div style={{ padding: '2rem', textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: '0.76rem', color: 'var(--warm-ivory-dim)' }}>
+              No recorded training convergence history CSV found.
             </div>
-          </div>
+          )}
         </div>
       </div>
     </div>

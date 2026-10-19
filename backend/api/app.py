@@ -280,27 +280,12 @@ def detect_sample(media_type: str = "image", conf_thresh: float = 0.35):
 
     annotated_url = f"/media/outputs/{result['annotated_filename']}"
 
-    saved_run = db.save_run(
-        run_id=result["run_id"],
-        media_type=m_type,
-        filename=filename,
-        input_url=input_url,
-        annotated_url=annotated_url,
-        model_name="Improved CenterNet (ResNet-18 + CBAM + BiFPN)",
-        weights_status=result["model_status"],
-        latency_ms=result["latency_ms"],
-        fps=result["fps"],
-        total_detections=result["total_detections"],
-        unique_vehicles=result["unique_vehicles"],
-        line_crossings=result.get("line_crossings", 0),
-        class_counts=result["class_counts"],
-        timeline=result.get("timeline"),
-        metadata={"is_sample_media": True, "conf_thresh": conf},
-    )
-
+    # Explicitly do NOT insert demo sample runs into production audit history
     result["input_url"] = input_url
     result["annotated_url"] = annotated_url
-    result["saved_run"] = saved_run
+    result["saved_run"] = None
+    result["is_sample"] = True
+    result["execution_mode"] = "PRE_CALIBRATED_DEMO_SAMPLE"
     return result
 
 

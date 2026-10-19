@@ -155,20 +155,38 @@ export const TrafficAnalyticsView: React.FC<TrafficAnalyticsViewProps> = ({
 
         <div className="kpi-block" style={{ borderLeftColor: 'var(--burnt-orange)' }}>
           <div className="kpi-title">Unique Tracked Vehicles</div>
-          <div className="kpi-value">{uniqueVehicles.toLocaleString()}</div>
-          <div className="kpi-subtext">Centroid trajectory de-duplication</div>
+          <div className="kpi-value">
+            {activeRun && activeRun.media_type === 'image' ? (
+              <span style={{ fontSize: '1.1rem', color: 'var(--warm-ivory-dim)' }}>N/A (Image)</span>
+            ) : uniqueVehicles > 0 ? (
+              uniqueVehicles.toLocaleString()
+            ) : (
+              '0'
+            )}
+          </div>
+          <div className="kpi-subtext">
+            {activeRun?.media_type === 'image' ? 'Multi-frame tracking requires video' : 'Centroid trajectory de-duplication'}
+          </div>
         </div>
 
         <div className="kpi-block" style={{ borderLeftColor: 'var(--status-green)' }}>
           <div className="kpi-title">Tripwire Crossings</div>
-          <div className="kpi-value">{lineCrossings}</div>
-          <div className="kpi-subtext">Counted crossing Gate 01</div>
+          <div className="kpi-value">
+            {activeRun && activeRun.media_type === 'image' ? (
+              <span style={{ fontSize: '1.1rem', color: 'var(--warm-ivory-dim)' }}>N/A (Image)</span>
+            ) : (
+              lineCrossings
+            )}
+          </div>
+          <div className="kpi-subtext">
+            {activeRun?.media_type === 'image' ? 'Counting gate requires video' : 'Counted crossing Gate 01'}
+          </div>
         </div>
 
         <div className="kpi-block" style={{ borderLeftColor: 'var(--muted-olive)' }}>
           <div className="kpi-title">Documented Density</div>
-          <div className="kpi-value" style={{ fontSize: '1.25rem', paddingTop: '0.4rem' }}>
-            {activeRun?.timeline?.length ? 'Spatial Estimate' : 'Awaiting Video'}
+          <div className="kpi-value" style={{ fontSize: '1.1rem', paddingTop: '0.4rem' }}>
+            {activeRun?.timeline?.length ? 'Spatial Estimate' : allRuns.length === 0 ? 'No Data' : 'Awaiting Video'}
           </div>
           <div className="kpi-subtext">Roadway occupancy ratio calculation</div>
         </div>

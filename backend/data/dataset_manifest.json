@@ -1,0 +1,50 @@
+{
+  "dataset_name": "UA-DETRAC Benchmark (V3 Development Setup)",
+  "benchmark_description": "Traffic surveillance dataset recorded at 24 urban intersections. V3 development setup uses temporal stride sampling across sequences.",
+  "sampling_interval_note": "Sampled at uniform temporal intervals across video sequences. Sampled frames represent the active training/validation benchmark, not the total uncompressed raw sequence frame count (~139k frames).",
+  "native_specifications": {
+    "total_sequences": 100,
+    "native_frame_resolution": "960x540",
+    "native_approx_total_frames": 139095,
+    "color_space": "RGB / BGR"
+  },
+  "development_setup_v3": {
+    "total_sequences": 100,
+    "training_sequences": 51,
+    "validation_sequences": 9,
+    "held_out_test_sequences": 40,
+    "sampled_training_images": 14317,
+    "sampled_validation_images": 2092,
+    "total_sampled_images": 16409,
+    "training_bounding_boxes": 104492,
+    "validation_bounding_boxes": 14121,
+    "total_annotated_boxes": 118613,
+    "target_classes": ["car", "van", "bus", "others"],
+    "model_input_resolution": "512x288",
+    "downsampling_ratio": 4,
+    "heatmap_output_resolution": "128x72"
+  },
+  "splits": {
+    "train": {
+      "sequences": 51,
+      "sampled_images": 14317,
+      "bounding_boxes": 104492,
+      "percentage": 87.25,
+      "role": "Training split with extensive multi-condition coverage"
+    },
+    "val": {
+      "sequences": 9,
+      "sampled_images": 2092,
+      "bounding_boxes": 14121,
+      "percentage": 12.75,
+      "role": "V3 validation split for hyperparameter tuning and model checkpoint selection"
+    },
+    "test": {
+      "sequences": 40,
+      "sampled_images": "Held-out",
+      "bounding_boxes": "Unannotated / Held-out benchmark",
+      "percentage": null,
+      "role": "Held-out test sequences reserved for independent evaluation"
+    }
+  }
+}

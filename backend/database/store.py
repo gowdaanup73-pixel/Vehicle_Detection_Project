@@ -52,6 +52,13 @@ class RunsDatabase:
                     metadata_json TEXT
                 )
             """)
+            # Purge demo highway samples from production operational records
+            cursor.execute("""
+                DELETE FROM runs 
+                WHERE filename LIKE 'sample_%' 
+                   OR metadata_json LIKE '%"is_sample_media": true%'
+                   OR metadata_json LIKE '%"is_sample_media":true%'
+            """)
             conn.commit()
 
     def save_run(
@@ -71,7 +78,11 @@ class RunsDatabase:
         class_counts: Dict[str, int],
         timeline: Optional[List[Dict]] = None,
         metadata: Optional[Dict] = None,
-    ) -> Dict:
+    ) -> Optional[Dict]:
+        # Do not insert demo sample runs into production operational history
+        if filename.startswith("sample_") or (metadata and metadata.get("is_sample_media")):
+            return None
+
         now_iso = datetime.now().isoformat()
         with self._get_connection() as conn:
             cursor = conn.cursor()
@@ -118,12 +129,17 @@ class RunsDatabase:
             cursor = conn.cursor()
             if media_type:
                 cursor.execute(
-                    "SELECT * FROM runs WHERE media_type = ? ORDER BY timestamp DESC LIMIT ?",
+                    """SELECT * FROM runs 
+                       WHERE media_type = ? 
+                         AND filename NOT LIKE 'sample_%' 
+                       ORDER BY timestamp DESC LIMIT ?""",
                     (media_type, limit)
                 )
             else:
                 cursor.execute(
-                    "SELECT * FROM runs ORDER BY timestamp DESC LIMIT ?",
+                    """SELECT * FROM runs 
+                       WHERE filename NOT LIKE 'sample_%' 
+                       ORDER BY timestamp DESC LIMIT ?""",
                     (limit,)
                 )
             rows = cursor.fetchall()
@@ -139,13 +155,21 @@ class RunsDatabase:
     def get_analytics_summary(self) -> Dict:
         with self._get_connection() as conn:
             cursor = conn.cursor()
-            cursor.execute("SELECT COUNT(*) as count, AVG(latency_ms) as avg_latency FROM runs")
+            cursor.execute("""
+                SELECT COUNT(*) as count, AVG(latency_ms) as avg_latency 
+                FROM runs 
+                WHERE filename NOT LIKE 'sample_%'
+            """)
             agg = cursor.fetchone()
 
             total_runs = agg["count"] if agg else 0
             avg_latency = round(agg["avg_latency"], 2) if agg and agg["avg_latency"] else 0.0
 
-            cursor.execute("SELECT class_counts_json, unique_vehicles, line_crossings, total_detections FROM runs")
+            cursor.execute("""
+                SELECT class_counts_json, unique_vehicles, line_crossings, total_detections 
+                FROM runs 
+                WHERE filename NOT LIKE 'sample_%'
+            """)
             rows = cursor.fetchall()
 
             total_detections = 0

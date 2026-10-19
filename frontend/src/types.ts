@@ -14,13 +14,16 @@ export interface ModelStatus {
     heads: string[];
     classes: string[];
     downsample_ratio: number;
+    input_resolution?: string;
   };
   device: string;
+  device_display?: string;
   is_cuda_available: boolean;
   gpu_name: string;
   weights_loaded: boolean;
   model_status: string;
   checkpoint_path: string;
+  checkpoint_name?: string;
   last_load_error: string | null;
   confidence_threshold: number;
   available_checkpoints: Array<{
@@ -80,6 +83,7 @@ export interface RunRecord {
   class_counts: Record<string, number>;
   timeline?: TimelinePoint[];
   metadata?: Record<string, any>;
+  is_sample?: boolean;
 }
 
 export interface AnalyticsSummary {
@@ -103,8 +107,11 @@ export interface ExperimentItem {
   attention: string;
   neck: string;
   heads: string;
+  evaluation_split?: string;
+  evaluation_type?: string;
   map_50: number | null;
   map_50_95: number | null;
+  ap_75?: number | null;
   precision: number | null;
   recall: number | null;
   f1_score: number | null;
@@ -123,28 +130,43 @@ export interface LossPoint {
   focal_heatmap_loss: number;
   wh_size_loss: number;
   offset_reg_loss: number;
-  val_map_50: number;
+  val_loss?: number;
+  val_map_50?: number;
+  val_heatmap_loss?: number;
+  val_wh_loss?: number;
+  val_offset_loss?: number;
 }
 
 export interface DatasetInfo {
   name: string;
   description: string;
+  sampling_interval_note?: string;
   target_classes: string[];
   total_sequences: number;
-  total_frames: number;
+  training_sequences?: number;
+  validation_sequences?: number;
+  test_sequences?: number;
+  total_sampled_images?: number;
+  training_sampled_images?: number;
+  validation_sampled_images?: number;
   total_annotated_boxes: number;
+  training_boxes?: number;
+  validation_boxes?: number;
   splits: {
-    train: { sequences: number; frames: number; bounding_boxes: number; percentage: number };
-    val: { sequences: number; frames: number; bounding_boxes: number; percentage: number };
-    test: { sequences: number; frames: number; bounding_boxes: number; percentage: number };
+    train: { sequences: number; frames: number | string; bounding_boxes: number | string; percentage: number | null };
+    val: { sequences: number; frames: number | string; bounding_boxes: number | string; percentage: number | null };
+    test: { sequences: number; frames: number | string; bounding_boxes: number | string; percentage: number | null };
   };
-  class_distribution: Record<string, { count: number; percentage: number }>;
-  weather_conditions: Array<{ condition: string; sequences: number; percentage: number; challenges: string }>;
-  occlusion_breakdown: { unoccluded: number; partially_occluded: number; heavily_occluded: number };
+  native_specifications?: {
+    native_frame_resolution: string;
+    native_approx_total_frames: number;
+  };
+  weather_conditions?: Array<{ condition: string; sequences: number; percentage: number; challenges: string }>;
   input_specifications: {
     native_resolution: string;
     model_input_resolution: string;
     color_space: string;
     downsampling_ratio: number;
+    heatmap_resolution?: string;
   };
 }
