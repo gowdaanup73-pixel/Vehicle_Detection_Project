@@ -229,3 +229,52 @@ class TestApiEndpoints:
         assert "class_counts" in data
         assert "latency_ms" in data
 
+    def test_two_distinct_uploads_provenance_and_model_invocation(self):
+        client = TestClient(app)
+        base_dir = os.path.dirname(os.path.dirname(__file__))
+
+        # Image 1: 320x480 blue canvas with a red test square
+        img1 = np.zeros((320, 480, 3), dtype=np.uint8)
+        img1[:] = (255, 100, 50)
+        cv2.rectangle(img1, (100, 100), (200, 200), (0, 0, 255), -1)
+        _, enc1 = cv2.imencode(".jpg", img1)
+
+        # Image 2: 400x600 green canvas with a yellow test circle
+        img2 = np.zeros((400, 600, 3), dtype=np.uint8)
+        img2[:] = (50, 200, 100)
+        cv2.circle(img2, (300, 200), 80, (0, 255, 255), -1)
+        _, enc2 = cv2.imencode(".jpg", img2)
+
+        res1 = client.post("/api/detect/image", files={"file": ("custom_cam1.jpg", enc1.tobytes(), "image/jpeg")}, data={"conf_thresh": "0.25"})
+        res2 = client.post("/api/detect/image", files={"file": ("custom_cam2.jpg", enc2.tobytes(), "image/jpeg")}, data={"conf_thresh": "0.25"})
+
+        assert res1.status_code == 200
+        assert res2.status_code == 200
+
+        d1 = res1.json()
+        d2 = res2.json()
+
+        # Verify distinct, non-demo run IDs and non-demo media paths
+        assert d1["run_id"] != d2["run_id"]
+        assert d1["input_url"] != d2["input_url"]
+        assert d1["annotated_url"] != d2["annotated_url"]
+        assert "sample_highway_traffic" not in d1["input_url"]
+        assert "sample_highway_traffic" not in d2["input_url"]
+        assert d1["execution_mode"] == "PYTORCH_IMPROVED_CENTERNET_V2"
+        assert d2["execution_mode"] == "PYTORCH_IMPROVED_CENTERNET_V2"
+
+        # Verify physical output image dimensions and provenance directly from disk
+        path1 = d1.get("annotated_path") or os.path.join(base_dir, "backend", d1["annotated_url"].lstrip("/"))
+        path2 = d2.get("annotated_path") or os.path.join(base_dir, "backend", d2["annotated_url"].lstrip("/"))
+        assert os.path.exists(path1), f"Output 1 missing: {path1}"
+        assert os.path.exists(path2), f"Output 2 missing: {path2}"
+
+        ann1 = cv2.imread(path1)
+        ann2 = cv2.imread(path2)
+        assert ann1 is not None and ann2 is not None
+
+        # Dimensions must match the respective uploaded image dimensions
+        assert ann1.shape == (320, 480, 3)
+        assert ann2.shape == (400, 600, 3)
+
+

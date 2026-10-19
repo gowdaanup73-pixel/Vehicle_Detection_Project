@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { 
   AlertCircle, 
   ArrowRight, 
@@ -37,6 +37,7 @@ export const DetectionStudioView: React.FC<DetectionStudioViewProps> = ({
   const [maxFrames, setMaxFrames] = useState<number>(100);
   const [frameStride, setFrameStride] = useState<number>(1);
 
+  const [isDragging, setIsDragging] = useState<boolean>(false);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [processingError, setProcessingError] = useState<string | null>(null);
   const [currentResult, setCurrentResult] = useState<any | null>(null);
@@ -45,17 +46,44 @@ export const DetectionStudioView: React.FC<DetectionStudioViewProps> = ({
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Sync with preselected file if passed from dashboard
+  useEffect(() => {
+    if (preselectedFile) {
+      validateAndSetFile(preselectedFile, true);
+    }
+  }, [preselectedFile]);
+
   // File Selection & Validation
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
-      validateAndSetFile(file);
+      validateAndSetFile(file, true);
     }
   };
 
-  const validateAndSetFile = (file: File) => {
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = () => {
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      const file = e.dataTransfer.files[0];
+      validateAndSetFile(file, true);
+    }
+  };
+
+  const validateAndSetFile = (file: File, autoRun: boolean = true) => {
+    // 1. Immediately clear any previous result, preview, and error
     setProcessingError(null);
     setCurrentResult(null);
+    setSelectedBoxIndex(null);
 
     const isVideo = file.type.startsWith('video/') || file.name.match(/\.(mp4|avi|mov|mkv|webm)$/i);
     const isImage = file.type.startsWith('image/') || file.name.match(/\.(jpg|jpeg|png|webp|bmp)$/i);
@@ -69,7 +97,6 @@ export const DetectionStudioView: React.FC<DetectionStudioViewProps> = ({
       return;
     }
 
-    // Size limit check (e.g. 100MB)
     if (file.size > 100 * 1024 * 1024) {
       setProcessingError('File size exceeds 100MB limit.');
       return;
@@ -78,6 +105,11 @@ export const DetectionStudioView: React.FC<DetectionStudioViewProps> = ({
     setSelectedFile(file);
     if (previewUrl) URL.revokeObjectURL(previewUrl);
     setPreviewUrl(URL.createObjectURL(file));
+
+    // 2. Automatically trigger inference for the newly selected file
+    if (autoRun) {
+      executeInference(file);
+    }
   };
 
   const handleReset = () => {
@@ -90,7 +122,7 @@ export const DetectionStudioView: React.FC<DetectionStudioViewProps> = ({
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  // Run Inference
+  // Run Inference on Actual Uploaded File
   const executeInference = async (targetFile?: File) => {
     const fileToRun = targetFile || selectedFile;
     if (!fileToRun) {
@@ -98,8 +130,10 @@ export const DetectionStudioView: React.FC<DetectionStudioViewProps> = ({
       return;
     }
 
+    // Ensure previous detection state is cleared while fresh inference runs
     setIsProcessing(true);
     setProcessingError(null);
+    setCurrentResult(null);
 
     try {
       let result;
@@ -109,6 +143,7 @@ export const DetectionStudioView: React.FC<DetectionStudioViewProps> = ({
         result = await detectVideo(fileToRun, confThresh, maxFrames, frameStride);
       }
       setCurrentResult(result);
+      setViewMode('annotated');
       if (result.saved_run) {
         onRunCompleted(result.saved_run);
       }
@@ -119,12 +154,13 @@ export const DetectionStudioView: React.FC<DetectionStudioViewProps> = ({
     }
   };
 
-  // Quick Demo Samples
+  // Isolated Demo Benchmark Runner (explicitly isolated sample)
   const handleLoadSample = async (type: 'image' | 'video') => {
     setActiveMode(type);
     setSelectedFile(null);
     if (previewUrl) URL.revokeObjectURL(previewUrl);
     setPreviewUrl(null);
+    setCurrentResult(null);
     setIsProcessing(true);
     setProcessingError(null);
 
@@ -132,6 +168,7 @@ export const DetectionStudioView: React.FC<DetectionStudioViewProps> = ({
       const result = await detectSample(type, confThresh);
       setCurrentResult(result);
       setPreviewUrl(result.input_url);
+      setViewMode('annotated');
       if (result.saved_run) {
         onRunCompleted(result.saved_run);
       }
@@ -228,22 +265,25 @@ export const DetectionStudioView: React.FC<DetectionStudioViewProps> = ({
             />
 
             <div 
-              className="dropzone"
+              className={`dropzone ${isDragging ? 'drag-over' : ''}`}
               onClick={() => fileInputRef.current?.click()}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
             >
               <Upload size={24} style={{ color: 'var(--muted-olive)', margin: '0 auto 0.5rem auto' }} />
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.78rem', color: 'var(--warm-ivory)' }}>
                 {selectedFile ? selectedFile.name : `Select ${activeMode === 'image' ? 'Image File' : 'Video File'}`}
               </div>
               <div style={{ fontSize: '0.7rem', color: 'var(--warm-ivory-dim)', marginTop: '0.25rem' }}>
-                {selectedFile ? `${(selectedFile.size / 1024 / 1024).toFixed(2)} MB` : 'Click or drop file to upload'}
+                {selectedFile ? `${(selectedFile.size / 1024 / 1024).toFixed(2)} MB (Auto-detecting...)` : 'Click or drop file to upload & run detection'}
               </div>
             </div>
 
             {/* Quick Test Demo */}
             <div style={{ marginTop: '0.85rem' }}>
               <div className="label-tactical" style={{ fontSize: '0.65rem', marginBottom: '0.35rem' }}>
-                OR RUN TEST BENCHMARK
+                DEMO PRE-CALIBRATED BENCHMARK
               </div>
               <button
                 className="btn btn-secondary"
@@ -252,7 +292,7 @@ export const DetectionStudioView: React.FC<DetectionStudioViewProps> = ({
                 disabled={isProcessing}
               >
                 <Play size={12} style={{ color: 'var(--burnt-orange)' }} />
-                {isProcessing ? 'Processing...' : `Load Test ${activeMode === 'image' ? 'Highway Image' : 'Traffic Video'}`}
+                {isProcessing ? 'Processing Demo...' : `Load Demo ${activeMode === 'image' ? 'Highway Image' : 'Traffic Video'} (Sample)`}
               </button>
             </div>
           </div>
@@ -426,7 +466,9 @@ export const DetectionStudioView: React.FC<DetectionStudioViewProps> = ({
                   <img
                     alt="Inspection result"
                     style={{ maxWidth: '100%', maxHeight: '460px', objectFit: 'contain' }}
-                    src={viewMode === 'original' ? currentResult.input_url : currentResult.annotated_url}
+                    src={viewMode === 'original' 
+                      ? `${currentResult.input_url}?v=${currentResult.run_id}` 
+                      : `${currentResult.annotated_url}?v=${currentResult.run_id}`}
                   />
                 )
               ) : previewUrl ? (

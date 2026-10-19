@@ -7,6 +7,8 @@ import os
 import shutil
 import uuid
 from typing import Dict, List, Optional
+import cv2
+import numpy as np
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
@@ -151,8 +153,18 @@ async def detect_image(
     upload_filename = f"{upload_id}_{file.filename}"
     upload_path = os.path.join(MEDIA_ROOT, "uploads", upload_filename)
 
+    contents = await file.read()
+    if not contents or len(contents) == 0:
+        raise HTTPException(status_code=400, detail="Uploaded file is empty.")
+
     with open(upload_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
+        buffer.write(contents)
+
+    # Validate image bytes decoding
+    nparr = np.frombuffer(contents, np.uint8)
+    img_bgr = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+    if img_bgr is None:
+        raise HTTPException(status_code=400, detail="Could not decode uploaded image bytes.")
 
     try:
         result = media_processor.process_image(upload_path, conf_thresh=conf)
