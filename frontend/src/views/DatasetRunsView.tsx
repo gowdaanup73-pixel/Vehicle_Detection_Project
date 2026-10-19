@@ -52,13 +52,13 @@ export const DatasetRunsView: React.FC<DatasetRunsViewProps> = ({
       {/* Header */}
       <div className="section-header">
         <div>
-          <div className="label-tactical">BENCHMARK DATASET & AUDIT TRAIL // UA-DETRAC METRICS</div>
+          <div className="label-tactical">SAVED RUNS & BENCHMARK ARCHIVE // AUDIT TRAIL</div>
           <h1 className="section-title">
             <Database size={22} style={{ color: 'var(--burnt-orange)' }} />
-            Dataset Intelligence & Execution Audit Log
+            History & Dataset
           </h1>
           <p className="section-subtitle">
-            UA-DETRAC benchmark specifications, split distributions, and persistent analysis execution history
+            Saved inference runs, downloadable prediction artifacts, and UA-DETRAC dataset specifications
           </p>
         </div>
 

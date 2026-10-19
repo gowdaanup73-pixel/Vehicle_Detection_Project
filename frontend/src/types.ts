@@ -1,9 +1,9 @@
 export type NavigationTab = 
-  | 'command_center' 
+  | 'dashboard' 
   | 'detection_studio' 
   | 'traffic_analytics' 
   | 'model_laboratory' 
-  | 'dataset_runs';
+  | 'history_dataset';
 
 export interface ModelStatus {
   model_name: string;

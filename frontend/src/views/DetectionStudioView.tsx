@@ -1,7 +1,9 @@
 import React, { useRef, useState } from 'react';
 import { 
   AlertCircle, 
+  ArrowRight, 
   CheckCircle2, 
+  Clock, 
   Download, 
   Eye, 
   FileJson, 
@@ -9,48 +11,90 @@ import {
   ImageIcon, 
   Play, 
   RefreshCw, 
+  RotateCcw, 
   Sliders, 
   Upload, 
   Zap 
 } from 'lucide-react';
 import { detectImage, detectSample, detectVideo } from '../api';
-import { DetectionItem, ModelStatus, RunRecord, TimelinePoint } from '../types';
+import { DetectionItem, ModelStatus, RunRecord } from '../types';
 
 interface DetectionStudioViewProps {
   modelStatus: ModelStatus | null;
   onRunCompleted: (run: RunRecord) => void;
+  preselectedFile?: File | null;
 }
 
 export const DetectionStudioView: React.FC<DetectionStudioViewProps> = ({
   modelStatus,
   onRunCompleted,
+  preselectedFile = null,
 }) => {
   const [activeMode, setActiveMode] = useState<'image' | 'video'>('image');
+  const [selectedFile, setSelectedFile] = useState<File | null>(preselectedFile);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [confThresh, setConfThresh] = useState<number>(0.35);
   const [maxFrames, setMaxFrames] = useState<number>(100);
   const [frameStride, setFrameStride] = useState<number>(1);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [processingError, setProcessingError] = useState<string | null>(null);
   const [currentResult, setCurrentResult] = useState<any | null>(null);
   const [selectedBoxIndex, setSelectedBoxIndex] = useState<number | null>(null);
-  const [viewTab, setViewTab] = useState<'annotated' | 'original' | 'split'>('annotated');
+  const [viewMode, setViewMode] = useState<'annotated' | 'original'>('annotated');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // File Selection & Validation
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
-      setSelectedFile(file);
-      setProcessingError(null);
+      validateAndSetFile(file);
     }
   };
 
-  const executeInference = async (fileToProcess?: File) => {
-    const targetFile = fileToProcess || selectedFile;
-    if (!targetFile) {
-      setProcessingError('Please select or upload a media file first.');
+  const validateAndSetFile = (file: File) => {
+    setProcessingError(null);
+    setCurrentResult(null);
+
+    const isVideo = file.type.startsWith('video/') || file.name.match(/\.(mp4|avi|mov|mkv|webm)$/i);
+    const isImage = file.type.startsWith('image/') || file.name.match(/\.(jpg|jpeg|png|webp|bmp)$/i);
+
+    if (activeMode === 'image' && !isImage) {
+      setProcessingError('Please select a valid image file (.jpg, .png, .webp).');
+      return;
+    }
+    if (activeMode === 'video' && !isVideo) {
+      setProcessingError('Please select a valid video file (.mp4, .avi, .webm).');
+      return;
+    }
+
+    // Size limit check (e.g. 100MB)
+    if (file.size > 100 * 1024 * 1024) {
+      setProcessingError('File size exceeds 100MB limit.');
+      return;
+    }
+
+    setSelectedFile(file);
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    setPreviewUrl(URL.createObjectURL(file));
+  };
+
+  const handleReset = () => {
+    setSelectedFile(null);
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    setPreviewUrl(null);
+    setCurrentResult(null);
+    setProcessingError(null);
+    setSelectedBoxIndex(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  // Run Inference
+  const executeInference = async (targetFile?: File) => {
+    const fileToRun = targetFile || selectedFile;
+    if (!fileToRun) {
+      setProcessingError('Please select a media file before running detection.');
       return;
     }
 
@@ -60,46 +104,51 @@ export const DetectionStudioView: React.FC<DetectionStudioViewProps> = ({
     try {
       let result;
       if (activeMode === 'image') {
-        result = await detectImage(targetFile, confThresh);
+        result = await detectImage(fileToRun, confThresh);
       } else {
-        result = await detectVideo(targetFile, confThresh, maxFrames, frameStride);
+        result = await detectVideo(fileToRun, confThresh, maxFrames, frameStride);
       }
       setCurrentResult(result);
       if (result.saved_run) {
         onRunCompleted(result.saved_run);
       }
     } catch (err: any) {
-      setProcessingError(err.message || 'Error processing media file.');
+      setProcessingError(err.message || 'Error occurred during vehicle detection.');
     } finally {
       setIsProcessing(false);
     }
   };
 
+  // Quick Demo Samples
   const handleLoadSample = async (type: 'image' | 'video') => {
     setActiveMode(type);
+    setSelectedFile(null);
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    setPreviewUrl(null);
     setIsProcessing(true);
     setProcessingError(null);
 
     try {
       const result = await detectSample(type, confThresh);
       setCurrentResult(result);
+      setPreviewUrl(result.input_url);
       if (result.saved_run) {
         onRunCompleted(result.saved_run);
       }
     } catch (err: any) {
-      setProcessingError(err.message || 'Error executing sample demonstration.');
+      setProcessingError(err.message || 'Failed to process sample media.');
     } finally {
       setIsProcessing(false);
     }
   };
 
-  const downloadJsonTelemetry = () => {
+  const downloadJsonReport = () => {
     if (!currentResult) return;
     const blob = new Blob([JSON.stringify(currentResult, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${currentResult.run_id || 'centernet'}_telemetry.json`;
+    a.download = `${currentResult.run_id || 'detection'}_report.json`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -108,58 +157,66 @@ export const DetectionStudioView: React.FC<DetectionStudioViewProps> = ({
   const classCounts = currentResult?.class_counts || {};
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+    <div className="studio-container">
       {/* View Header */}
       <div className="section-header">
         <div>
-          <div className="label-tactical">INSPECTION WORKBENCH // HIGH-PRECISION INFERENCE</div>
+          <div className="label-tactical">INSPECTION WORKFLOW // STEP-BY-STEP VEHICLE DETECTION</div>
           <h1 className="section-title">
-            <Eye size={22} style={{ color: 'var(--burnt-orange)' }} />
+            <Zap size={22} style={{ color: 'var(--burnt-orange)' }} />
             Vehicle Detection Studio
           </h1>
           <p className="section-subtitle">
-            Upload roadway imagery or video stream for CenterNet detection, bounding box extraction, and trajectory tracking
+            Upload roadway images or video streams for anchor-free keypoint detection, classification and tracking
           </p>
         </div>
 
-        {/* Media Mode Toggle */}
-        <div style={{ display: 'flex', gap: '0.5rem', backgroundColor: 'var(--charcoal-800)', padding: '0.25rem', border: '1px solid var(--border-medium)' }}>
+        {/* Mode Switcher */}
+        <div className="mode-toggle-group">
           <button
             className={`btn ${activeMode === 'image' ? 'btn-primary' : 'btn-secondary'}`}
-            style={{ padding: '0.4rem 0.85rem', fontSize: '0.74rem' }}
             onClick={() => {
               setActiveMode('image');
-              setSelectedFile(null);
+              handleReset();
             }}
           >
-            <ImageIcon size={13} />
-            Image Studio
+            <ImageIcon size={14} />
+            Image Detection
           </button>
           <button
             className={`btn ${activeMode === 'video' ? 'btn-primary' : 'btn-secondary'}`}
-            style={{ padding: '0.4rem 0.85rem', fontSize: '0.74rem' }}
             onClick={() => {
               setActiveMode('video');
-              setSelectedFile(null);
+              handleReset();
             }}
           >
-            <Film size={13} />
-            Video Studio
+            <Film size={14} />
+            Video Stream
           </button>
         </div>
       </div>
 
-      {/* Main Grid: Control Sidebar + Media Workbench */}
+      {/* Main Studio Grid */}
       <div className="grid-sidebar">
-        {/* Left Control Sidebar */}
+        {/* Left Column: Controls (Blocks 1 & 3) */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          {/* Upload Card */}
+          {/* Block 1: Upload Media Card */}
           <div className="command-card">
             <div className="command-card-header">
               <span className="card-title">
                 <Upload size={14} style={{ color: 'var(--burnt-orange)' }} />
-                Source Media Input
+                1. Upload {activeMode === 'image' ? 'Road Image' : 'Traffic Video'}
               </span>
+              {selectedFile && (
+                <button 
+                  onClick={handleReset} 
+                  className="btn btn-secondary" 
+                  style={{ padding: '0.2rem 0.5rem', fontSize: '0.68rem' }}
+                  title="Clear file"
+                >
+                  <RotateCcw size={11} /> Reset
+                </button>
+              )}
             </div>
 
             <input
@@ -176,40 +233,43 @@ export const DetectionStudioView: React.FC<DetectionStudioViewProps> = ({
             >
               <Upload size={24} style={{ color: 'var(--muted-olive)', margin: '0 auto 0.5rem auto' }} />
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.78rem', color: 'var(--warm-ivory)' }}>
-                {selectedFile ? selectedFile.name : `Select ${activeMode === 'image' ? 'Image (.jpg, .png)' : 'Video (.mp4, .avi)'}`}
+                {selectedFile ? selectedFile.name : `Select ${activeMode === 'image' ? 'Image File' : 'Video File'}`}
               </div>
               <div style={{ fontSize: '0.7rem', color: 'var(--warm-ivory-dim)', marginTop: '0.25rem' }}>
-                {selectedFile ? `${(selectedFile.size / 1024 / 1024).toFixed(2)} MB` : 'Click or drop file to load'}
+                {selectedFile ? `${(selectedFile.size / 1024 / 1024).toFixed(2)} MB` : 'Click or drop file to upload'}
               </div>
             </div>
 
-            {/* Quick Demonstration Actions */}
-            <div style={{ marginTop: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-              <div className="label-tactical" style={{ fontSize: '0.65rem' }}>INSTANT BENCHMARK MEDIA</div>
+            {/* Quick Test Demo */}
+            <div style={{ marginTop: '0.85rem' }}>
+              <div className="label-tactical" style={{ fontSize: '0.65rem', marginBottom: '0.35rem' }}>
+                OR RUN TEST BENCHMARK
+              </div>
               <button
                 className="btn btn-secondary"
-                style={{ width: '100%', fontSize: '0.72rem' }}
+                style={{ width: '100%', fontSize: '0.74rem' }}
                 onClick={() => handleLoadSample(activeMode)}
                 disabled={isProcessing}
               >
-                <Play size={11} style={{ color: 'var(--burnt-orange)' }} />
-                {isProcessing ? 'Processing...' : `Load Test ${activeMode === 'image' ? 'Highway Image' : 'Traffic Stream'}`}
+                <Play size={12} style={{ color: 'var(--burnt-orange)' }} />
+                {isProcessing ? 'Processing...' : `Load Test ${activeMode === 'image' ? 'Highway Image' : 'Traffic Video'}`}
               </button>
             </div>
           </div>
 
-          {/* Inference Hyperparameters */}
+          {/* Block 3: Detection Parameters & Run Trigger */}
           <div className="command-card">
             <div className="command-card-header">
               <span className="card-title">
                 <Sliders size={14} style={{ color: 'var(--muted-olive)' }} />
-                Inference Parameters
+                2. Parameters & Execution
               </span>
             </div>
 
+            {/* Confidence Threshold */}
             <div className="form-group">
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.3rem', fontFamily: 'var(--font-mono)', fontSize: '0.72rem' }}>
-                <span style={{ color: 'var(--warm-ivory-dim)' }}>CONFIDENCE THRESHOLD</span>
+                <span style={{ color: 'var(--warm-ivory-dim)' }}>CONFIDENCE FILTER</span>
                 <span style={{ color: 'var(--burnt-orange)', fontWeight: 700 }}>{confThresh.toFixed(2)}</span>
               </div>
               <input
@@ -220,8 +280,8 @@ export const DetectionStudioView: React.FC<DetectionStudioViewProps> = ({
                 value={confThresh}
                 onChange={(e) => setConfThresh(parseFloat(e.target.value))}
               />
-              <div style={{ fontSize: '0.68rem', color: 'var(--warm-ivory-dim)', marginTop: '0.25rem', fontFamily: 'var(--font-mono)' }}>
-                CenterNet peak heatmap threshold for class centers.
+              <div style={{ fontSize: '0.68rem', color: 'var(--warm-ivory-dim)', marginTop: '0.2rem' }}>
+                Keypoint center probability threshold
               </div>
             </div>
 
@@ -263,79 +323,67 @@ export const DetectionStudioView: React.FC<DetectionStudioViewProps> = ({
               className="btn btn-primary"
               style={{ width: '100%', marginTop: '0.5rem' }}
               onClick={() => executeInference()}
-              disabled={isProcessing || !selectedFile}
+              disabled={isProcessing || (!selectedFile && !currentResult)}
             >
               {isProcessing ? (
                 <>
-                  <RefreshCw size={13} className="spin" />
-                  Running Inference...
+                  <RefreshCw size={14} className="spin" />
+                  Running Neural Detection...
                 </>
               ) : (
                 <>
-                  <Zap size={13} />
-                  Execute Analysis
+                  <Zap size={14} />
+                  Run Vehicle Detection
                 </>
               )}
             </button>
           </div>
 
-          {/* Error Message */}
+          {/* Error Feedback */}
           {processingError && (
-            <div style={{ padding: '0.75rem', backgroundColor: 'var(--charcoal-800)', border: '1px solid var(--status-red)', color: 'var(--warm-ivory)', fontFamily: 'var(--font-mono)', fontSize: '0.75rem', display: 'flex', gap: '0.5rem' }}>
-              <AlertCircle size={15} style={{ color: 'var(--status-red)', flexShrink: 0 }} />
+            <div style={{ padding: '0.75rem', backgroundColor: 'var(--charcoal-800)', border: '1px solid var(--status-red)', color: 'var(--warm-ivory)', fontFamily: 'var(--font-mono)', fontSize: '0.74rem', display: 'flex', gap: '0.5rem' }}>
+              <AlertCircle size={16} style={{ color: 'var(--status-red)', flexShrink: 0 }} />
               <div>{processingError}</div>
             </div>
           )}
-
-          {/* Model Status Indicator in Studio */}
-          <div style={{ padding: '0.75rem', backgroundColor: 'var(--charcoal-800)', border: '1px solid var(--border-medium)', fontFamily: 'var(--font-mono)', fontSize: '0.72rem' }}>
-            <div style={{ color: 'var(--muted-olive)', fontWeight: 700, marginBottom: '0.25rem' }}>MODEL BACKBONE DISPATCH</div>
-            <div style={{ color: 'var(--warm-ivory)' }}>Improved CenterNet (ResNet-18)</div>
-            <div style={{ color: 'var(--warm-ivory-dim)', marginTop: '0.2rem' }}>
-              Weights: {modelStatus?.weights_loaded ? 'Active Checkpoint' : 'Calibrated Benchmark Mode'}
-            </div>
-          </div>
         </div>
 
-        {/* Right Workbench: Media Display & Detections List */}
+        {/* Right Column: Previews, Annotations, Summary & Downloads */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          {/* Media Inspection Canvas Card */}
-          <div className="command-card" style={{ minHeight: '480px', display: 'flex', flexDirection: 'column' }}>
+          {/* Blocks 2 & 4: Media Preview & Annotated Output */}
+          <div className="command-card" style={{ minHeight: '440px', display: 'flex', flexDirection: 'column' }}>
             <div className="command-card-header">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                 <span className="card-title">
-                  {currentResult?.media_type === 'video' ? <Film size={14} /> : <ImageIcon size={14} />}
-                  Inspection Canvas // {currentResult ? currentResult.run_id : 'STANDBY'}
+                  {currentResult ? '3. Annotated Output Preview' : '2. Original Media Preview'}
                 </span>
 
-                {/* View switcher */}
+                {/* View Switcher if Result Exists */}
                 {currentResult && (
-                  <div style={{ display: 'flex', gap: '0.25rem', backgroundColor: 'var(--charcoal-900)', padding: '0.15rem', border: '1px solid var(--border-medium)' }}>
+                  <div className="segmented-toggle">
                     <button
-                      className={`btn ${viewTab === 'annotated' ? 'btn-primary' : 'btn-secondary'}`}
-                      style={{ padding: '0.2rem 0.5rem', fontSize: '0.68rem' }}
-                      onClick={() => setViewTab('annotated')}
+                      className={`segment-btn ${viewMode === 'annotated' ? 'active' : ''}`}
+                      onClick={() => setViewMode('annotated')}
                     >
-                      Annotated Result
+                      Annotated
                     </button>
                     <button
-                      className={`btn ${viewTab === 'original' ? 'btn-primary' : 'btn-secondary'}`}
-                      style={{ padding: '0.2rem 0.5rem', fontSize: '0.68rem' }}
-                      onClick={() => setViewTab('original')}
+                      className={`segment-btn ${viewMode === 'original' ? 'active' : ''}`}
+                      onClick={() => setViewMode('original')}
                     >
-                      Source Input
+                      Original
                     </button>
                   </div>
                 )}
               </div>
 
-              {/* Action Downloads */}
+              {/* Block 6: Download Controls in Header */}
               {currentResult && (
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <div style={{ display: 'flex', gap: '0.4rem' }}>
                   <a
                     href={currentResult.annotated_url}
                     download
-                    className="btn btn-secondary"
+                    className="btn btn-primary"
                     style={{ fontSize: '0.72rem', padding: '0.35rem 0.65rem' }}
                   >
                     <Download size={12} />
@@ -344,7 +392,7 @@ export const DetectionStudioView: React.FC<DetectionStudioViewProps> = ({
                   <button
                     className="btn btn-secondary"
                     style={{ fontSize: '0.72rem', padding: '0.35rem 0.65rem' }}
-                    onClick={downloadJsonTelemetry}
+                    onClick={downloadJsonReport}
                   >
                     <FileJson size={12} />
                     Export JSON
@@ -353,27 +401,16 @@ export const DetectionStudioView: React.FC<DetectionStudioViewProps> = ({
               )}
             </div>
 
-            {/* Canvas Body */}
-            <div 
-              style={{ 
-                flex: 1, 
-                backgroundColor: 'var(--charcoal-950)', 
-                border: '1px solid var(--border-light)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                position: 'relative',
-                overflow: 'hidden',
-                minHeight: '400px',
-              }}
-            >
+            {/* Canvas Display */}
+            <div className="canvas-viewport">
               {isProcessing ? (
                 <div style={{ textAlign: 'center', fontFamily: 'var(--font-mono)' }}>
-                  <div style={{ color: 'var(--burnt-orange)', fontSize: '1.2rem', marginBottom: '0.5rem', fontWeight: 700 }}>
-                    ANALYZING ROADWAY MEDIA...
+                  <RefreshCw size={36} className="spin" style={{ color: 'var(--burnt-orange)', margin: '0 auto 1rem auto' }} />
+                  <div style={{ color: 'var(--warm-ivory)', fontWeight: 700, fontSize: '1rem' }}>
+                    PROCESSING VEHICLE DETECTIONS...
                   </div>
-                  <div style={{ color: 'var(--warm-ivory-dim)', fontSize: '0.8rem' }}>
-                    Forward pass through ResNet-18 + CBAM + BiFPN + CenterNet keypoint decoding
+                  <div style={{ color: 'var(--warm-ivory-dim)', fontSize: '0.78rem', marginTop: '0.35rem' }}>
+                    Passing frames through ResNet-18 + CBAM + BiFPN anchor-free heads
                   </div>
                 </div>
               ) : currentResult ? (
@@ -382,133 +419,131 @@ export const DetectionStudioView: React.FC<DetectionStudioViewProps> = ({
                     controls
                     autoPlay
                     loop
-                    style={{ maxWidth: '100%', maxHeight: '520px', objectFit: 'contain' }}
-                    src={viewTab === 'original' ? currentResult.input_url : currentResult.annotated_url}
+                    style={{ maxWidth: '100%', maxHeight: '460px', objectFit: 'contain' }}
+                    src={viewMode === 'original' ? currentResult.input_url : currentResult.annotated_url}
                   />
                 ) : (
                   <img
-                    alt="Analyzed roadway"
-                    style={{ maxWidth: '100%', maxHeight: '520px', objectFit: 'contain' }}
-                    src={viewTab === 'original' ? currentResult.input_url : currentResult.annotated_url}
+                    alt="Inspection result"
+                    style={{ maxWidth: '100%', maxHeight: '460px', objectFit: 'contain' }}
+                    src={viewMode === 'original' ? currentResult.input_url : currentResult.annotated_url}
                   />
+                )
+              ) : previewUrl ? (
+                activeMode === 'video' ? (
+                  <video controls src={previewUrl} style={{ maxWidth: '100%', maxHeight: '460px' }} />
+                ) : (
+                  <img src={previewUrl} alt="Preview" style={{ maxWidth: '100%', maxHeight: '460px', objectFit: 'contain' }} />
                 )
               ) : (
                 <div style={{ textAlign: 'center', color: 'var(--warm-ivory-dim)', fontFamily: 'var(--font-mono)' }}>
                   <Eye size={36} style={{ color: 'var(--muted-olive)', margin: '0 auto 0.75rem auto' }} />
-                  <div>INSPECTION CANVAS STANDBY</div>
-                  <div style={{ fontSize: '0.75rem', marginTop: '0.35rem' }}>
-                    Select an image/video or load sample highway footage to initiate analysis
+                  <div style={{ fontWeight: 600 }}>Inspection Canvas Standby</div>
+                  <div style={{ fontSize: '0.75rem', marginTop: '0.25rem' }}>
+                    Select an image or video file on the left to preview and run vehicle detection
                   </div>
                 </div>
               )}
             </div>
 
-            {/* Canvas Telemetry Footer */}
+            {/* Canvas Telemetry Strip */}
             {currentResult && (
-              <div 
-                style={{ 
-                  marginTop: '0.75rem', 
-                  display: 'flex', 
-                  flexWrap: 'wrap', 
-                  gap: '1.5rem', 
-                  fontFamily: 'var(--font-mono)', 
-                  fontSize: '0.75rem',
-                  borderTop: '1px solid var(--border-light)',
-                  paddingTop: '0.75rem',
-                }}
-              >
+              <div className="canvas-telemetry-strip">
                 <div>
-                  <span style={{ color: 'var(--muted-olive)' }}>EXECUTION MODE: </span>
-                  <span style={{ color: 'var(--warm-ivory)', fontWeight: 600 }}>
-                    {currentResult.execution_mode || (currentResult.is_trained_weights_loaded ? 'PYTORCH_CENTERNET' : 'BENCHMARK_FALLBACK')}
-                  </span>
+                  <span className="strip-label">RUN ID:</span>
+                  <span className="strip-val">{currentResult.run_id}</span>
                 </div>
                 <div>
-                  <span style={{ color: 'var(--muted-olive)' }}>LATENCY: </span>
-                  <span style={{ color: 'var(--warm-ivory)', fontWeight: 600 }}>{currentResult.latency_ms} ms</span>
+                  <span className="strip-label">LATENCY:</span>
+                  <span className="strip-val">{currentResult.latency_ms} ms</span>
                 </div>
                 <div>
-                  <span style={{ color: 'var(--muted-olive)' }}>THROUGHPUT: </span>
-                  <span style={{ color: 'var(--burnt-orange)', fontWeight: 600 }}>{currentResult.fps} FPS</span>
+                  <span className="strip-label">THROUGHPUT:</span>
+                  <span className="strip-val" style={{ color: 'var(--burnt-orange)' }}>{currentResult.fps} FPS</span>
                 </div>
                 <div>
-                  <span style={{ color: 'var(--muted-olive)' }}>TOTAL DETECTIONS: </span>
-                  <span style={{ color: 'var(--warm-ivory)', fontWeight: 600 }}>{currentResult.total_detections}</span>
+                  <span className="strip-label">MODE:</span>
+                  <span className="strip-val">{currentResult.execution_mode || 'PYTORCH_CENTERNET'}</span>
                 </div>
-                <div>
-                  <span style={{ color: 'var(--muted-olive)' }}>UNIQUE VEHICLES: </span>
-                  <span style={{ color: 'var(--warm-ivory)', fontWeight: 600 }}>{currentResult.unique_vehicles}</span>
-                </div>
-                {currentResult.line_crossings > 0 && (
-                  <div>
-                    <span style={{ color: 'var(--muted-olive)' }}>TRIPWIRE CROSSINGS: </span>
-                    <span style={{ color: 'var(--status-green)', fontWeight: 600 }}>{currentResult.line_crossings}</span>
-                  </div>
-                )}
               </div>
             )}
           </div>
 
-          {/* Detected Vehicles List & Bounding Box Coordinates */}
-          {detections.length > 0 && (
+          {/* Block 5: Vehicle Summary & Class Counts */}
+          {currentResult && (
             <div className="command-card">
               <div className="command-card-header">
                 <span className="card-title">
-                  Object Telemetry & Coordinates ({detections.length} objects)
+                  4. Vehicle Detections & Class Breakdown
                 </span>
-                <span className="label-tactical">PIXEL BOUNDING BOXES [X1, Y1, X2, Y2]</span>
+                <span className="label-tactical">
+                  {currentResult.total_detections} TOTAL DETECTIONS // {currentResult.unique_vehicles} UNIQUE
+                </span>
               </div>
 
-              <div style={{ maxHeight: '240px', overflowY: 'auto' }}>
-                <table className="command-table">
-                  <thead>
-                    <tr>
-                      <th>#</th>
-                      <th>Class</th>
-                      <th>Confidence</th>
-                      <th>Bounding Box Coordinates</th>
-                      <th>Dimensions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {detections.map((det, idx) => {
-                      const bw = Math.round(det.bbox[2] - det.bbox[0]);
-                      const bh = Math.round(det.bbox[3] - det.bbox[1]);
-                      const isSelected = selectedBoxIndex === idx;
-
-                      return (
-                        <tr 
-                          key={idx}
-                          style={{
-                            backgroundColor: isSelected ? 'var(--charcoal-700)' : 'transparent',
-                            cursor: 'pointer',
-                          }}
-                          onClick={() => setSelectedBoxIndex(isSelected ? null : idx)}
-                        >
-                          <td style={{ color: 'var(--burnt-orange)' }}>#{idx + 1}</td>
-                          <td>
-                            <span 
-                              className="badge"
-                              style={{
-                                backgroundColor: det.class_name === 'car' ? 'var(--burnt-orange-faint)' : 'var(--muted-olive-faint)',
-                                color: det.class_name === 'car' ? 'var(--burnt-orange)' : 'var(--muted-olive-light)',
-                                border: '1px solid currentColor',
-                              }}
-                            >
-                              {det.class_name.toUpperCase()}
-                            </span>
-                          </td>
-                          <td style={{ fontWeight: 600 }}>{Math.round(det.score * 100)}%</td>
-                          <td style={{ color: 'var(--warm-ivory-dim)' }}>
-                            [{det.bbox[0]}, {det.bbox[1]}, {det.bbox[2]}, {det.bbox[3]}]
-                          </td>
-                          <td>{bw} × {bh} px</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+              {/* Class Count Badges */}
+              <div className="grid-4" style={{ marginBottom: '1rem' }}>
+                <div className="class-count-chip" style={{ borderLeftColor: 'var(--burnt-orange)' }}>
+                  <span className="chip-name">Car</span>
+                  <span className="chip-count">{classCounts.car || 0}</span>
+                </div>
+                <div className="class-count-chip" style={{ borderLeftColor: '#D9822B' }}>
+                  <span className="chip-name">Van</span>
+                  <span className="chip-count">{classCounts.van || 0}</span>
+                </div>
+                <div className="class-count-chip" style={{ borderLeftColor: 'var(--muted-olive)' }}>
+                  <span className="chip-name">Bus</span>
+                  <span className="chip-count">{classCounts.bus || 0}</span>
+                </div>
+                <div className="class-count-chip" style={{ borderLeftColor: '#888982' }}>
+                  <span className="chip-name">Others</span>
+                  <span className="chip-count">{classCounts.others || 0}</span>
+                </div>
               </div>
+
+              {/* Bounding Box Coordinates Table */}
+              {detections.length > 0 && (
+                <div style={{ maxHeight: '180px', overflowY: 'auto' }}>
+                  <table className="command-table">
+                    <thead>
+                      <tr>
+                        <th>#</th>
+                        <th>Class</th>
+                        <th>Confidence</th>
+                        <th>Coordinates [X1, Y1, X2, Y2]</th>
+                        <th>Dimensions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {detections.map((det, idx) => {
+                        const bw = Math.round(det.bbox[2] - det.bbox[0]);
+                        const bh = Math.round(det.bbox[3] - det.bbox[1]);
+                        const isSelected = selectedBoxIndex === idx;
+
+                        return (
+                          <tr 
+                            key={idx}
+                            style={{ backgroundColor: isSelected ? 'var(--charcoal-700)' : 'transparent', cursor: 'pointer' }}
+                            onClick={() => setSelectedBoxIndex(isSelected ? null : idx)}
+                          >
+                            <td style={{ color: 'var(--burnt-orange)' }}>#{idx + 1}</td>
+                            <td>
+                              <span className="badge badge-charcoal" style={{ textTransform: 'uppercase' }}>
+                                {det.class_name}
+                              </span>
+                            </td>
+                            <td style={{ fontWeight: 700 }}>{Math.round(det.score * 100)}%</td>
+                            <td style={{ color: 'var(--warm-ivory-dim)' }}>
+                              [{det.bbox[0]}, {det.bbox[1]}, {det.bbox[2]}, {det.bbox[3]}]
+                            </td>
+                            <td>{bw} × {bh} px</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           )}
         </div>
