@@ -125,15 +125,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {/* Device */}
           <div className="sidebar-status-row">
             <span style={{ color: 'var(--warm-ivory-dim)' }}>Accelerator</span>
-            <span style={{ color: 'var(--warm-ivory)', fontWeight: 600 }}>
-              {modelStatus?.is_cuda_available ? 'CUDA GPU' : 'CPU Mode'}
+            <span style={{ color: 'var(--warm-ivory)', fontWeight: 600, fontSize: '0.74rem' }}>
+              {modelStatus?.device_display || (modelStatus?.is_cuda_available ? 'CUDA GPU' : 'CPU Mode')}
             </span>
           </div>
 
           {/* Model Weights State */}
           <div className="sidebar-status-card">
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.2rem' }}>
-              <span style={{ fontSize: '0.68rem', color: 'var(--muted-olive)', fontWeight: 700 }}>MODEL WEIGHTS</span>
+              <span style={{ fontSize: '0.68rem', color: 'var(--muted-olive)', fontWeight: 700 }}>CHECKPOINT</span>
               <span 
                 className="badge" 
                 style={{ 
@@ -146,8 +146,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 {isTrainedActive ? 'ACTIVE' : 'UNCONFIGURED'}
               </span>
             </div>
-            <div style={{ fontSize: '0.72rem', color: 'var(--warm-ivory-muted)', lineHeight: 1.4 }}>
-              {isTrainedActive ? 'Custom weights loaded' : 'Awaiting Colab checkpoint'}
+            <div style={{ fontSize: '0.72rem', color: 'var(--warm-ivory-muted)', lineHeight: 1.4, fontFamily: 'var(--font-mono)' }}>
+              {isTrainedActive ? (modelStatus?.checkpoint_name || 'improved_v2_best.pth') : 'No checkpoint loaded'}
             </div>
           </div>
         </div>

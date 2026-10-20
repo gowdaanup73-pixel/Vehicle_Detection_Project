@@ -84,6 +84,7 @@ export interface RunRecord {
   timeline?: TimelinePoint[];
   metadata?: Record<string, any>;
   is_sample?: boolean;
+  run_type?: 'user_upload' | 'test_run' | 'demo_sample';
 }
 
 export interface AnalyticsSummary {

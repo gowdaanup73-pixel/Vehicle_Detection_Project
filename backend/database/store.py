@@ -49,9 +49,16 @@ class RunsDatabase:
                     line_crossings INTEGER NOT NULL,
                     class_counts_json TEXT NOT NULL,
                     timeline_json TEXT,
-                    metadata_json TEXT
+                    metadata_json TEXT,
+                    run_type TEXT DEFAULT 'user_upload'
                 )
             """)
+            # Ensure run_type column exists if table was created in an older schema
+            cursor.execute("PRAGMA table_info(runs)")
+            cols = [col[1] for col in cursor.fetchall()]
+            if "run_type" not in cols:
+                cursor.execute("ALTER TABLE runs ADD COLUMN run_type TEXT DEFAULT 'user_upload'")
+
             # Purge demo highway samples from production operational records
             cursor.execute("""
                 DELETE FROM runs 
@@ -78,12 +85,17 @@ class RunsDatabase:
         class_counts: Dict[str, int],
         timeline: Optional[List[Dict]] = None,
         metadata: Optional[Dict] = None,
+        timestamp: Optional[str] = None,
+        run_type: str = "user_upload",
     ) -> Optional[Dict]:
         # Do not insert demo sample runs into production operational history
         if filename.startswith("sample_") or (metadata and metadata.get("is_sample_media")):
             return None
 
-        now_iso = datetime.now().isoformat()
+        now_iso = timestamp or datetime.now().isoformat()
+        meta = dict(metadata or {})
+        meta["run_type"] = run_type
+
         with self._get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute("""
@@ -91,8 +103,8 @@ class RunsDatabase:
                     id, timestamp, media_type, filename, input_url, annotated_url,
                     model_name, weights_status, latency_ms, fps,
                     total_detections, unique_vehicles, line_crossings,
-                    class_counts_json, timeline_json, metadata_json
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    class_counts_json, timeline_json, metadata_json, run_type
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 run_id,
                 now_iso,
@@ -109,7 +121,8 @@ class RunsDatabase:
                 line_crossings,
                 json.dumps(class_counts),
                 json.dumps(timeline) if timeline else None,
-                json.dumps(metadata) if metadata else None,
+                json.dumps(meta),
+                run_type,
             ))
             conn.commit()
 
@@ -132,14 +145,14 @@ class RunsDatabase:
                     """SELECT * FROM runs 
                        WHERE media_type = ? 
                          AND filename NOT LIKE 'sample_%' 
-                       ORDER BY timestamp DESC LIMIT ?""",
+                       ORDER BY timestamp DESC, rowid DESC LIMIT ?""",
                     (media_type, limit)
                 )
             else:
                 cursor.execute(
                     """SELECT * FROM runs 
                        WHERE filename NOT LIKE 'sample_%' 
-                       ORDER BY timestamp DESC LIMIT ?""",
+                       ORDER BY timestamp DESC, rowid DESC LIMIT ?""",
                     (limit,)
                 )
             rows = cursor.fetchall()
@@ -217,4 +230,5 @@ class RunsDatabase:
         except Exception:
             d["metadata"] = {}
 
+        d["run_type"] = d.get("run_type") or (d.get("metadata") or {}).get("run_type", "user_upload")
         return d

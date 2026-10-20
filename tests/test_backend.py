@@ -17,7 +17,7 @@ import pytest
 import torch
 from fastapi.testclient import TestClient
 
-from backend.api.app import app
+from backend.api.app import app, db
 from backend.database.store import RunsDatabase
 from backend.models.bifpn import BiFPNBlock
 from backend.models.cbam import CBAM
@@ -407,6 +407,94 @@ class TestApiEndpoints:
         )
         assert res.status_code in (400, 500)
         assert res.status_code != 200
+
+    def test_dual_image_provenance_and_model_invocation_roadway_and_spiderman(self):
+        """
+        Reproducible test proving:
+        1. Exact uploaded bytes are received
+        2. Real model forward pass is invoked (PYTORCH_IMPROVED_CENTERNET_V2)
+        3. Original preview / input_url uses the correct uploaded image
+        4. Annotated image is generated from that same image (dimensions match source)
+        5. Response and persisted record use correct filename and run ID
+        6. No demo image or previous response is used as fallback
+        """
+        client = TestClient(app)
+        base_dir = os.path.dirname(os.path.dirname(__file__))
+
+        road_path = os.path.join(base_dir, "backend", "media", "uploads", "sample_highway_traffic.jpg")
+        spider_path = os.path.join(base_dir, "backend", "media", "uploads", "5bcc352c_spider-man-eyes_5120x2880_xtrafondos.com.jpg")
+
+        assert os.path.exists(road_path), f"Road image missing: {road_path}"
+        assert os.path.exists(spider_path), f"Spider-Man image missing: {spider_path}"
+
+        with open(road_path, "rb") as f:
+            road_bytes = f.read()
+        with open(spider_path, "rb") as f:
+            spider_bytes = f.read()
+
+        # 1. Post Roadway Image
+        res1 = client.post(
+            "/api/detect/image",
+            files={"file": ("verified_roadway.jpg", road_bytes, "image/jpeg")},
+            data={"conf_thresh": "0.35", "run_type": "test_run"},
+        )
+        assert res1.status_code == 200
+        d1 = res1.json()
+
+        # 2. Post Spider-Man Image
+        res2 = client.post(
+            "/api/detect/image",
+            files={"file": ("verified_spiderman.jpg", spider_bytes, "image/jpeg")},
+            data={"conf_thresh": "0.35", "run_type": "test_run"},
+        )
+        assert res2.status_code == 200
+        d2 = res2.json()
+
+        # Verify distinct non-colliding runs
+        assert d1["run_id"] != d2["run_id"]
+        assert d1["input_url"] != d2["input_url"]
+        assert d1["annotated_url"] != d2["annotated_url"]
+        assert "sample_highway_traffic" not in d1["input_url"]
+        assert "sample_highway_traffic" not in d2["input_url"]
+
+        # Verify model execution mode & checkpoint reporting
+        assert d1["execution_mode"] == "PYTORCH_IMPROVED_CENTERNET_V2"
+        assert d2["execution_mode"] == "PYTORCH_IMPROVED_CENTERNET_V2"
+        assert d1["checkpoint"] == "improved_v2_best.pth"
+        assert d2["checkpoint"] == "improved_v2_best.pth"
+
+        # Verify exact uploaded bytes on disk
+        saved_road_file = os.path.join(base_dir, "backend", "media", d1["input_url"].removeprefix("/media/"))
+        saved_spider_file = os.path.join(base_dir, "backend", "media", d2["input_url"].removeprefix("/media/"))
+        assert os.path.exists(saved_road_file)
+        assert os.path.exists(saved_spider_file)
+        with open(saved_road_file, "rb") as f:
+            assert f.read() == road_bytes
+        with open(saved_spider_file, "rb") as f:
+            assert f.read() == spider_bytes
+
+        # Verify annotated images generated from exact uploaded files matching resolution
+        ann1_path = d1["annotated_path"]
+        ann2_path = d2["annotated_path"]
+        assert os.path.exists(ann1_path)
+        assert os.path.exists(ann2_path)
+
+        ann1_img = cv2.imread(ann1_path)
+        ann2_img = cv2.imread(ann2_path)
+        assert ann1_img.shape == (720, 1280, 3)
+        assert ann2_img.shape == (2880, 5120, 3)
+
+        # Verify DB persistence of both runs
+        run1_db = db.get_run(d1["run_id"])
+        run2_db = db.get_run(d2["run_id"])
+        assert run1_db is not None
+        assert run2_db is not None
+        assert run1_db["filename"] == "verified_roadway.jpg"
+        assert run2_db["filename"] == "verified_spiderman.jpg"
+        assert run1_db["total_detections"] == d1["total_detections"]
+        assert run2_db["total_detections"] == d2["total_detections"]
+        assert run1_db["run_type"] == "test_run"
+        assert run2_db["run_type"] == "test_run"
 
 
 

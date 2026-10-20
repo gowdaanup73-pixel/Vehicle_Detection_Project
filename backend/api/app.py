@@ -142,6 +142,7 @@ def _to_float(val, default: float = 0.35) -> float:
 async def detect_image(
     file: UploadFile = File(...),
     conf_thresh: float = Form(0.35),
+    run_type: Optional[str] = Form(None),
 ):
     """Processes an uploaded image through Improved CenterNet."""
     conf = _to_float(conf_thresh, 0.35)
@@ -175,6 +176,8 @@ async def detect_image(
     input_url = f"/media/uploads/{upload_filename}"
     annotated_url = f"/media/outputs/{result['annotated_filename']}"
 
+    actual_run_type = run_type or ("test_run" if file.filename.startswith(("test_", "custom_cam")) else "user_upload")
+
     # Persist in SQLite
     saved_run = db.save_run(
         run_id=result["run_id"],
@@ -190,12 +193,20 @@ async def detect_image(
         unique_vehicles=result["unique_vehicles"],
         line_crossings=0,
         class_counts=result["class_counts"],
-        metadata={"conf_thresh": conf, "execution_mode": result["execution_mode"]},
+        metadata={
+            "conf_thresh": conf,
+            "execution_mode": result["execution_mode"],
+            "checkpoint": result.get("checkpoint"),
+            "device": result.get("device_display"),
+            "run_type": actual_run_type,
+        },
+        run_type=actual_run_type,
     )
 
     result["input_url"] = input_url
     result["annotated_url"] = annotated_url
     result["saved_run"] = saved_run
+    result["run_type"] = actual_run_type
     return result
 
 
@@ -205,6 +216,7 @@ async def detect_video(
     conf_thresh: float = Form(0.35),
     max_frames: int = Form(150),
     frame_stride: int = Form(1),
+    run_type: Optional[str] = Form(None),
 ):
     """Processes an uploaded video frame-by-frame with CenterNet and Multi-Object Tracking."""
     conf = _to_float(conf_thresh, 0.35)
@@ -238,6 +250,8 @@ async def detect_video(
     input_url = f"/media/uploads/{upload_filename}"
     annotated_url = f"/media/outputs/{result['annotated_filename']}"
 
+    actual_run_type = run_type or ("test_run" if file.filename.startswith(("test_", "custom_cam")) else "user_upload")
+
     saved_run = db.save_run(
         run_id=result["run_id"],
         media_type="video",
@@ -257,13 +271,19 @@ async def detect_video(
             "conf_thresh": conf,
             "processed_frames": result["processed_frames"],
             "line_crossings_detail": result["line_crossings_detail"],
+            "checkpoint": result.get("checkpoint"),
+            "device": result.get("device_display"),
+            "run_type": actual_run_type,
         },
+        run_type=actual_run_type,
     )
 
     result["input_url"] = input_url
     result["annotated_url"] = annotated_url
     result["saved_run"] = saved_run
+    result["run_type"] = actual_run_type
     return result
+
 
 
 @app.post("/api/detect/sample")

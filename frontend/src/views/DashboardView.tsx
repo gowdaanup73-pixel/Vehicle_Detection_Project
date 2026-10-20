@@ -1,6 +1,7 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { 
   Activity, 
+  AlertCircle,
   ArrowRight, 
   BarChart3, 
   Car, 
@@ -46,6 +47,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
+  const [mediaLoadError, setMediaLoadError] = useState(false);
 
   const isWeightsLoaded = modelStatus?.weights_loaded ?? false;
 
@@ -67,6 +69,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
   const recentRuns = runs.slice(0, 5);
   const latestRun = runs[0] || null;
+
+  useEffect(() => {
+    setMediaLoadError(false);
+  }, [latestRun?.id]);
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
@@ -159,12 +165,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
         {/* Model Status */}
         <div className="kpi-block" style={{ borderLeftColor: isWeightsLoaded ? 'var(--status-green)' : 'var(--burnt-orange)' }}>
-          <div className="kpi-title">Active Model Status</div>
-          <div className="kpi-value" style={{ fontSize: '1.25rem', paddingTop: '0.4rem' }}>
-            {isWeightsLoaded ? 'Trained Weights' : 'Benchmark Mode'}
+          <div className="kpi-title">Active Model Checkpoint</div>
+          <div className="kpi-value" style={{ fontSize: '1.05rem', paddingTop: '0.4rem', color: isWeightsLoaded ? 'var(--warm-ivory)' : 'var(--burnt-orange)' }}>
+            {isWeightsLoaded ? (modelStatus?.checkpoint_name || 'improved_v2_best.pth') : 'No Checkpoint Loaded'}
           </div>
           <div className="kpi-subtext">
-            {isWeightsLoaded ? 'ResNet-18 Checkpoint Active' : 'Unconfigured - Awaiting Colab .pth'}
+            {modelStatus?.device_display || (modelStatus?.device ? `Accelerator: ${modelStatus.device}` : 'CPU Device')}
           </div>
         </div>
       </section>
@@ -245,30 +251,55 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             {latestRun ? (
               <div className="latest-run-card">
                 <div className="preview-media-wrapper">
-                  {latestRun.media_type === 'video' ? (
+                  {mediaLoadError ? (
+                    <div className="empty-state-box" style={{ height: '100%', minHeight: '160px', padding: '1rem', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                      <AlertCircle size={24} style={{ color: 'var(--status-red)', margin: '0 auto 0.5rem auto' }} />
+                      <div style={{ color: 'var(--warm-ivory)', fontSize: '0.75rem', fontWeight: 600 }}>Media artifact unavailable on disk</div>
+                      <div style={{ fontSize: '0.68rem', color: 'var(--warm-ivory-dim)', marginTop: '0.2rem', wordBreak: 'break-all' }}>
+                        {latestRun.annotated_url}
+                      </div>
+                    </div>
+                  ) : latestRun.media_type === 'video' ? (
                     <video 
-                      src={latestRun.annotated_url} 
+                      src={`${latestRun.annotated_url}?v=${latestRun.id}`} 
                       controls 
                       style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                      onError={() => setMediaLoadError(true)}
                     />
                   ) : (
                     <img 
-                      src={latestRun.annotated_url} 
+                      src={`${latestRun.annotated_url}?v=${latestRun.id}`} 
                       alt="Processed run" 
                       style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                      onError={() => setMediaLoadError(true)}
                     />
                   )}
                 </div>
 
                 <div className="latest-run-details">
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontWeight: 700, color: 'var(--warm-ivory)' }}>
+                    <span style={{ fontWeight: 700, color: 'var(--warm-ivory)', maxWidth: '65%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={latestRun.filename}>
                       {latestRun.filename}
                     </span>
-                    <span className="badge badge-orange">{latestRun.media_type.toUpperCase()}</span>
+                    <div style={{ display: 'flex', gap: '0.35rem' }}>
+                      <span className={`badge ${
+                        latestRun.run_type === 'test_run' || latestRun.metadata?.run_type === 'test_run' || latestRun.filename.startsWith('test_') || latestRun.filename.startsWith('custom_cam')
+                          ? 'badge-olive'
+                          : 'badge-orange'
+                      }`} style={{ fontSize: '0.62rem' }}>
+                        {latestRun.run_type === 'test_run' || latestRun.metadata?.run_type === 'test_run' || latestRun.filename.startsWith('test_') || latestRun.filename.startsWith('custom_cam')
+                          ? 'TEST BENCHMARK'
+                          : 'USER UPLOAD'}
+                      </span>
+                      <span className="badge badge-orange">{latestRun.media_type.toUpperCase()}</span>
+                    </div>
                   </div>
 
-                  <div className="grid-2" style={{ marginTop: '0.65rem', gap: '0.5rem' }}>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--warm-ivory-dim)', marginTop: '0.35rem', fontFamily: 'var(--font-mono)' }}>
+                    RUN ID: {latestRun.id}
+                  </div>
+
+                  <div className="grid-2" style={{ marginTop: '0.5rem', gap: '0.5rem' }}>
                     <div className="metric-pill">
                       <span className="pill-label">Detections</span>
                       <span className="pill-val">{latestRun.total_detections}</span>
@@ -287,9 +318,17 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                     </div>
                   </div>
 
+                  <div style={{ fontSize: '0.68rem', color: 'var(--warm-ivory-dim)', marginTop: '0.45rem', fontStyle: 'italic' }}>
+                    {latestRun.run_type === 'test_run' || latestRun.filename.startsWith('test_') || latestRun.filename.startsWith('custom_cam')
+                      ? 'Automated test suite media processed by active checkpoint'
+                      : latestRun.total_detections > 0
+                        ? `Model reported ${latestRun.total_detections} detection(s) on genuine input`
+                        : 'No vehicle keypoints exceeded threshold on this input'}
+                  </div>
+
                   <button 
                     className="btn btn-primary"
-                    style={{ width: '100%', marginTop: '0.75rem', fontSize: '0.74rem' }}
+                    style={{ width: '100%', marginTop: '0.65rem', fontSize: '0.74rem' }}
                     onClick={() => onSelectRun(latestRun)}
                   >
                     <Eye size={12} />
@@ -499,33 +538,33 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             <Cpu size={16} style={{ color: 'var(--burnt-orange)' }} />
             Model & Backend Hardware Telemetry
           </span>
-          <span className="label-tactical">RESNET-18 + CBAM + BIFPN</span>
+          <span className="label-tactical">{modelStatus?.checkpoint_name || 'improved_v2_best.pth'}</span>
         </div>
 
         <div className="grid-3">
           <div className="telemetry-box">
             <span className="telemetry-label">Active Architecture</span>
-            <span className="telemetry-val">Improved CenterNet</span>
-            <span className="telemetry-sub">ResNet-18 Backbone + CBAM Attention + BiFPN Neck</span>
+            <span className="telemetry-val">Improved CenterNet V2</span>
+            <span className="telemetry-sub">ResNet-18 Backbone + CBAM Attention + 2x BiFPN Neck</span>
           </div>
 
           <div className="telemetry-box">
-            <span className="telemetry-label">Checkpoint State</span>
+            <span className="telemetry-label">Active Checkpoint</span>
             <span className="telemetry-val" style={{ color: isWeightsLoaded ? 'var(--status-green)' : 'var(--burnt-orange)' }}>
-              {isWeightsLoaded ? 'Custom Weights Loaded' : 'Unconfigured Benchmark Mode'}
+              {isWeightsLoaded ? (modelStatus?.checkpoint_name || 'improved_v2_best.pth') : 'None'}
             </span>
             <span className="telemetry-sub">
-              {isWeightsLoaded ? 'Trained PyTorch weights active' : 'Awaiting Colab best_improved_centernet.pth'}
+              {isWeightsLoaded ? (modelStatus?.checkpoint_path || 'backend/checkpoints/improved_v2_best.pth') : 'Awaiting checkpoint file'}
             </span>
           </div>
 
           <div className="telemetry-box">
             <span className="telemetry-label">Compute Device</span>
             <span className="telemetry-val">
-              {modelStatus?.is_cuda_available ? 'CUDA GPU' : 'CPU Host Processor'}
+              {modelStatus?.device_display || (modelStatus?.is_cuda_available ? 'CUDA GPU' : 'CPU Host Processor')}
             </span>
             <span className="telemetry-sub">
-              {modelStatus?.gpu_name || 'Standard Intel/AMD Processor with PyTorch AVX fallback'}
+              {modelStatus?.gpu_name || 'Host CPU Processor with PyTorch Float32 Engine'}
             </span>
           </div>
         </div>

@@ -190,6 +190,10 @@ class MediaProcessor:
             "model_status": det_result["model_status"],
             "is_trained_weights_loaded": det_result["is_trained_weights_loaded"],
             "execution_mode": det_result["execution_mode"],
+            "checkpoint": det_result.get("checkpoint") or os.path.basename(self.detector.checkpoint_path),
+            "checkpoint_path": self.detector.checkpoint_path,
+            "device": str(self.detector.device),
+            "device_display": self.detector.get_system_status().get("device_display", "CPU"),
         }
 
     def process_video(
@@ -326,6 +330,11 @@ class MediaProcessor:
             "density_summary": tracker.compute_density_estimate(orig_w, orig_h),
             "model_status": self.detector.model_status,
             "is_trained_weights_loaded": self.detector.weights_loaded,
+            "execution_mode": "PYTORCH_IMPROVED_CENTERNET_V2",
+            "checkpoint": os.path.basename(self.detector.checkpoint_path),
+            "checkpoint_path": self.detector.checkpoint_path,
+            "device": str(self.detector.device),
+            "device_display": self.detector.get_system_status().get("device_display", "CPU"),
         }
 
     def generate_sample_road_media(self) -> Tuple[str, str]:

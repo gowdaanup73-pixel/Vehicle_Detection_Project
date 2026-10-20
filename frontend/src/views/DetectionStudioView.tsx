@@ -76,7 +76,7 @@ export const DetectionStudioView: React.FC<DetectionStudioViewProps> = ({
   // Sync with preselected file if passed from dashboard
   useEffect(() => {
     if (preselectedFile) {
-      validateAndSetFile(preselectedFile, true);
+      validateAndSetFile(preselectedFile, false);
     }
   }, [preselectedFile]);
 
@@ -84,7 +84,7 @@ export const DetectionStudioView: React.FC<DetectionStudioViewProps> = ({
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
-      validateAndSetFile(file, true);
+      validateAndSetFile(file, false);
     }
   };
 
@@ -102,11 +102,11 @@ export const DetectionStudioView: React.FC<DetectionStudioViewProps> = ({
     setIsDragging(false);
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       const file = e.dataTransfer.files[0];
-      validateAndSetFile(file, true);
+      validateAndSetFile(file, false);
     }
   };
 
-  const validateAndSetFile = (file: File, autoRun: boolean = true) => {
+  const validateAndSetFile = (file: File, autoRun: boolean = false) => {
     // 1. Immediately clear any previous result, preview, and error
     setProcessingError(null);
     setCurrentResult(null);
@@ -140,7 +140,7 @@ export const DetectionStudioView: React.FC<DetectionStudioViewProps> = ({
     updatePreviewUrl(objUrl);
     setViewMode('original');
 
-    // 2. Automatically trigger inference for the newly selected file
+    // Trigger inference only if explicitly requested
     if (autoRun) {
       executeInference(file, targetMode);
     }
@@ -596,16 +596,22 @@ export const DetectionStudioView: React.FC<DetectionStudioViewProps> = ({
                   <span className="strip-val">{currentResult.run_id}</span>
                 </div>
                 <div>
+                  <span className="strip-label">CHECKPOINT:</span>
+                  <span className="strip-val" style={{ color: 'var(--status-green)' }}>
+                    {currentResult.checkpoint || modelStatus?.checkpoint_name || 'improved_v2_best.pth'}
+                  </span>
+                </div>
+                <div>
+                  <span className="strip-label">DEVICE:</span>
+                  <span className="strip-val">{currentResult.device_display || modelStatus?.device_display || (modelStatus?.is_cuda_available ? 'CUDA GPU' : 'CPU')}</span>
+                </div>
+                <div>
                   <span className="strip-label">LATENCY:</span>
                   <span className="strip-val">{currentResult.latency_ms} ms</span>
                 </div>
                 <div>
-                  <span className="strip-label">THROUGHPUT:</span>
+                  <span className="strip-label">SPEED:</span>
                   <span className="strip-val" style={{ color: 'var(--burnt-orange)' }}>{currentResult.fps} FPS</span>
-                </div>
-                <div>
-                  <span className="strip-label">MODE:</span>
-                  <span className="strip-val">{currentResult.execution_mode || 'PYTORCH_CENTERNET'}</span>
                 </div>
               </div>
             )}

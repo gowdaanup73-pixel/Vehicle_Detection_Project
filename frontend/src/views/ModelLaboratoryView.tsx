@@ -96,12 +96,12 @@ export const ModelLaboratoryView: React.FC<ModelLaboratoryViewProps> = ({
           </p>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
           <span className="badge badge-charcoal">
-            BACKBONE: RESNET-18
+            CHECKPOINT: {modelStatus?.checkpoint_name || 'improved_v2_best.pth'}
           </span>
           <span className="badge badge-orange">
-            PROPOSED: CBAM + BIFPN
+            DEVICE: {modelStatus?.device_display || (modelStatus?.is_cuda_available ? 'CUDA GPU' : 'CPU')}
           </span>
         </div>
       </div>
