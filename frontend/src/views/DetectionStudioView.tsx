@@ -46,6 +46,33 @@ export const DetectionStudioView: React.FC<DetectionStudioViewProps> = ({
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Safe object URL management with revocation
+  const updatePreviewUrl = (newUrl: string | null) => {
+    setPreviewUrl((prev) => {
+      if (prev && prev.startsWith('blob:') && prev !== newUrl) {
+        try {
+          URL.revokeObjectURL(prev);
+        } catch (e) {
+          console.warn('Revoke error:', e);
+        }
+      }
+      return newUrl;
+    });
+  };
+
+  // Revoke object URL on unmount
+  useEffect(() => {
+    return () => {
+      if (previewUrl && previewUrl.startsWith('blob:')) {
+        try {
+          URL.revokeObjectURL(previewUrl);
+        } catch (e) {
+          console.warn('Unmount revoke error:', e);
+        }
+      }
+    };
+  }, [previewUrl]);
+
   // Sync with preselected file if passed from dashboard
   useEffect(() => {
     if (preselectedFile) {
@@ -85,46 +112,61 @@ export const DetectionStudioView: React.FC<DetectionStudioViewProps> = ({
     setCurrentResult(null);
     setSelectedBoxIndex(null);
 
-    const isVideo = file.type.startsWith('video/') || file.name.match(/\.(mp4|avi|mov|mkv|webm)$/i);
-    const isImage = file.type.startsWith('image/') || file.name.match(/\.(jpg|jpeg|png|webp|bmp)$/i);
+    const isVideo = file.type.startsWith('video/') || Boolean(file.name.match(/\.(mp4|avi|mov|mkv|webm)$/i));
+    const isImage = file.type.startsWith('image/') || Boolean(file.name.match(/\.(jpg|jpeg|png|webp|bmp)$/i));
 
-    if (activeMode === 'image' && !isImage) {
-      setProcessingError('Please select a valid image file (.jpg, .png, .webp).');
-      return;
-    }
-    if (activeMode === 'video' && !isVideo) {
-      setProcessingError('Please select a valid video file (.mp4, .avi, .webm).');
+    if (!isImage && !isVideo) {
+      setProcessingError('Unsupported format. Please select an image (.jpg, .png, .webp) or video (.mp4, .avi, .webm).');
       return;
     }
 
-    if (file.size > 100 * 1024 * 1024) {
-      setProcessingError('File size exceeds 100MB limit.');
+    if (file.size > 150 * 1024 * 1024) {
+      setProcessingError('File size exceeds 150MB limit.');
       return;
+    }
+
+    // Auto-detect and switch mode if mismatched
+    let targetMode = activeMode;
+    if (isVideo && activeMode !== 'video') {
+      targetMode = 'video';
+      setActiveMode('video');
+    } else if (isImage && activeMode !== 'image') {
+      targetMode = 'image';
+      setActiveMode('image');
     }
 
     setSelectedFile(file);
-    if (previewUrl) URL.revokeObjectURL(previewUrl);
-    setPreviewUrl(URL.createObjectURL(file));
+    const objUrl = URL.createObjectURL(file);
+    updatePreviewUrl(objUrl);
+    setViewMode('original');
 
     // 2. Automatically trigger inference for the newly selected file
     if (autoRun) {
-      executeInference(file);
+      executeInference(file, targetMode);
     }
   };
 
   const handleReset = () => {
     setSelectedFile(null);
-    if (previewUrl) URL.revokeObjectURL(previewUrl);
-    setPreviewUrl(null);
+    updatePreviewUrl(null);
     setCurrentResult(null);
     setProcessingError(null);
     setSelectedBoxIndex(null);
+    setViewMode('original');
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
+  const openFilePicker = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+      fileInputRef.current.click();
+    }
+  };
+
   // Run Inference on Actual Uploaded File
-  const executeInference = async (targetFile?: File) => {
+  const executeInference = async (targetFile?: File, overrideMode?: 'image' | 'video') => {
     const fileToRun = targetFile || selectedFile;
+    const modeToUse = overrideMode || activeMode;
     if (!fileToRun) {
       setProcessingError('Please select a media file before running detection.');
       return;
@@ -134,10 +176,11 @@ export const DetectionStudioView: React.FC<DetectionStudioViewProps> = ({
     setIsProcessing(true);
     setProcessingError(null);
     setCurrentResult(null);
+    setSelectedBoxIndex(null);
 
     try {
       let result;
-      if (activeMode === 'image') {
+      if (modeToUse === 'image') {
         result = await detectImage(fileToRun, confThresh);
       } else {
         result = await detectVideo(fileToRun, confThresh, maxFrames, frameStride);
@@ -158,8 +201,7 @@ export const DetectionStudioView: React.FC<DetectionStudioViewProps> = ({
   const handleLoadSample = async (type: 'image' | 'video') => {
     setActiveMode(type);
     setSelectedFile(null);
-    if (previewUrl) URL.revokeObjectURL(previewUrl);
-    setPreviewUrl(null);
+    updatePreviewUrl(null);
     setCurrentResult(null);
     setIsProcessing(true);
     setProcessingError(null);
@@ -167,7 +209,7 @@ export const DetectionStudioView: React.FC<DetectionStudioViewProps> = ({
     try {
       const result = await detectSample(type, confThresh);
       setCurrentResult(result);
-      setPreviewUrl(result.input_url);
+      updatePreviewUrl(result.input_url);
       setViewMode('annotated');
       if (result.saved_run) {
         onRunCompleted(result.saved_run);
@@ -192,6 +234,13 @@ export const DetectionStudioView: React.FC<DetectionStudioViewProps> = ({
 
   const detections: DetectionItem[] = currentResult?.detections || [];
   const classCounts = currentResult?.class_counts || {};
+
+  const hasMedia = Boolean(previewUrl || currentResult);
+  const displayMode = currentResult ? viewMode : 'original';
+  const isMediaVideo = activeMode === 'video' || (currentResult?.media_type === 'video');
+  const activeMediaUrl = displayMode === 'annotated' && currentResult?.annotated_url
+    ? `${currentResult.annotated_url}?v=${currentResult.run_id}`
+    : (previewUrl || currentResult?.input_url || null);
 
   return (
     <div className="studio-container">
@@ -266,7 +315,7 @@ export const DetectionStudioView: React.FC<DetectionStudioViewProps> = ({
 
             <div 
               className={`dropzone ${isDragging ? 'drag-over' : ''}`}
-              onClick={() => fileInputRef.current?.click()}
+              onClick={openFilePicker}
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
@@ -276,7 +325,7 @@ export const DetectionStudioView: React.FC<DetectionStudioViewProps> = ({
                 {selectedFile ? selectedFile.name : `Select ${activeMode === 'image' ? 'Image File' : 'Video File'}`}
               </div>
               <div style={{ fontSize: '0.7rem', color: 'var(--warm-ivory-dim)', marginTop: '0.25rem' }}>
-                {selectedFile ? `${(selectedFile.size / 1024 / 1024).toFixed(2)} MB (Auto-detecting...)` : 'Click or drop file to upload & run detection'}
+                {selectedFile ? `${(selectedFile.size / 1024 / 1024).toFixed(2)} MB (Ready for detection)` : 'Click or drop file to preview & run detection'}
               </div>
             </div>
 
@@ -393,13 +442,17 @@ export const DetectionStudioView: React.FC<DetectionStudioViewProps> = ({
           {/* Blocks 2 & 4: Media Preview & Annotated Output */}
           <div className="command-card" style={{ minHeight: '440px', display: 'flex', flexDirection: 'column' }}>
             <div className="command-card-header">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
                 <span className="card-title">
-                  {currentResult ? '3. Annotated Output Preview' : '2. Original Media Preview'}
+                  {!hasMedia 
+                    ? '2. Media Inspection Canvas' 
+                    : displayMode === 'annotated' 
+                      ? '3. Annotated Output Preview' 
+                      : '2. Original Media Preview'}
                 </span>
 
                 {/* View Switcher if Result Exists */}
-                {currentResult && (
+                {currentResult ? (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
                     <div className="segmented-toggle">
                       <button
@@ -425,7 +478,11 @@ export const DetectionStudioView: React.FC<DetectionStudioViewProps> = ({
                       </span>
                     )}
                   </div>
-                )}
+                ) : hasMedia ? (
+                  <span className="badge badge-olive" style={{ fontSize: '0.62rem' }}>
+                    ORIGINAL SOURCE READY
+                  </span>
+                ) : null}
               </div>
 
               {/* Block 6: Download Controls in Header */}
@@ -453,42 +510,74 @@ export const DetectionStudioView: React.FC<DetectionStudioViewProps> = ({
             </div>
 
             {/* Canvas Display */}
-            <div className="canvas-viewport">
-              {isProcessing ? (
-                <div style={{ textAlign: 'center', fontFamily: 'var(--font-mono)' }}>
+            <div className="canvas-viewport" style={{ position: 'relative', minHeight: '440px', backgroundColor: 'var(--charcoal-950)' }}>
+              {/* Tactical Loading Overlay - Keeps the original media visible underneath */}
+              {isProcessing && (
+                <div 
+                  style={{ 
+                    position: 'absolute', 
+                    inset: 0, 
+                    backgroundColor: hasMedia ? 'rgba(15, 17, 21, 0.76)' : 'var(--charcoal-950)',
+                    backdropFilter: hasMedia ? 'blur(3px)' : 'none',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 10,
+                    fontFamily: 'var(--font-mono)',
+                    textAlign: 'center',
+                    padding: '1.5rem',
+                  }}
+                >
                   <RefreshCw size={36} className="spin" style={{ color: 'var(--burnt-orange)', margin: '0 auto 1rem auto' }} />
-                  <div style={{ color: 'var(--warm-ivory)', fontWeight: 700, fontSize: '1rem' }}>
+                  <div style={{ color: 'var(--warm-ivory)', fontWeight: 700, fontSize: '1rem', letterSpacing: '0.05em' }}>
                     PROCESSING VEHICLE DETECTIONS...
                   </div>
                   <div style={{ color: 'var(--warm-ivory-dim)', fontSize: '0.78rem', marginTop: '0.35rem' }}>
                     Passing frames through ResNet-18 + CBAM + BiFPN anchor-free heads
                   </div>
                 </div>
-              ) : currentResult ? (
-                currentResult.media_type === 'video' ? (
+              )}
+
+              {/* Media Content Display */}
+              {hasMedia && activeMediaUrl ? (
+                isMediaVideo ? (
                   <video
+                    key={activeMediaUrl}
                     controls
                     autoPlay
                     loop
-                    style={{ maxWidth: '100%', maxHeight: '460px', objectFit: 'contain' }}
-                    src={viewMode === 'original' ? currentResult.input_url : currentResult.annotated_url}
+                    playsInline
+                    style={{ 
+                      maxWidth: '100%', 
+                      maxHeight: '460px', 
+                      width: 'auto', 
+                      height: 'auto', 
+                      objectFit: 'contain',
+                      display: 'block',
+                      margin: '0 auto',
+                    }}
+                    src={activeMediaUrl}
+                    onError={() => setProcessingError('Failed to load video preview. The video codec may not be supported by this browser.')}
                   />
                 ) : (
                   <img
-                    alt="Inspection result"
-                    style={{ maxWidth: '100%', maxHeight: '460px', objectFit: 'contain' }}
-                    src={viewMode === 'original' 
-                      ? `${currentResult.input_url}?v=${currentResult.run_id}` 
-                      : `${currentResult.annotated_url}?v=${currentResult.run_id}`}
+                    key={activeMediaUrl}
+                    alt={displayMode === 'original' ? 'Original media preview' : 'Annotated detection result'}
+                    style={{ 
+                      maxWidth: '100%', 
+                      maxHeight: '460px', 
+                      width: 'auto', 
+                      height: 'auto', 
+                      objectFit: 'contain',
+                      display: 'block',
+                      margin: '0 auto',
+                    }}
+                    src={activeMediaUrl}
+                    onError={() => setProcessingError('Failed to render image preview. The file format may be unsupported.')}
                   />
                 )
-              ) : previewUrl ? (
-                activeMode === 'video' ? (
-                  <video controls src={previewUrl} style={{ maxWidth: '100%', maxHeight: '460px' }} />
-                ) : (
-                  <img src={previewUrl} alt="Preview" style={{ maxWidth: '100%', maxHeight: '460px', objectFit: 'contain' }} />
-                )
-              ) : (
+              ) : !isProcessing ? (
                 <div style={{ textAlign: 'center', color: 'var(--warm-ivory-dim)', fontFamily: 'var(--font-mono)' }}>
                   <Eye size={36} style={{ color: 'var(--muted-olive)', margin: '0 auto 0.75rem auto' }} />
                   <div style={{ fontWeight: 600 }}>Inspection Canvas Standby</div>
@@ -496,7 +585,7 @@ export const DetectionStudioView: React.FC<DetectionStudioViewProps> = ({
                     Select an image or video file on the left to preview and run vehicle detection
                   </div>
                 </div>
-              )}
+              ) : null}
             </div>
 
             {/* Canvas Telemetry Strip */}

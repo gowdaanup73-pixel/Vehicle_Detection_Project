@@ -365,5 +365,48 @@ class TestApiEndpoints:
         assert status["architecture"]["input_resolution"] == "512x288"
         assert status["architecture"]["downsample_ratio"] == 4
 
+    def test_video_upload_and_tracking_endpoint(self):
+        client = TestClient(app)
+        temp_dir = tempfile.mkdtemp()
+        vid_path = os.path.join(temp_dir, "test_clip.mp4")
+
+        # Create a small 3-frame 320x240 video
+        fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+        writer = cv2.VideoWriter(vid_path, fourcc, 10.0, (320, 240))
+        for _ in range(3):
+            frame = np.full((240, 320, 3), 120, dtype=np.uint8)
+            writer.write(frame)
+        writer.release()
+
+        with open(vid_path, "rb") as f:
+            vid_bytes = f.read()
+
+        res = client.post(
+            "/api/detect/video",
+            files={"file": ("test_clip.mp4", vid_bytes, "video/mp4")},
+            data={"conf_thresh": "0.35", "max_frames": "3", "frame_stride": "1"},
+        )
+        assert res.status_code == 200
+        data = res.json()
+        assert data["media_type"] == "video"
+        assert data["processed_frames"] == 3
+        assert "timeline" in data
+        assert len(data["timeline"]) == 3
+        assert "annotated_url" in data
+        assert data["annotated_url"].endswith(".mp4")
+        assert "saved_run" in data
+        assert data["saved_run"] is not None
+        shutil.rmtree(temp_dir, ignore_errors=True)
+
+    def test_corrupt_video_upload_endpoint(self):
+        client = TestClient(app)
+        corrupt_bytes = b"ftypmp42" + b"\x00" * 30
+        res = client.post(
+            "/api/detect/video",
+            files={"file": ("corrupt.mp4", corrupt_bytes, "video/mp4")},
+        )
+        assert res.status_code in (400, 500)
+        assert res.status_code != 200
+
 
 

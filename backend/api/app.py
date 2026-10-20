@@ -3,6 +3,7 @@ FastAPI Backend Application
 Exposes REST endpoints for vehicle detection, video tracking analytics,
 model configuration, run persistence, and dataset telemetry.
 """
+import asyncio
 import os
 import shutil
 import uuid
@@ -167,7 +168,7 @@ async def detect_image(
         raise HTTPException(status_code=400, detail="Could not decode uploaded image bytes.")
 
     try:
-        result = media_processor.process_image(upload_path, conf_thresh=conf)
+        result = await asyncio.to_thread(media_processor.process_image, upload_path, conf_thresh=conf)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Image processing error: {str(e)}")
 
@@ -222,12 +223,15 @@ async def detect_video(
     try:
         frames_limit = int(max_frames) if not hasattr(max_frames, "default") else 150
         stride = int(frame_stride) if not hasattr(frame_stride, "default") else 1
-        result = media_processor.process_video(
+        result = await asyncio.to_thread(
+            media_processor.process_video,
             video_path=upload_path,
             conf_thresh=conf,
             max_frames=frames_limit,
             frame_stride=stride,
         )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=f"Invalid video file: {str(e)}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Video processing error: {str(e)}")
 
@@ -263,20 +267,32 @@ async def detect_video(
 
 
 @app.post("/api/detect/sample")
-def detect_sample(media_type: str = "image", conf_thresh: float = 0.35):
+async def detect_sample(media_type: str = "image", conf_thresh: float = 0.35):
     """Triggers immediate analysis on pre-calibrated sample road footage."""
     conf = _to_float(conf_thresh, 0.35)
     m_type = str(media_type).lower()
     sample_img_path, sample_vid_path = media_processor.generate_sample_road_media()
 
-    if m_type == "video":
-        result = media_processor.process_video(sample_vid_path, conf_thresh=conf, max_frames=60)
-        filename = "sample_traffic_stream.mp4"
-        input_url = "/media/uploads/sample_traffic_stream.mp4"
-    else:
-        result = media_processor.process_image(sample_img_path, conf_thresh=conf)
-        filename = "sample_highway_traffic.jpg"
-        input_url = "/media/uploads/sample_highway_traffic.jpg"
+    try:
+        if m_type == "video":
+            result = await asyncio.to_thread(
+                media_processor.process_video,
+                video_path=sample_vid_path,
+                conf_thresh=conf,
+                max_frames=60,
+            )
+            filename = "sample_traffic_stream.mp4"
+            input_url = "/media/uploads/sample_traffic_stream.mp4"
+        else:
+            result = await asyncio.to_thread(
+                media_processor.process_image,
+                image_path=sample_img_path,
+                conf_thresh=conf,
+            )
+            filename = "sample_highway_traffic.jpg"
+            input_url = "/media/uploads/sample_highway_traffic.jpg"
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Sample processing error: {str(e)}")
 
     annotated_url = f"/media/outputs/{result['annotated_filename']}"
 
