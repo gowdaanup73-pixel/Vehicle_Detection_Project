@@ -237,7 +237,7 @@ export const DatasetRunsView: React.FC<DatasetRunsViewProps> = ({
               NO PERSISTED OPERATIONAL RUNS FOUND
             </div>
             <div style={{ fontSize: '0.74rem', maxWidth: '480px', margin: '0 auto', lineHeight: 1.6 }}>
-              Upload image or video files in Detection Studio to record authentic PyTorch inference results. Demo highway benchmarks are isolated and not inserted into production audit logs.
+              Upload image or video files in Detection Studio to record operational PyTorch inference results. Reference benchmark test samples are isolated from operational audit logs.
             </div>
           </div>
         ) : filteredRuns.length === 0 ? (

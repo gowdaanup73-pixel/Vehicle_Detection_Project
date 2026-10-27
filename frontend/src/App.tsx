@@ -39,6 +39,7 @@ export const App: React.FC = () => {
   const [isProcessingSample, setIsProcessingSample] = useState<boolean>(false);
   const [isBackendHealthy, setIsBackendHealthy] = useState<boolean>(true);
   const [dashboardStagedFile, setDashboardStagedFile] = useState<File | null>(null);
+  const [dashboardStagedBenchmark, setDashboardStagedBenchmark] = useState<'image' | 'video' | null>(null);
 
   // Synchronize backend telemetry and runs
   const loadData = async (isBackgroundPoll: boolean = false) => {
@@ -85,26 +86,16 @@ export const App: React.FC = () => {
     return () => clearInterval(timer);
   }, []);
 
-  // Immediate test runner
-  const handleRunSample = async (mediaType: 'image' | 'video') => {
-    setIsProcessingSample(true);
-    try {
-      const res = await detectSample(mediaType);
-      if (res.saved_run) {
-        setRuns((prev) => [res.saved_run, ...prev]);
-        setSelectedRun(res.saved_run);
-      }
-      const sum = await fetchAnalyticsSummary();
-      setSummary(sum);
-    } catch (err) {
-      console.error('Sample processing error:', err);
-    } finally {
-      setIsProcessingSample(false);
-    }
+  // Reference Benchmark runner from Dashboard - seamlessly navigates to Detection Studio
+  const handleRunSampleFromDashboard = (mediaType: 'image' | 'video') => {
+    setDashboardStagedFile(null);
+    setDashboardStagedBenchmark(mediaType);
+    setActiveTab('detection_studio');
   };
 
   // Dropzone file on dashboard switches to studio
   const handleUploadFromDashboard = (file: File) => {
+    setDashboardStagedBenchmark(null);
     setDashboardStagedFile(file);
     setActiveTab('detection_studio');
   };
@@ -153,7 +144,7 @@ export const App: React.FC = () => {
                 setSelectedRun(run);
                 setActiveTab('history_dataset');
               }}
-              onRunSample={handleRunSample}
+              onRunSample={handleRunSampleFromDashboard}
               onUploadFile={handleUploadFromDashboard}
               isProcessing={isProcessingSample}
               isBackendHealthy={isBackendHealthy}
@@ -165,6 +156,8 @@ export const App: React.FC = () => {
               modelStatus={modelStatus}
               onRunCompleted={handleRunCompleted}
               preselectedFile={dashboardStagedFile}
+              initialBenchmark={dashboardStagedBenchmark}
+              onBenchmarkConsumed={() => setDashboardStagedBenchmark(null)}
             />
           )}
 

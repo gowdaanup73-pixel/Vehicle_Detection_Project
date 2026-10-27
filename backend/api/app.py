@@ -37,7 +37,7 @@ media_processor = MediaProcessor(detector=detector, media_root=MEDIA_ROOT)
 experiments_service = ExperimentsService()
 dataset_service = DatasetService()
 
-# Pre-generate sample road media for instant one-click demonstration
+# Ensure standard reference benchmark media is available for validation
 media_processor.generate_sample_road_media()
 
 app = FastAPI(
@@ -316,12 +316,12 @@ async def detect_sample(media_type: str = "image", conf_thresh: float = 0.35):
 
     annotated_url = f"/media/outputs/{result['annotated_filename']}"
 
-    # Explicitly do NOT insert demo sample runs into production audit history
+    # Reference benchmark samples are evaluated in-memory and isolated from production audit records
     result["input_url"] = input_url
     result["annotated_url"] = annotated_url
     result["saved_run"] = None
     result["is_sample"] = True
-    result["execution_mode"] = "PRE_CALIBRATED_DEMO_SAMPLE"
+    result["execution_mode"] = "REFERENCE_BENCHMARK_SAMPLE"
     return result
 
 

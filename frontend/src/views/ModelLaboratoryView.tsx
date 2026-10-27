@@ -32,7 +32,7 @@ export const ModelLaboratoryView: React.FC<ModelLaboratoryViewProps> = ({
   modelStatus,
   onRefreshStatus,
 }) => {
-  const [selectedExpId, setSelectedExpId] = useState<string>('exp_improved_centernet_full');
+  const [selectedExpId, setSelectedExpId] = useState<string>('exp_improved_centernet_v2');
   const [customPathInput, setCustomPathInput] = useState<string>('');
   const [uploadLoading, setUploadLoading] = useState<boolean>(false);
   const [configMessage, setConfigMessage] = useState<{ text: string; isError: boolean } | null>(null);

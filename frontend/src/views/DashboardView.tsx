@@ -219,26 +219,31 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               </button>
             </div>
 
-            {/* Demo Highway Benchmark Runner */}
-            <div style={{ marginTop: '0.85rem', display: 'flex', gap: '0.5rem' }}>
-              <button
-                className="btn btn-secondary"
-                style={{ flex: 1, fontSize: '0.72rem' }}
-                onClick={() => onRunSample('image')}
-                disabled={isProcessing}
-              >
-                <Play size={12} style={{ color: 'var(--burnt-orange)' }} />
-                {isProcessing ? 'Processing...' : 'Load Demo Highway (Sample)'}
-              </button>
-              <button
-                className="btn btn-secondary"
-                style={{ flex: 1, fontSize: '0.72rem' }}
-                onClick={() => onRunSample('video')}
-                disabled={isProcessing}
-              >
-                <Film size={12} style={{ color: 'var(--muted-olive)' }} />
-                {isProcessing ? 'Processing...' : 'Load Demo Video (Sample)'}
-              </button>
+            {/* Standard Reference Benchmarks */}
+            <div style={{ marginTop: '0.85rem' }}>
+              <div className="label-tactical" style={{ fontSize: '0.65rem', marginBottom: '0.35rem' }}>
+                STANDARD REFERENCE BENCHMARK
+              </div>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <button
+                  className="btn btn-secondary"
+                  style={{ flex: 1, fontSize: '0.72rem' }}
+                  onClick={() => onRunSample('image')}
+                  disabled={isProcessing}
+                >
+                  <Play size={12} style={{ color: 'var(--burnt-orange)' }} />
+                  {isProcessing ? 'Processing...' : 'Evaluate Reference Highway (Image)'}
+                </button>
+                <button
+                  className="btn btn-secondary"
+                  style={{ flex: 1, fontSize: '0.72rem' }}
+                  onClick={() => onRunSample('video')}
+                  disabled={isProcessing}
+                >
+                  <Film size={12} style={{ color: 'var(--muted-olive)' }} />
+                  {isProcessing ? 'Processing...' : 'Evaluate Reference Stream (Video)'}
+                </button>
+              </div>
             </div>
           </div>
 
@@ -341,7 +346,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 <ImageIcon size={32} style={{ color: 'var(--muted-olive)', margin: '0 auto 0.5rem auto' }} />
                 <div style={{ color: 'var(--warm-ivory)', fontWeight: 600 }}>No processing runs yet</div>
                 <div style={{ fontSize: '0.75rem', color: 'var(--warm-ivory-dim)', marginTop: '0.2rem' }}>
-                  Upload a media file or click one of the test buttons to run your first vehicle detection.
+                  Upload a media file or evaluate a reference benchmark to run your first vehicle detection.
                 </div>
               </div>
             )}

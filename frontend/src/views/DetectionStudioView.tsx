@@ -23,12 +23,16 @@ interface DetectionStudioViewProps {
   modelStatus: ModelStatus | null;
   onRunCompleted: (run: RunRecord) => void;
   preselectedFile?: File | null;
+  initialBenchmark?: 'image' | 'video' | null;
+  onBenchmarkConsumed?: () => void;
 }
 
 export const DetectionStudioView: React.FC<DetectionStudioViewProps> = ({
   modelStatus,
   onRunCompleted,
   preselectedFile = null,
+  initialBenchmark = null,
+  onBenchmarkConsumed,
 }) => {
   const [activeMode, setActiveMode] = useState<'image' | 'video'>('image');
   const [selectedFile, setSelectedFile] = useState<File | null>(preselectedFile);
@@ -79,6 +83,14 @@ export const DetectionStudioView: React.FC<DetectionStudioViewProps> = ({
       validateAndSetFile(preselectedFile, false);
     }
   }, [preselectedFile]);
+
+  // Sync with initial reference benchmark if triggered from dashboard
+  useEffect(() => {
+    if (initialBenchmark) {
+      handleLoadSample(initialBenchmark);
+      onBenchmarkConsumed?.();
+    }
+  }, [initialBenchmark]);
 
   // File Selection & Validation
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -329,10 +341,10 @@ export const DetectionStudioView: React.FC<DetectionStudioViewProps> = ({
               </div>
             </div>
 
-            {/* Quick Test Demo */}
+            {/* Standard Reference Benchmark */}
             <div style={{ marginTop: '0.85rem' }}>
               <div className="label-tactical" style={{ fontSize: '0.65rem', marginBottom: '0.35rem' }}>
-                DEMO PRE-CALIBRATED BENCHMARK
+                STANDARD REFERENCE BENCHMARK
               </div>
               <button
                 className="btn btn-secondary"
@@ -341,7 +353,7 @@ export const DetectionStudioView: React.FC<DetectionStudioViewProps> = ({
                 disabled={isProcessing}
               >
                 <Play size={12} style={{ color: 'var(--burnt-orange)' }} />
-                {isProcessing ? 'Processing Demo...' : `Load Demo ${activeMode === 'image' ? 'Highway Image' : 'Traffic Video'} (Sample)`}
+                {isProcessing ? 'Running Benchmark...' : `Run Reference Benchmark (${activeMode === 'image' ? 'Highway Frame' : 'Traffic Stream'})`}
               </button>
             </div>
           </div>
@@ -470,11 +482,11 @@ export const DetectionStudioView: React.FC<DetectionStudioViewProps> = ({
                     </div>
                     {currentResult.is_sample ? (
                       <span className="badge badge-orange" style={{ fontSize: '0.62rem' }}>
-                        DEMO SAMPLE (NOT IN AUDIT HISTORY)
+                        REFERENCE BENCHMARK // AUDIT ISOLATED
                       </span>
                     ) : (
                       <span className="badge badge-olive" style={{ fontSize: '0.62rem' }}>
-                        REAL UPLOAD // INFERENCE
+                        OPERATIONAL INFERENCE // AUDIT LOGGED
                       </span>
                     )}
                   </div>
