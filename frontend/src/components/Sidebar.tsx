@@ -32,12 +32,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const isTrainedActive = modelStatus?.weights_loaded ?? false;
 
   const navItems: Array<{ id: NavigationTab; label: string; icon: React.ReactNode }> = [
-    { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard size={18} /> },
+    { id: 'overview', label: 'Overview', icon: <LayoutDashboard size={18} /> },
     { id: 'detection_studio', label: 'Detection Studio', icon: <Crosshair size={18} /> },
-    { id: 'traffic_analytics', label: 'Traffic Analytics', icon: <Activity size={18} /> },
-    { id: 'model_laboratory', label: 'Model Laboratory', icon: <FlaskConical size={18} /> },
-    { id: 'history_dataset', label: 'History & Dataset', icon: <Database size={18} /> },
+    { id: 'analytics', label: 'Analytics', icon: <Activity size={18} /> },
+    { id: 'model_evaluation', label: 'Model Evaluation', icon: <FlaskConical size={18} /> },
+    { id: 'history', label: 'History', icon: <Database size={18} /> },
   ];
+
+  const isTabActive = (itemId: NavigationTab) => {
+    if (activeTab === itemId) return true;
+    if (itemId === 'overview' && activeTab === 'dashboard') return true;
+    if (itemId === 'analytics' && activeTab === 'traffic_analytics') return true;
+    if (itemId === 'model_evaluation' && activeTab === 'model_laboratory') return true;
+    if (itemId === 'history' && activeTab === 'history_dataset') return true;
+    return false;
+  };
 
   return (
     <>
@@ -76,7 +85,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <nav className="sidebar-nav">
           <div className="sidebar-section-label">PLATFORM</div>
           {navItems.map((item) => {
-            const isActive = activeTab === item.id;
+            const isActive = isTabActive(item.id);
             return (
               <button
                 key={item.id}

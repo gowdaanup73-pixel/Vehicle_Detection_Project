@@ -80,11 +80,14 @@ export async function detectSample(mediaType: 'image' | 'video' = 'image', confT
   const formData = new FormData();
   formData.append('media_type', mediaType);
   formData.append('conf_thresh', confThresh.toString());
-  const res = await fetch(`${API_BASE}/detect/sample`, {
+  const res = await fetch(`${API_BASE}/detect/sample?media_type=${mediaType}&conf_thresh=${confThresh}`, {
     method: 'POST',
     body: formData,
   });
-  if (!res.ok) throw new Error('Sample detection failed');
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new Error(err.detail || 'Sample detection failed');
+  }
   return res.json();
 }
 

@@ -10,7 +10,7 @@ import uuid
 from typing import Dict, List, Optional
 import cv2
 import numpy as np
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -199,6 +199,7 @@ async def detect_image(
             "checkpoint": result.get("checkpoint"),
             "device": result.get("device_display"),
             "run_type": actual_run_type,
+            "detections": result.get("detections", []),
         },
         run_type=actual_run_type,
     )
@@ -274,6 +275,7 @@ async def detect_video(
             "checkpoint": result.get("checkpoint"),
             "device": result.get("device_display"),
             "run_type": actual_run_type,
+            "detections": result.get("detections", []),
         },
         run_type=actual_run_type,
     )
@@ -287,10 +289,45 @@ async def detect_video(
 
 
 @app.post("/api/detect/sample")
-async def detect_sample(media_type: str = "image", conf_thresh: float = 0.35):
+async def detect_sample(
+    request: Request,
+    media_type: Optional[str] = None,
+    conf_thresh: Optional[float] = None,
+):
     """Triggers immediate analysis on pre-calibrated sample road footage."""
-    conf = _to_float(conf_thresh, 0.35)
-    m_type = str(media_type).lower()
+    m_type = media_type or "image"
+    conf_val = conf_thresh if conf_thresh is not None else 0.35
+
+    # Check query params first
+    if "media_type" in request.query_params:
+        m_type = request.query_params["media_type"]
+    if "conf_thresh" in request.query_params:
+        conf_val = _to_float(request.query_params["conf_thresh"], conf_val)
+
+    # Check body (FormData or JSON)
+    content_type = request.headers.get("content-type", "")
+    if "multipart/form-data" in content_type or "application/x-www-form-urlencoded" in content_type:
+        try:
+            form = await request.form()
+            if "media_type" in form:
+                m_type = str(form["media_type"])
+            if "conf_thresh" in form:
+                conf_val = _to_float(form["conf_thresh"], conf_val)
+        except Exception:
+            pass
+    elif "application/json" in content_type:
+        try:
+            body = await request.json()
+            if isinstance(body, dict):
+                if "media_type" in body:
+                    m_type = str(body["media_type"])
+                if "conf_thresh" in body:
+                    conf_val = _to_float(body["conf_thresh"], conf_val)
+        except Exception:
+            pass
+
+    conf = _to_float(conf_val, 0.35)
+    m_type = str(m_type).lower()
     sample_img_path, sample_vid_path = media_processor.generate_sample_road_media()
 
     try:
