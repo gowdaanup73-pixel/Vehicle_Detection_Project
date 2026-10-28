@@ -2,10 +2,13 @@
 Persistent SQLite Storage for Runs, Telemetry, and Diagnostics
 Stores analysis runs, vehicle detections, tracking statistics, and artifact paths.
 """
+from collections import defaultdict
+from contextlib import contextmanager
+from datetime import datetime
 import json
 import os
 import sqlite3
-from datetime import datetime
+import statistics
 from typing import Dict, List, Optional
 
 DB_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data")
@@ -169,31 +172,54 @@ class RunsDatabase:
         with self._get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute("""
-                SELECT COUNT(*) as count, AVG(latency_ms) as avg_latency 
+                SELECT id, timestamp, media_type, filename, latency_ms, total_detections, 
+                       unique_vehicles, line_crossings, class_counts_json, metadata_json
                 FROM runs 
                 WHERE filename NOT LIKE 'sample_%'
-            """)
-            agg = cursor.fetchone()
-
-            total_runs = agg["count"] if agg else 0
-            avg_latency = round(agg["avg_latency"], 2) if agg and agg["avg_latency"] else 0.0
-
-            cursor.execute("""
-                SELECT class_counts_json, unique_vehicles, line_crossings, total_detections 
-                FROM runs 
-                WHERE filename NOT LIKE 'sample_%'
+                ORDER BY timestamp ASC
             """)
             rows = cursor.fetchall()
 
+            total_runs = len(rows)
+            image_runs = sum(1 for r in rows if r["media_type"] == "image")
+            video_runs = sum(1 for r in rows if r["media_type"] == "video")
+            failed_runs = 0
+
+            latencies = [float(r["latency_ms"]) for r in rows if r["latency_ms"] is not None]
+            avg_latency = round(statistics.mean(latencies), 2) if latencies else 0.0
+            median_latency = round(statistics.median(latencies), 2) if latencies else 0.0
+
             total_detections = 0
+            # Unique vehicles are only counted from video runs where multi-object tracking is applied
             total_unique = 0
             total_crossings = 0
             aggregated_classes = {"car": 0, "van": 0, "bus": 0, "others": 0}
 
+            date_volume = defaultdict(lambda: {"detections": 0, "runs": 0})
+            confidence_scores = []
+            per_run_breakdown = []
+
             for r in rows:
-                total_detections += r["total_detections"] or 0
-                total_unique += r["unique_vehicles"] or 0
+                dets = r["total_detections"] or 0
+                total_detections += dets
+                if r["media_type"] == "video":
+                    total_unique += r["unique_vehicles"] or 0
                 total_crossings += r["line_crossings"] or 0
+
+                per_run_breakdown.append({
+                    "id": r["id"],
+                    "filename": r["filename"],
+                    "media_type": r["media_type"],
+                    "detections": dets,
+                    "unique_vehicles": r["unique_vehicles"] or 0,
+                    "latency_ms": r["latency_ms"],
+                    "timestamp": r["timestamp"],
+                })
+
+                d_key = r["timestamp"][:10] if r["timestamp"] else "Unknown"
+                date_volume[d_key]["detections"] += dets
+                date_volume[d_key]["runs"] += 1
+
                 try:
                     c_dict = json.loads(r["class_counts_json"] or "{}")
                     for k, v in c_dict.items():
@@ -204,13 +230,51 @@ class RunsDatabase:
                 except Exception:
                     pass
 
+                try:
+                    meta = json.loads(r["metadata_json"] or "{}")
+                    dets_list = meta.get("detections", [])
+                    for d in dets_list:
+                        score = d.get("score") or d.get("confidence")
+                        if score is not None:
+                            confidence_scores.append(float(score))
+                except Exception:
+                    pass
+
+            hist_bins = [
+                {"bin": "30-40%", "min": 0.30, "max": 0.40, "count": 0},
+                {"bin": "40-50%", "min": 0.40, "max": 0.50, "count": 0},
+                {"bin": "50-60%", "min": 0.50, "max": 0.60, "count": 0},
+                {"bin": "60-70%", "min": 0.60, "max": 0.70, "count": 0},
+                {"bin": "70-80%", "min": 0.70, "max": 0.80, "count": 0},
+                {"bin": "80-90%", "min": 0.80, "max": 0.90, "count": 0},
+                {"bin": "90-100%", "min": 0.90, "max": 1.01, "count": 0},
+            ]
+            for s in confidence_scores:
+                for b in hist_bins:
+                    if b["min"] <= s < b["max"]:
+                        b["count"] += 1
+                        break
+
+            runs_over_time = [
+                {"date": k, "detections": v["detections"], "runs": v["runs"]}
+                for k, v in sorted(date_volume.items())
+            ]
+
             return {
                 "total_runs": total_runs,
+                "image_runs": image_runs,
+                "video_runs": video_runs,
+                "failed_runs": failed_runs,
                 "total_detections": total_detections,
                 "total_unique_vehicles": total_unique,
                 "total_line_crossings": total_crossings,
                 "average_latency_ms": avg_latency,
+                "median_latency_ms": median_latency,
                 "class_distribution": aggregated_classes,
+                "runs_over_time": runs_over_time,
+                "confidence_histogram": hist_bins,
+                "total_confidence_samples": len(confidence_scores),
+                "per_run_breakdown": per_run_breakdown,
             }
 
     def _format_row(self, row: sqlite3.Row) -> Dict:

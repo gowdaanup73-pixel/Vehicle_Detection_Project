@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { 
-  CloudRain, 
+  ArrowUpDown,
+  ChevronLeft,
+  ChevronRight,
   Database, 
   Download, 
   Eye, 
@@ -8,16 +10,14 @@ import {
   Film, 
   Filter, 
   ImageIcon, 
-  Moon, 
   Search, 
-  Sun, 
   Trash2, 
   X 
 } from 'lucide-react';
 import { DatasetInfo, RunRecord } from '../types';
 
 interface DatasetRunsViewProps {
-  datasetInfo: DatasetInfo | null;
+  datasetInfo?: DatasetInfo | null;
   runs: RunRecord[];
   selectedRun: RunRecord | null;
   onSelectRun: (run: RunRecord | null) => void;
@@ -25,7 +25,6 @@ interface DatasetRunsViewProps {
 }
 
 export const DatasetRunsView: React.FC<DatasetRunsViewProps> = ({
-  datasetInfo,
   runs,
   selectedRun,
   onSelectRun,
@@ -33,199 +32,151 @@ export const DatasetRunsView: React.FC<DatasetRunsViewProps> = ({
 }) => {
   const [mediaFilter, setMediaFilter] = useState<'all' | 'image' | 'video'>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [sortBy, setSortBy] = useState<'timestamp' | 'detections' | 'latency'>('timestamp');
+  const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const pageSize = 12;
 
-  const filteredRuns = runs.filter((r) => {
-    if (mediaFilter !== 'all' && r.media_type !== mediaFilter) return false;
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      return (
-        r.id.toLowerCase().includes(q) ||
-        r.filename.toLowerCase().includes(q) ||
-        r.model_name.toLowerCase().includes(q)
-      );
+  // Filtered & Sorted Runs
+  const processedRuns = useMemo(() => {
+    let result = runs.filter((r) => {
+      if (mediaFilter !== 'all' && r.media_type !== mediaFilter) return false;
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        return (
+          r.id.toLowerCase().includes(q) ||
+          r.filename.toLowerCase().includes(q) ||
+          (r.model_name && r.model_name.toLowerCase().includes(q))
+        );
+      }
+      return true;
+    });
+
+    result.sort((a, b) => {
+      let comparison = 0;
+      if (sortBy === 'timestamp') {
+        comparison = new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime();
+      } else if (sortBy === 'detections') {
+        comparison = a.total_detections - b.total_detections;
+      } else if (sortBy === 'latency') {
+        comparison = a.latency_ms - b.latency_ms;
+      }
+      return sortOrder === 'desc' ? -comparison : comparison;
+    });
+
+    return result;
+  }, [runs, mediaFilter, searchQuery, sortBy, sortOrder]);
+
+  const totalPages = Math.max(1, Math.ceil(processedRuns.length / pageSize));
+  const paginatedRuns = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return processedRuns.slice(start, start + pageSize);
+  }, [processedRuns, currentPage, pageSize]);
+
+  const handleSortChange = (newSort: 'timestamp' | 'detections' | 'latency') => {
+    if (sortBy === newSort) {
+      setSortOrder((prev) => (prev === 'desc' ? 'asc' : 'desc'));
+    } else {
+      setSortBy(newSort);
+      setSortOrder('desc');
     }
-    return true;
-  });
+  };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       {/* Header */}
       <div className="section-header">
         <div>
-          <div className="label-tactical">SAVED RUNS & BENCHMARK ARCHIVE // AUDIT TRAIL</div>
+          <div className="label-tactical">EXECUTION AUDIT TRAIL // PERSISTENT RECORDS</div>
           <h1 className="section-title">
-            <Database size={22} style={{ color: 'var(--burnt-orange)' }} />
-            History & Dataset
+            <FileText size={22} style={{ color: 'var(--burnt-orange)' }} />
+            Execution History & Inspection
           </h1>
           <p className="section-subtitle">
-            Saved inference runs, downloadable prediction artifacts, and UA-DETRAC dataset specifications
+            Auditable log of all genuine operational vehicle inference runs, detection bounding boxes, and media outputs
           </p>
         </div>
 
-        <span className="badge badge-charcoal" style={{ fontSize: '0.74rem' }}>
-          {runs.length} PERSISTED RUNS
-        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+          <span className="badge badge-charcoal" style={{ fontSize: '0.74rem' }}>
+            {runs.length} TOTAL AUDIT RECORDS
+          </span>
+          <span className="badge badge-olive" style={{ fontSize: '0.74rem' }}>
+            PERSISTENT SQLITE STORE
+          </span>
+        </div>
       </div>
 
-      {/* UA-DETRAC Dataset Intelligence Summary */}
-      {datasetInfo && (
-        <div className="command-card">
-          <div className="command-card-header">
-            <span className="card-title">
-              UA-DETRAC Benchmark Specifications (V3 Development Setup)
-            </span>
-            <span className="label-tactical">100 SEQUENCES // 51 TRAIN / 9 VAL / 40 TEST</span>
-          </div>
-
-          {datasetInfo.sampling_interval_note && (
-            <div style={{ padding: '0.65rem 0.85rem', backgroundColor: 'var(--charcoal-900)', border: '1px solid var(--border-light)', fontFamily: 'var(--font-mono)', fontSize: '0.72rem', color: 'var(--warm-ivory-dim)', marginBottom: '1rem' }}>
-              <strong style={{ color: 'var(--burnt-orange)' }}>SAMPLING INTERVAL SPECIFICATION: </strong>
-              {datasetInfo.sampling_interval_note} Native video sequences contain ~139,095 uncompressed frames.
-            </div>
-          )}
-
-          {/* Quick Metrics */}
-          <div className="grid-4" style={{ marginBottom: '1.25rem' }}>
-            <div style={{ padding: '0.75rem', backgroundColor: 'var(--charcoal-900)', border: '1px solid var(--border-light)' }}>
-              <div className="label-tactical" style={{ fontSize: '0.65rem' }}>SAMPLED BENCHMARK IMAGES</div>
-              <div style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--warm-ivory)', fontFamily: 'var(--font-display)' }}>
-                {(datasetInfo.total_sampled_images || 16409).toLocaleString()}
-              </div>
-              <div style={{ fontSize: '0.7rem', color: 'var(--warm-ivory-dim)' }}>
-                14,317 train + 2,092 val frames
-              </div>
-            </div>
-
-            <div style={{ padding: '0.75rem', backgroundColor: 'var(--charcoal-900)', border: '1px solid var(--border-light)' }}>
-              <div className="label-tactical" style={{ fontSize: '0.65rem' }}>ANNOTATED BOUNDING BOXES</div>
-              <div style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--warm-ivory)', fontFamily: 'var(--font-display)' }}>
-                {(datasetInfo.total_annotated_boxes || 118613).toLocaleString()}
-              </div>
-              <div style={{ fontSize: '0.7rem', color: 'var(--warm-ivory-dim)' }}>
-                104,492 train + 14,121 val boxes
-              </div>
-            </div>
-
-            <div style={{ padding: '0.75rem', backgroundColor: 'var(--charcoal-900)', border: '1px solid var(--border-light)' }}>
-              <div className="label-tactical" style={{ fontSize: '0.65rem' }}>TARGET CLASSES</div>
-              <div style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--burnt-orange)', fontFamily: 'var(--font-display)' }}>
-                4 CLASSES
-              </div>
-              <div style={{ fontSize: '0.7rem', color: 'var(--warm-ivory-dim)' }}>car, van, bus, others</div>
-            </div>
-
-            <div style={{ padding: '0.75rem', backgroundColor: 'var(--charcoal-900)', border: '1px solid var(--border-light)' }}>
-              <div className="label-tactical" style={{ fontSize: '0.65rem' }}>MODEL INPUT RESOLUTION</div>
-              <div style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--muted-olive)', fontFamily: 'var(--font-display)' }}>
-                {datasetInfo.input_specifications?.model_input_resolution || '512 × 288'}
-              </div>
-              <div style={{ fontSize: '0.7rem', color: 'var(--warm-ivory-dim)' }}>Native capture: 960 × 540</div>
-            </div>
-          </div>
-
-          {/* Splits Grid */}
-          <div className="grid-2">
-            {/* Splits */}
-            <div style={{ padding: '0.85rem', backgroundColor: 'var(--charcoal-900)', border: '1px solid var(--border-light)' }}>
-              <div className="label-tactical" style={{ marginBottom: '0.5rem', color: 'var(--burnt-orange)' }}>
-                PARTITION SPLITS (TRAIN / VAL / TEST)
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem', fontFamily: 'var(--font-mono)', fontSize: '0.76rem' }}>
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.2rem' }}>
-                    <span style={{ color: 'var(--warm-ivory)' }}>TRAINING SET (51 sequences)</span>
-                    <span style={{ color: 'var(--warm-ivory-dim)' }}>
-                      14,317 images (104,492 boxes)
-                    </span>
-                  </div>
-                  <div style={{ height: '6px', backgroundColor: 'var(--charcoal-800)' }}>
-                    <div style={{ width: '87.3%', height: '100%', backgroundColor: 'var(--burnt-orange)' }} />
-                  </div>
-                </div>
-
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.2rem' }}>
-                    <span style={{ color: 'var(--warm-ivory)' }}>VALIDATION SET (9 sequences)</span>
-                    <span style={{ color: 'var(--warm-ivory-dim)' }}>
-                      2,092 images (14,121 boxes)
-                    </span>
-                  </div>
-                  <div style={{ height: '6px', backgroundColor: 'var(--charcoal-800)' }}>
-                    <div style={{ width: '12.7%', height: '100%', backgroundColor: '#D9822B' }} />
-                  </div>
-                </div>
-
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.2rem' }}>
-                    <span style={{ color: 'var(--warm-ivory)' }}>TEST SET (40 sequences)</span>
-                    <span style={{ color: 'var(--warm-ivory-dim)' }}>
-                      Held-out benchmark sequences
-                    </span>
-                  </div>
-                  <div style={{ height: '6px', backgroundColor: 'var(--charcoal-800)' }}>
-                    <div style={{ width: '100%', height: '100%', backgroundColor: 'var(--muted-olive)' }} />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Weather Breakdown if present */}
-            {datasetInfo.weather_conditions && datasetInfo.weather_conditions.length > 0 && (
-              <div style={{ padding: '0.85rem', backgroundColor: 'var(--charcoal-900)', border: '1px solid var(--border-light)' }}>
-                <div className="label-tactical" style={{ marginBottom: '0.5rem', color: 'var(--muted-olive)' }}>
-                  ENVIRONMENTAL TEST CONDITIONS
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.5rem', fontFamily: 'var(--font-mono)', fontSize: '0.74rem' }}>
-                  {datasetInfo.weather_conditions.map((w, idx) => (
-                    <div key={idx} style={{ padding: '0.45rem', backgroundColor: 'var(--charcoal-800)', border: '1px solid var(--border-light)' }}>
-                      <div style={{ color: 'var(--warm-ivory)', fontWeight: 700 }}>
-                        {w.condition} ({w.percentage}%)
-                      </div>
-                      <div style={{ fontSize: '0.68rem', color: 'var(--warm-ivory-dim)', marginTop: '0.15rem' }}>
-                        {w.challenges}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Persistent Execution Audit Table */}
+      {/* Main Execution History Card */}
       <div className="command-card">
         <div className="command-card-header">
-          <span className="card-title">
-            <FileText size={15} style={{ color: 'var(--warm-ivory)' }} />
-            Persistent Execution Audit History
-          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <span className="card-title">
+              Inference Records ({processedRuns.length} matching)
+            </span>
+          </div>
 
-          {/* Search & Filters */}
-          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+          {/* Search, Filter, & Sort Controls */}
+          <div style={{ display: 'flex', gap: '0.65rem', alignItems: 'center', flexWrap: 'wrap' }}>
+            {/* Search */}
             <div style={{ position: 'relative', width: '220px' }}>
               <Search size={12} style={{ position: 'absolute', left: '8px', top: '9px', color: 'var(--warm-ivory-dim)' }} />
               <input
                 type="text"
                 className="form-input"
-                style={{ paddingLeft: '26px', fontSize: '0.75rem', padding: '0.35rem 0.6rem 0.35rem 26px' }}
-                placeholder="Search run ID or filename..."
+                style={{ paddingLeft: '26px', fontSize: '0.74rem', padding: '0.35rem 0.6rem 0.35rem 26px' }}
+                placeholder="Search Run ID or filename..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setCurrentPage(1);
+                }}
               />
             </div>
 
+            {/* Media Filter */}
             <div style={{ display: 'flex', gap: '0.2rem', backgroundColor: 'var(--charcoal-900)', padding: '0.15rem', border: '1px solid var(--border-medium)' }}>
               {(['all', 'image', 'video'] as const).map((m) => (
                 <button
                   key={m}
                   className={`btn ${mediaFilter === m ? 'btn-primary' : 'btn-secondary'}`}
                   style={{ padding: '0.25rem 0.55rem', fontSize: '0.68rem' }}
-                  onClick={() => setMediaFilter(m)}
+                  onClick={() => {
+                    setMediaFilter(m);
+                    setCurrentPage(1);
+                  }}
                 >
                   {m.toUpperCase()}
                 </button>
               ))}
+            </div>
+
+            {/* Sort Toggle */}
+            <div style={{ display: 'flex', gap: '0.2rem', alignItems: 'center' }}>
+              <button
+                className="btn btn-secondary"
+                style={{ padding: '0.25rem 0.55rem', fontSize: '0.68rem' }}
+                onClick={() => handleSortChange('timestamp')}
+                title="Sort by Date"
+              >
+                Date {sortBy === 'timestamp' ? (sortOrder === 'desc' ? '↓' : '↑') : ''}
+              </button>
+              <button
+                className="btn btn-secondary"
+                style={{ padding: '0.25rem 0.55rem', fontSize: '0.68rem' }}
+                onClick={() => handleSortChange('detections')}
+                title="Sort by Detections"
+              >
+                Detections {sortBy === 'detections' ? (sortOrder === 'desc' ? '↓' : '↑') : ''}
+              </button>
+              <button
+                className="btn btn-secondary"
+                style={{ padding: '0.25rem 0.55rem', fontSize: '0.68rem' }}
+                onClick={() => handleSortChange('latency')}
+                title="Sort by Latency"
+              >
+                Latency {sortBy === 'latency' ? (sortOrder === 'desc' ? '↓' : '↑') : ''}
+              </button>
             </div>
           </div>
         </div>
@@ -237,83 +188,119 @@ export const DatasetRunsView: React.FC<DatasetRunsViewProps> = ({
               NO PERSISTED OPERATIONAL RUNS FOUND
             </div>
             <div style={{ fontSize: '0.74rem', maxWidth: '480px', margin: '0 auto', lineHeight: 1.6 }}>
-              Upload image or video files in Detection Studio to record operational PyTorch inference results. Reference benchmark test samples are isolated from operational audit logs.
+              Perform inference in Detection Studio to generate persistent execution records in the SQLite database.
             </div>
           </div>
-        ) : filteredRuns.length === 0 ? (
+        ) : processedRuns.length === 0 ? (
           <div style={{ padding: '2.5rem', textAlign: 'center', color: 'var(--warm-ivory-dim)', fontFamily: 'var(--font-mono)' }}>
-            NO AUDIT RECORDS MATCH CURRENT FILTER.
+            NO AUDIT RECORDS MATCH THE CURRENT FILTER OR SEARCH QUERY.
           </div>
         ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table className="command-table">
-              <thead>
-                <tr>
-                  <th>Run ID</th>
-                  <th>Timestamp</th>
-                  <th>Type</th>
-                  <th>Source Filename</th>
-                  <th>Detections</th>
-                  <th>Unique Tracked</th>
-                  <th>Tripwire Crossings</th>
-                  <th>Latency</th>
-                  <th>Model State</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredRuns.map((run) => (
-                  <tr key={run.id}>
-                    <td style={{ color: 'var(--burnt-orange)', fontWeight: 600 }}>{run.id}</td>
-                    <td>{new Date(run.timestamp).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}</td>
-                    <td>
-                      <span className={`badge ${run.media_type === 'video' ? 'badge-orange' : 'badge-olive'}`}>
-                        {run.media_type.toUpperCase()}
-                      </span>
-                    </td>
-                    <td style={{ maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {run.filename}
-                    </td>
-                    <td>{run.total_detections}</td>
-                    <td>{run.unique_vehicles}</td>
-                    <td style={{ color: run.line_crossings > 0 ? 'var(--status-green)' : 'var(--warm-ivory-dim)' }}>
-                      {run.line_crossings}
-                    </td>
-                    <td>{run.latency_ms} ms</td>
-                    <td>
-                      <span className="badge badge-charcoal" style={{ fontSize: '0.65rem' }}>
-                        {run.weights_status.replace(/_/g, ' ')}
-                      </span>
-                    </td>
-                    <td>
-                      <div style={{ display: 'flex', gap: '0.35rem' }}>
-                        <button
-                          className="btn btn-secondary"
-                          style={{ padding: '0.25rem 0.45rem', fontSize: '0.68rem' }}
-                          onClick={() => onSelectRun(run)}
-                          title="Inspect run outputs"
-                        >
-                          <Eye size={11} />
-                        </button>
-                        <button
-                          className="btn btn-secondary"
-                          style={{ padding: '0.25rem 0.45rem', fontSize: '0.68rem', color: 'var(--status-red)' }}
-                          onClick={() => onDeleteRun(run.id)}
-                          title="Delete record"
-                        >
-                          <Trash2 size={11} />
-                        </button>
-                      </div>
-                    </td>
+          <>
+            <div style={{ overflowX: 'auto' }}>
+              <table className="command-table">
+                <thead>
+                  <tr>
+                    <th>Run ID</th>
+                    <th>Timestamp</th>
+                    <th>Media</th>
+                    <th>Source Filename</th>
+                    <th>Detections</th>
+                    <th>Unique Tracked</th>
+                    <th>Tripwire Crossings</th>
+                    <th>Latency</th>
+                    <th>Execution Status</th>
+                    <th style={{ textAlign: 'right' }}>Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {paginatedRuns.map((run) => (
+                    <tr key={run.id}>
+                      <td style={{ color: 'var(--burnt-orange)', fontWeight: 600 }}>{run.id}</td>
+                      <td style={{ color: 'var(--warm-ivory-dim)', fontSize: '0.72rem' }}>
+                        {new Date(run.timestamp).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
+                      </td>
+                      <td>
+                        <span className={`badge ${run.media_type === 'video' ? 'badge-orange' : 'badge-olive'}`}>
+                          {run.media_type.toUpperCase()}
+                        </span>
+                      </td>
+                      <td style={{ maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {run.filename}
+                      </td>
+                      <td style={{ fontWeight: 700, color: 'var(--warm-ivory)' }}>
+                        {run.total_detections}
+                      </td>
+                      <td style={{ color: run.unique_vehicles > 0 ? 'var(--burnt-orange)' : 'var(--warm-ivory-dim)' }}>
+                        {run.unique_vehicles}
+                      </td>
+                      <td style={{ color: run.line_crossings > 0 ? 'var(--status-green)' : 'var(--warm-ivory-dim)' }}>
+                        {run.line_crossings}
+                      </td>
+                      <td>{run.latency_ms} ms</td>
+                      <td>
+                        <span className="badge badge-green" style={{ fontSize: '0.62rem' }}>
+                          COMPLETED
+                        </span>
+                      </td>
+                      <td style={{ textAlign: 'right' }}>
+                        <div style={{ display: 'inline-flex', gap: '0.35rem' }}>
+                          <button
+                            className="btn btn-secondary"
+                            style={{ padding: '0.25rem 0.5rem', fontSize: '0.68rem' }}
+                            onClick={() => onSelectRun(run)}
+                            title="Inspect Run Details"
+                          >
+                            <Eye size={11} style={{ marginRight: '0.25rem' }} />
+                            View
+                          </button>
+                          <button
+                            className="btn btn-secondary"
+                            style={{ padding: '0.25rem 0.45rem', fontSize: '0.68rem', color: 'var(--status-red)' }}
+                            onClick={() => onDeleteRun(run.id)}
+                            title="Delete Record"
+                          >
+                            <Trash2 size={11} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem 1rem', borderTop: '1px solid var(--border-light)', fontFamily: 'var(--font-mono)', fontSize: '0.74rem' }}>
+                <span style={{ color: 'var(--warm-ivory-dim)' }}>
+                  Page {currentPage} of {totalPages} ({processedRuns.length} total runs)
+                </span>
+                <div style={{ display: 'flex', gap: '0.4rem' }}>
+                  <button
+                    className="btn btn-secondary"
+                    style={{ padding: '0.25rem 0.55rem', fontSize: '0.7rem' }}
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  >
+                    <ChevronLeft size={12} /> Previous
+                  </button>
+                  <button
+                    className="btn btn-secondary"
+                    style={{ padding: '0.25rem 0.55rem', fontSize: '0.7rem' }}
+                    disabled={currentPage === totalPages}
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  >
+                    Next <ChevronRight size={12} />
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
 
-      {/* Individual Run Inspector Modal / Drawer */}
+      {/* Individual Run Inspector Modal */}
       {selectedRun && (
         <div 
           style={{
@@ -322,7 +309,7 @@ export const DatasetRunsView: React.FC<DatasetRunsViewProps> = ({
             left: 0,
             right: 0,
             bottom: 0,
-            backgroundColor: 'rgba(20, 21, 19, 0.85)',
+            backgroundColor: 'rgba(20, 21, 19, 0.88)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -333,16 +320,16 @@ export const DatasetRunsView: React.FC<DatasetRunsViewProps> = ({
           <div 
             className="command-card"
             style={{
-              maxWidth: '960px',
+              maxWidth: '980px',
               width: '100%',
-              maxHeight: '90vh',
+              maxHeight: '92vh',
               overflowY: 'auto',
               border: '1px solid var(--burnt-orange)',
             }}
           >
             <div className="command-card-header">
               <span className="card-title">
-                Run Inspector // {selectedRun.id}
+                Run Inspector // {selectedRun.id} ({selectedRun.filename})
               </span>
               <button 
                 className="btn btn-secondary" 
@@ -354,10 +341,10 @@ export const DatasetRunsView: React.FC<DatasetRunsViewProps> = ({
             </div>
 
             {/* Media Comparison Preview */}
-            <div className="grid-2" style={{ marginBottom: '1rem' }}>
+            <div className="grid-2" style={{ marginBottom: '1rem', padding: '0 0.85rem' }}>
               <div>
-                <div className="label-tactical" style={{ marginBottom: '0.3rem' }}>SOURCE INPUT</div>
-                <div style={{ height: '260px', backgroundColor: 'var(--charcoal-900)', border: '1px solid var(--border-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                <div className="label-tactical" style={{ marginBottom: '0.3rem' }}>ORIGINAL SOURCE INPUT</div>
+                <div style={{ height: '280px', backgroundColor: 'var(--charcoal-900)', border: '1px solid var(--border-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
                   {selectedRun.media_type === 'video' ? (
                     <video controls src={selectedRun.input_url} style={{ maxWidth: '100%', maxHeight: '100%' }} />
                   ) : (
@@ -367,8 +354,8 @@ export const DatasetRunsView: React.FC<DatasetRunsViewProps> = ({
               </div>
 
               <div>
-                <div className="label-tactical" style={{ marginBottom: '0.3rem', color: 'var(--burnt-orange)' }}>ANNOTATED OUTPUT</div>
-                <div style={{ height: '260px', backgroundColor: 'var(--charcoal-900)', border: '1px solid var(--border-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                <div className="label-tactical" style={{ marginBottom: '0.3rem', color: 'var(--burnt-orange)' }}>ANNOTATED OUTPUT (BOUNDING BOXES)</div>
+                <div style={{ height: '280px', backgroundColor: 'var(--charcoal-900)', border: '1px solid var(--border-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
                   {selectedRun.media_type === 'video' ? (
                     <video controls src={selectedRun.annotated_url} style={{ maxWidth: '100%', maxHeight: '100%' }} />
                   ) : (
@@ -379,27 +366,42 @@ export const DatasetRunsView: React.FC<DatasetRunsViewProps> = ({
             </div>
 
             {/* Run Telemetry Summary */}
-            <div className="grid-4" style={{ marginBottom: '1rem' }}>
-              <div style={{ padding: '0.5rem', backgroundColor: 'var(--charcoal-900)', border: '1px solid var(--border-light)', fontFamily: 'var(--font-mono)', fontSize: '0.74rem' }}>
-                <span style={{ color: 'var(--warm-ivory-dim)' }}>TOTAL DETECTIONS: </span>
-                <span style={{ color: 'var(--warm-ivory)', fontWeight: 700 }}>{selectedRun.total_detections}</span>
+            <div className="kpi-row-4" style={{ marginBottom: '1rem', padding: '0 0.85rem' }}>
+              <div style={{ padding: '0.65rem', backgroundColor: 'var(--charcoal-900)', border: '1px solid var(--border-light)', fontFamily: 'var(--font-mono)' }}>
+                <div className="label-tactical" style={{ fontSize: '0.62rem' }}>TOTAL DETECTIONS</div>
+                <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--warm-ivory)' }}>{selectedRun.total_detections}</div>
               </div>
-              <div style={{ padding: '0.5rem', backgroundColor: 'var(--charcoal-900)', border: '1px solid var(--border-light)', fontFamily: 'var(--font-mono)', fontSize: '0.74rem' }}>
-                <span style={{ color: 'var(--warm-ivory-dim)' }}>UNIQUE VEHICLES: </span>
-                <span style={{ color: 'var(--burnt-orange)', fontWeight: 700 }}>{selectedRun.unique_vehicles}</span>
+              <div style={{ padding: '0.65rem', backgroundColor: 'var(--charcoal-900)', border: '1px solid var(--border-light)', fontFamily: 'var(--font-mono)' }}>
+                <div className="label-tactical" style={{ fontSize: '0.62rem' }}>UNIQUE VEHICLES</div>
+                <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--burnt-orange)' }}>{selectedRun.unique_vehicles}</div>
               </div>
-              <div style={{ padding: '0.5rem', backgroundColor: 'var(--charcoal-900)', border: '1px solid var(--border-light)', fontFamily: 'var(--font-mono)', fontSize: '0.74rem' }}>
-                <span style={{ color: 'var(--warm-ivory-dim)' }}>TRIPWIRE CROSSINGS: </span>
-                <span style={{ color: 'var(--status-green)', fontWeight: 700 }}>{selectedRun.line_crossings}</span>
+              <div style={{ padding: '0.65rem', backgroundColor: 'var(--charcoal-900)', border: '1px solid var(--border-light)', fontFamily: 'var(--font-mono)' }}>
+                <div className="label-tactical" style={{ fontSize: '0.62rem' }}>TRIPWIRE CROSSINGS</div>
+                <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--status-green)' }}>{selectedRun.line_crossings}</div>
               </div>
-              <div style={{ padding: '0.5rem', backgroundColor: 'var(--charcoal-900)', border: '1px solid var(--border-light)', fontFamily: 'var(--font-mono)', fontSize: '0.74rem' }}>
-                <span style={{ color: 'var(--warm-ivory-dim)' }}>LATENCY: </span>
-                <span style={{ color: 'var(--warm-ivory)', fontWeight: 700 }}>{selectedRun.latency_ms} ms</span>
+              <div style={{ padding: '0.65rem', backgroundColor: 'var(--charcoal-900)', border: '1px solid var(--border-light)', fontFamily: 'var(--font-mono)' }}>
+                <div className="label-tactical" style={{ fontSize: '0.62rem' }}>INFERENCE LATENCY</div>
+                <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--warm-ivory)' }}>{selectedRun.latency_ms} ms</div>
+              </div>
+            </div>
+
+            {/* Run Metadata Details */}
+            <div style={{ padding: '0 0.85rem 1rem 0.85rem' }}>
+              <div style={{ padding: '0.75rem', backgroundColor: 'var(--charcoal-900)', border: '1px solid var(--border-light)', fontFamily: 'var(--font-mono)', fontSize: '0.72rem' }}>
+                <div style={{ color: 'var(--muted-olive)', fontWeight: 700, marginBottom: '0.4rem' }}>
+                  RECORD AUDIT METADATA
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.4rem', color: 'var(--warm-ivory-dim)' }}>
+                  <div>Model Checkpoint: <span style={{ color: 'var(--warm-ivory)' }}>{selectedRun.model_name || 'improved_v2_best.pth'}</span></div>
+                  <div>Execution Timestamp: <span style={{ color: 'var(--warm-ivory)' }}>{new Date(selectedRun.timestamp).toISOString()}</span></div>
+                  <div>Weights Status: <span style={{ color: 'var(--warm-ivory)' }}>{selectedRun.weights_status}</span></div>
+                  <div>Media Type: <span style={{ color: 'var(--warm-ivory)' }}>{selectedRun.media_type}</span></div>
+                </div>
               </div>
             </div>
 
             {/* Actions */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid var(--border-light)', paddingTop: '0.75rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid var(--border-light)', padding: '0.75rem 0.85rem' }}>
               <div style={{ display: 'flex', gap: '0.5rem' }}>
                 <a
                   href={selectedRun.annotated_url}
@@ -408,7 +410,7 @@ export const DatasetRunsView: React.FC<DatasetRunsViewProps> = ({
                   style={{ fontSize: '0.74rem' }}
                 >
                   <Download size={12} />
-                  Download Annotated File
+                  Download Annotated Media
                 </a>
               </div>
               <button

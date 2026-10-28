@@ -5,6 +5,8 @@ tactical visual annotation in Industrial Command Center style, and video encodin
 """
 import math
 import os
+import shutil
+import subprocess
 import time
 import uuid
 from typing import Dict, List, Optional, Tuple
@@ -307,6 +309,26 @@ class MediaProcessor:
 
         cap.release()
         out_writer.release()
+
+        # Convert video to standard H.264 using ffmpeg for HTML5 browser compatibility
+        ffmpeg_bin = shutil.which("ffmpeg")
+        if ffmpeg_bin:
+            temp_path = out_path + ".raw.mp4"
+            try:
+                if os.path.exists(out_path):
+                    shutil.move(out_path, temp_path)
+                    cmd = [
+                        ffmpeg_bin, "-y", "-i", temp_path,
+                        "-c:v", "libx264", "-preset", "veryfast", "-crf", "23",
+                        "-pix_fmt", "yuv420p", "-movflags", "+faststart",
+                        out_path
+                    ]
+                    subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
+                    if os.path.exists(temp_path):
+                        os.remove(temp_path)
+            except Exception:
+                if os.path.exists(temp_path) and not os.path.exists(out_path):
+                    shutil.move(temp_path, out_path)
 
         total_time = time.perf_counter() - t_start
         avg_latency = round(np.mean(latencies), 2) if latencies else 0.0

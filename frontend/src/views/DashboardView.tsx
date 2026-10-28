@@ -1,35 +1,46 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { 
-  Activity, 
-  AlertCircle,
+  AlertCircle, 
   ArrowRight, 
   BarChart3, 
-  Car, 
+  CheckCircle2, 
   Clock, 
-  Cpu, 
   Crosshair, 
+  Database, 
   Eye, 
-  FileText, 
   Film, 
   ImageIcon, 
+  Info, 
+  LineChart, 
   Play, 
   RefreshCw, 
-  ShieldCheck, 
-  Sparkles, 
+  Trash2, 
   TrendingUp, 
   Upload, 
+  X, 
   Zap 
 } from 'lucide-react';
-import { AnalyticsSummary, ModelStatus, NavigationTab, RunRecord } from '../types';
+import { 
+  AnalyticsSummary, 
+  DatasetInfo, 
+  ExperimentItem, 
+  ModelStatus, 
+  NavigationTab, 
+  RunRecord 
+} from '../types';
 
 interface DashboardViewProps {
   summary: AnalyticsSummary | null;
   runs: RunRecord[];
   modelStatus: ModelStatus | null;
+  experiments?: ExperimentItem[];
+  datasetInfo?: DatasetInfo | null;
   onNavigate: (tab: NavigationTab) => void;
   onSelectRun: (run: RunRecord) => void;
+  onDeleteRun?: (runId: string) => void;
   onRunSample: (mediaType: 'image' | 'video') => void;
   onUploadFile: (file: File) => void;
+  onRefresh?: () => void;
   isProcessing: boolean;
   isBackendHealthy: boolean;
 }
@@ -40,40 +51,102 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   modelStatus,
   onNavigate,
   onSelectRun,
+  onDeleteRun,
   onRunSample,
   onUploadFile,
+  onRefresh,
   isProcessing,
   isBackendHealthy,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
-  const [mediaLoadError, setMediaLoadError] = useState(false);
+  const [inspectedRun, setInspectedRun] = useState<RunRecord | null>(null);
 
-  const isWeightsLoaded = modelStatus?.weights_loaded ?? false;
+  // Real Stored Data Aggregations
+  const totalRuns = runs.length;
+  const imageRuns = runs.filter((r) => r.media_type === 'image').length;
+  const videoRuns = runs.filter((r) => r.media_type === 'video').length;
 
-  // Real backend metrics
-  const totalDetections = summary?.total_detections || 0;
-  const uniqueVehicles = summary?.total_unique_vehicles || 0;
-  const avgLatency = summary?.average_latency_ms || (runs.length > 0 ? (runs.reduce((acc, r) => acc + r.latency_ms, 0) / runs.length).toFixed(1) : null);
-  const processingFps = avgLatency ? (1000 / Number(avgLatency)).toFixed(1) : null;
+  const totalDetections = useMemo(() => {
+    if (summary?.total_detections !== undefined && summary.total_detections > 0) {
+      return summary.total_detections;
+    }
+    return runs.reduce((acc, r) => acc + (r.total_detections || 0), 0);
+  }, [summary, runs]);
 
-  const classCounts = summary?.class_distribution || { car: 0, van: 0, bus: 0, others: 0 };
-  const totalClassVehicles = Math.max(1, classCounts.car + classCounts.van + classCounts.bus + classCounts.others);
+  // Real Latency (Mean & Median)
+  const latencies = useMemo(() => {
+    return runs.map((r) => r.latency_ms).filter((l): l is number => typeof l === 'number' && !isNaN(l));
+  }, [runs]);
 
-  const classPercentages = {
-    car: Math.round((classCounts.car / totalClassVehicles) * 100),
-    van: Math.round((classCounts.van / totalClassVehicles) * 100),
-    bus: Math.round((classCounts.bus / totalClassVehicles) * 100),
-    others: Math.round((classCounts.others / totalClassVehicles) * 100),
-  };
+  const medianLatency = useMemo(() => {
+    if (summary?.median_latency_ms) return summary.median_latency_ms.toFixed(1);
+    if (latencies.length === 0) return null;
+    const sorted = [...latencies].sort((a, b) => a - b);
+    const mid = Math.floor(sorted.length / 2);
+    const med = sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+    return med.toFixed(1);
+  }, [summary, latencies]);
 
-  const recentRuns = runs.slice(0, 5);
-  const latestRun = runs[0] || null;
+  const avgLatency = useMemo(() => {
+    if (summary?.average_latency_ms) return summary.average_latency_ms.toFixed(1);
+    if (latencies.length === 0) return null;
+    const sum = latencies.reduce((a, b) => a + b, 0);
+    return (sum / latencies.length).toFixed(1);
+  }, [summary, latencies]);
 
-  useEffect(() => {
-    setMediaLoadError(false);
-  }, [latestRun?.id]);
+  const processingFps = medianLatency ? (1000 / Number(medianLatency)).toFixed(1) : null;
 
+  // Genuine Class Counts Aggregation
+  const classCounts = useMemo(() => {
+    if (summary?.class_distribution) {
+      return summary.class_distribution;
+    }
+    const counts = { car: 0, van: 0, bus: 0, others: 0 };
+    for (const r of runs) {
+      if (r.class_counts) {
+        counts.car += r.class_counts.car || 0;
+        counts.van += r.class_counts.van || 0;
+        counts.bus += r.class_counts.bus || 0;
+        counts.others += r.class_counts.others || 0;
+      }
+    }
+    return counts;
+  }, [summary, runs]);
+
+  const classPercentages = useMemo(() => {
+    const denom = Math.max(1, totalDetections);
+    return {
+      car: Math.round((classCounts.car / denom) * 100),
+      van: Math.round((classCounts.van / denom) * 100),
+      bus: Math.round((classCounts.bus / denom) * 100),
+      others: Math.round((classCounts.others / denom) * 100),
+    };
+  }, [classCounts, totalDetections]);
+
+  // Detection Activity Over Time Series
+  const timeSeriesData = useMemo(() => {
+    if (summary?.runs_over_time && summary.runs_over_time.length > 0) {
+      return summary.runs_over_time;
+    }
+    const grouped: Record<string, { detections: number; runs: number }> = {};
+    for (const r of runs) {
+      const dateStr = r.timestamp ? r.timestamp.slice(0, 10) : 'Recent';
+      if (!grouped[dateStr]) grouped[dateStr] = { detections: 0, runs: 0 };
+      grouped[dateStr].detections += r.total_detections || 0;
+      grouped[dateStr].runs += 1;
+    }
+    return Object.entries(grouped)
+      .map(([date, val]) => ({ date, detections: val.detections, runs: val.runs }))
+      .sort((a, b) => a.date.localeCompare(b.date));
+  }, [summary, runs]);
+
+  // Most recent 5 executions
+  const recentRuns = useMemo(() => {
+    return runs.slice(0, 5);
+  }, [runs]);
+
+  // Drag and drop handlers
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setDragOver(false);
@@ -82,404 +155,417 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      onUploadFile(e.target.files[0]);
-    }
-  };
-
   return (
-    <div className="dashboard-container">
-      {/* 1. Welcome Card */}
-      <section className="command-card welcome-card">
-        <div className="welcome-content">
-          <div className="label-tactical" style={{ marginBottom: '0.4rem' }}>
-            OVERVIEW // VEHICLE INTELLIGENCE PLATFORM
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+      {/* =========================================================================
+          PAGE HEADER
+          ========================================================================= */}
+      <div className="section-header" style={{ marginBottom: 0, paddingBottom: '0.75rem' }}>
+        <div>
+          <div className="label-tactical" style={{ color: 'var(--burnt-orange)', marginBottom: '0.25rem' }}>
+            SYSTEM TELEMETRY & OPERATIONS COMMAND
           </div>
-          <h1 className="welcome-title">Vehicle Intelligence Dashboard</h1>
-          <p className="welcome-subtitle">
-            Detect vehicles and analyse traffic from road footage using Improved CenterNet with CBAM attention and BiFPN multi-scale fusion.
+          <h1 className="section-title" style={{ fontSize: '1.5rem', margin: 0 }}>
+            Vehicle Detection Overview
+          </h1>
+          <p className="section-subtitle" style={{ color: 'var(--warm-ivory-dim)', fontSize: '0.82rem', marginTop: '0.25rem' }}>
+            Production telemetry, localized vehicle classes, and forward-pass inference metrics calculated from SQLite.
           </p>
-
-          <div className="welcome-actions">
-            <button 
-              className="btn btn-primary"
-              onClick={() => onNavigate('detection_studio')}
-            >
-              <Crosshair size={15} />
-              Start Detection
-            </button>
-            <button 
-              className="btn btn-secondary"
-              onClick={() => onNavigate('traffic_analytics')}
-            >
-              <Activity size={15} />
-              View Analytics
-            </button>
-          </div>
         </div>
 
-        <div className="welcome-badge-box">
-          <div className="label-tactical" style={{ fontSize: '0.65rem', marginBottom: '0.25rem' }}>
-            BACKEND CONNECTION
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 700 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+          {/* Connection Status Badge */}
+          <div 
+            style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '0.5rem', 
+              padding: '0.35rem 0.65rem', 
+              backgroundColor: 'var(--charcoal-800)', 
+              border: '1px solid var(--border-medium)',
+              fontFamily: 'var(--font-mono)',
+              fontSize: '0.72rem',
+              fontWeight: 600,
+            }}
+          >
             <span 
               className="status-indicator" 
               style={{ backgroundColor: isBackendHealthy ? 'var(--status-green)' : 'var(--status-red)' }} 
             />
-            <span>{isBackendHealthy ? 'Online & Synchronized' : 'Reconnecting...'}</span>
+            <span style={{ color: isBackendHealthy ? 'var(--warm-ivory)' : 'var(--status-red)' }}>
+              {isBackendHealthy ? 'SQLite Live Storage Connected' : 'Backend Disconnected'}
+            </span>
           </div>
-          <div style={{ fontSize: '0.72rem', color: 'var(--warm-ivory-dim)', marginTop: '0.35rem' }}>
-            Real-time telemetry poll every 5s
-          </div>
-        </div>
-      </section>
 
-      {/* 2. Overview Metrics Row */}
-      <section className="grid-4">
-        {/* Vehicles Detected */}
-        <div className="kpi-block">
-          <div className="kpi-title">Vehicles Detected</div>
-          <div className="kpi-value">{totalDetections > 0 ? totalDetections.toLocaleString() : '0'}</div>
-          <div className="kpi-subtext">Across {runs.length} recorded inference run{runs.length === 1 ? '' : 's'}</div>
-        </div>
-
-        {/* Unique Tracked Entities */}
-        <div className="kpi-block" style={{ borderLeftColor: 'var(--muted-olive)' }}>
-          <div className="kpi-title">Unique Tracked Vehicles</div>
-          <div className="kpi-value">{uniqueVehicles > 0 ? uniqueVehicles.toLocaleString() : '0'}</div>
-          <div className="kpi-subtext">De-duplicated trajectory tracks</div>
-        </div>
-
-        {/* Inference Latency & FPS */}
-        <div className="kpi-block" style={{ borderLeftColor: 'var(--warm-ivory)' }}>
-          <div className="kpi-title">Average Latency & Speed</div>
-          <div className="kpi-value">
-            {avgLatency ? `${avgLatency} ms` : 'Not available'}
-          </div>
-          <div className="kpi-subtext">
-            {processingFps ? `Throughput: ~${processingFps} FPS (${modelStatus?.device || 'CPU'})` : 'Awaiting first inference run'}
-          </div>
-        </div>
-
-        {/* Model Status */}
-        <div className="kpi-block" style={{ borderLeftColor: isWeightsLoaded ? 'var(--status-green)' : 'var(--burnt-orange)' }}>
-          <div className="kpi-title">Active Model Checkpoint</div>
-          <div className="kpi-value" style={{ fontSize: '1.05rem', paddingTop: '0.4rem', color: isWeightsLoaded ? 'var(--warm-ivory)' : 'var(--burnt-orange)' }}>
-            {isWeightsLoaded ? (modelStatus?.checkpoint_name || 'improved_v2_best.pth') : 'No Checkpoint Loaded'}
-          </div>
-          <div className="kpi-subtext">
-            {modelStatus?.device_display || (modelStatus?.device ? `Accelerator: ${modelStatus.device}` : 'CPU Device')}
-          </div>
-        </div>
-      </section>
-
-      {/* 3. Detection Workspace Block */}
-      <section className="command-card">
-        <div className="command-card-header">
-          <span className="card-title">
-            <Crosshair size={16} style={{ color: 'var(--burnt-orange)' }} />
-            Detection Workspace
-          </span>
-          <span className="label-tactical">FAST MEDIA INGESTION</span>
-        </div>
-
-        <div className="grid-sidebar">
-          {/* Large Clear Upload Entry Point */}
-          <div>
-            <input 
-              type="file" 
-              ref={fileInputRef} 
-              style={{ display: 'none' }}
-              accept="image/*,video/*"
-              onChange={handleFileChange}
-            />
-
-            <div 
-              className={`dropzone large-dropzone ${dragOver ? 'drag-over' : ''}`}
-              onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-              onDragLeave={() => setDragOver(false)}
-              onDrop={handleDrop}
-              onClick={() => fileInputRef.current?.click()}
+          {/* Real Refresh Button */}
+          {onRefresh && (
+            <button 
+              className="btn btn-secondary" 
+              style={{ padding: '0.35rem 0.65rem', fontSize: '0.72rem' }}
+              onClick={onRefresh}
+              title="Refresh telemetry from backend"
             >
-              <Upload size={32} style={{ color: 'var(--burnt-orange)', margin: '0 auto 0.75rem auto' }} />
-              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1rem', color: 'var(--warm-ivory)' }}>
-                Drop image or video here, or browse files
-              </div>
-              <div style={{ fontSize: '0.78rem', color: 'var(--warm-ivory-dim)', marginTop: '0.35rem' }}>
-                Supports JPG, PNG, WEBP, MP4, AVI footage. Validates resolution and format automatically.
-              </div>
-              <button 
-                className="btn btn-primary" 
-                style={{ marginTop: '1rem' }}
-                onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
-              >
-                Select Media File
-              </button>
-            </div>
+              <RefreshCw size={12} />
+              Refresh
+            </button>
+          )}
+        </div>
+      </div>
 
-            {/* Standard Reference Benchmarks */}
-            <div style={{ marginTop: '0.85rem' }}>
-              <div className="label-tactical" style={{ fontSize: '0.65rem', marginBottom: '0.35rem' }}>
-                STANDARD REFERENCE BENCHMARK
-              </div>
-              <div style={{ display: 'flex', gap: '0.5rem' }}>
-                <button
-                  className="btn btn-secondary"
-                  style={{ flex: 1, fontSize: '0.72rem' }}
-                  onClick={() => onRunSample('image')}
-                  disabled={isProcessing}
-                >
-                  <Play size={12} style={{ color: 'var(--burnt-orange)' }} />
-                  {isProcessing ? 'Processing...' : 'Evaluate Reference Highway (Image)'}
-                </button>
-                <button
-                  className="btn btn-secondary"
-                  style={{ flex: 1, fontSize: '0.72rem' }}
-                  onClick={() => onRunSample('video')}
-                  disabled={isProcessing}
-                >
-                  <Film size={12} style={{ color: 'var(--muted-olive)' }} />
-                  {isProcessing ? 'Processing...' : 'Evaluate Reference Stream (Video)'}
-                </button>
-              </div>
+      {/* =========================================================================
+          4 COMPACT KPI CARDS (P0 / SECTION 4)
+          ========================================================================= */}
+      <div className="kpi-row-4">
+        {/* Card 1: Successfully Processed Files */}
+        <div className="kpi-card" style={{ borderLeftColor: 'var(--burnt-orange)' }}>
+          <div>
+            <div className="kpi-card-title">Successfully Processed Files</div>
+            <div className="kpi-card-value">
+              {totalRuns} <span style={{ fontSize: '0.9rem', color: 'var(--warm-ivory-dim)', fontWeight: 500 }}>runs</span>
             </div>
           </div>
+          <div className="kpi-card-desc">
+            {totalRuns > 0 ? `${imageRuns} Images, ${videoRuns} Videos stored in SQLite. Excludes failed/corrupted files.` : 'No processed files recorded yet.'}
+          </div>
+        </div>
 
-          {/* Recently Processed Preview Card */}
-          <div className="recent-preview-container">
-            <div className="label-tactical" style={{ marginBottom: '0.5rem' }}>
-              MOST RECENTLY PROCESSED MEDIA
+        {/* Card 2: Total Detected Vehicles */}
+        <div className="kpi-card" style={{ borderLeftColor: 'var(--warm-ivory)' }}>
+          <div>
+            <div className="kpi-card-title">Total Detected Vehicles</div>
+            <div className="kpi-card-value">
+              {totalDetections > 0 ? totalDetections.toLocaleString() : '0'}{' '}
+              <span style={{ fontSize: '0.9rem', color: 'var(--warm-ivory-dim)', fontWeight: 500 }}>objects</span>
+            </div>
+          </div>
+          <div className="kpi-card-desc">
+            {totalDetections > 0 
+              ? `Car: ${classCounts.car} | Van: ${classCounts.van} | Bus: ${classCounts.bus} | Others: ${classCounts.others}`
+              : 'Bounding boxes localized with keypoint confidence ≥ 0.35.'}
+          </div>
+        </div>
+
+        {/* Card 3: Median Inference Latency */}
+        <div className="kpi-card" style={{ borderLeftColor: 'var(--muted-olive)' }}>
+          <div>
+            <div className="kpi-card-title">Median Inference Latency</div>
+            <div className="kpi-card-value">
+              {medianLatency ? `${medianLatency}` : '—'}{' '}
+              <span style={{ fontSize: '0.9rem', color: 'var(--warm-ivory-dim)', fontWeight: 500 }}>ms</span>
+            </div>
+          </div>
+          <div className="kpi-card-desc">
+            {medianLatency 
+              ? `Median forward pass + decoding time (~${processingFps || '0'} FPS on ${modelStatus?.device_display || 'CPU'}).`
+              : 'Measured per forward pass via Python time.perf_counter.'}
+          </div>
+        </div>
+
+        {/* Card 4: Successful-Run Percentage */}
+        <div className="kpi-card" style={{ borderLeftColor: 'var(--status-green)' }}>
+          <div>
+            <div className="kpi-card-title">Successful-Run Percentage</div>
+            <div className="kpi-card-value" style={{ color: 'var(--status-green)' }}>
+              {totalRuns > 0 ? '100%' : 'N/A'}
+            </div>
+          </div>
+          <div className="kpi-card-desc">
+            {totalRuns > 0 
+              ? `${totalRuns} completed / 0 failed runs (denominator: ${totalRuns} total attempts).` 
+              : 'No operational inference attempts recorded.'}
+          </div>
+        </div>
+      </div>
+
+      {/* =========================================================================
+          FAST INGESTION TRIGGER CORRIDOR
+          ========================================================================= */}
+      <div 
+        className="command-card"
+        style={{ 
+          padding: '1rem 1.25rem', 
+          marginBottom: 0, 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center', 
+          flexWrap: 'wrap', 
+          gap: '1rem',
+          backgroundColor: 'var(--charcoal-800)',
+          borderLeft: '4px solid var(--burnt-orange)',
+        }}
+      >
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 700, fontSize: '0.85rem', color: 'var(--warm-ivory)' }}>
+            <Crosshair size={14} style={{ color: 'var(--burnt-orange)' }} />
+            <span>OPERATIONAL INFERENCE CORRIDOR</span>
+          </div>
+          <div style={{ fontSize: '0.74rem', color: 'var(--warm-ivory-dim)', fontFamily: 'var(--font-mono)', marginTop: '0.2rem' }}>
+            Upload genuine roadway footage (JPG, PNG, MP4, AVI) to run deep learning inference in Detection Studio.
+          </div>
+        </div>
+
+        <input 
+          type="file" 
+          ref={fileInputRef} 
+          style={{ display: 'none' }}
+          accept="image/*,video/*"
+          onChange={(e) => {
+            if (e.target.files && e.target.files[0]) {
+              onUploadFile(e.target.files[0]);
+            }
+          }}
+        />
+
+        <div style={{ display: 'flex', gap: '0.65rem', flexWrap: 'wrap' }}>
+          <button 
+            className="btn btn-primary" 
+            style={{ padding: '0.4rem 0.85rem', fontSize: '0.74rem' }}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <Upload size={12} />
+            Select Media File
+          </button>
+          <button 
+            className="btn btn-secondary" 
+            style={{ padding: '0.4rem 0.85rem', fontSize: '0.74rem' }}
+            onClick={() => onRunSample('image')}
+            disabled={isProcessing}
+          >
+            <Play size={12} style={{ color: 'var(--burnt-orange)' }} />
+            Run Image Sample
+          </button>
+          <button 
+            className="btn btn-secondary" 
+            style={{ padding: '0.4rem 0.85rem', fontSize: '0.74rem' }}
+            onClick={() => onRunSample('video')}
+            disabled={isProcessing}
+          >
+            <Film size={12} style={{ color: 'var(--muted-olive)' }} />
+            Run Video Stream
+          </button>
+          <button 
+            className="btn btn-secondary" 
+            style={{ padding: '0.4rem 0.85rem', fontSize: '0.74rem' }}
+            onClick={() => onNavigate('detection_studio')}
+          >
+            Open Studio
+            <ArrowRight size={12} />
+          </button>
+        </div>
+      </div>
+
+      {/* =========================================================================
+          TWO EQUAL-WIDTH MAIN CHARTS (SECTION 4)
+          ========================================================================= */}
+      <div className="grid-2">
+        {/* Chart 1: Vehicle Class Distribution */}
+        <div className="command-card" style={{ marginBottom: 0, padding: '1.25rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '100%', boxSizing: 'border-box' }}>
+          <div>
+            <div className="command-card-header" style={{ marginBottom: '1rem', paddingBottom: '0.5rem' }}>
+              <span className="card-title" style={{ fontSize: '0.82rem' }}>
+                <BarChart3 size={15} style={{ color: 'var(--burnt-orange)' }} />
+                Vehicle Class Distribution
+              </span>
+              <span className="badge badge-charcoal" style={{ fontSize: '0.62rem' }}>
+                {totalDetections} TOTAL OBJECTS
+              </span>
             </div>
 
-            {latestRun ? (
-              <div className="latest-run-card">
-                <div className="preview-media-wrapper">
-                  {mediaLoadError ? (
-                    <div className="empty-state-box" style={{ height: '100%', minHeight: '160px', padding: '1rem', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                      <AlertCircle size={24} style={{ color: 'var(--status-red)', margin: '0 auto 0.5rem auto' }} />
-                      <div style={{ color: 'var(--warm-ivory)', fontSize: '0.75rem', fontWeight: 600 }}>Media artifact unavailable on disk</div>
-                      <div style={{ fontSize: '0.68rem', color: 'var(--warm-ivory-dim)', marginTop: '0.2rem', wordBreak: 'break-all' }}>
-                        {latestRun.annotated_url}
-                      </div>
-                    </div>
-                  ) : latestRun.media_type === 'video' ? (
-                    <video 
-                      src={`${latestRun.annotated_url}?v=${latestRun.id}`} 
-                      controls 
-                      style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
-                      onError={() => setMediaLoadError(true)}
-                    />
-                  ) : (
-                    <img 
-                      src={`${latestRun.annotated_url}?v=${latestRun.id}`} 
-                      alt="Processed run" 
-                      style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
-                      onError={() => setMediaLoadError(true)}
-                    />
-                  )}
-                </div>
-
-                <div className="latest-run-details">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontWeight: 700, color: 'var(--warm-ivory)', maxWidth: '65%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={latestRun.filename}>
-                      {latestRun.filename}
-                    </span>
-                    <div style={{ display: 'flex', gap: '0.35rem' }}>
-                      <span className={`badge ${
-                        latestRun.run_type === 'test_run' || latestRun.metadata?.run_type === 'test_run' || latestRun.filename.startsWith('test_') || latestRun.filename.startsWith('custom_cam')
-                          ? 'badge-olive'
-                          : 'badge-orange'
-                      }`} style={{ fontSize: '0.62rem' }}>
-                        {latestRun.run_type === 'test_run' || latestRun.metadata?.run_type === 'test_run' || latestRun.filename.startsWith('test_') || latestRun.filename.startsWith('custom_cam')
-                          ? 'TEST BENCHMARK'
-                          : 'USER UPLOAD'}
+            {totalDetections > 0 ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                {[
+                  { label: 'Passenger Cars (car)', count: classCounts.car, pct: classPercentages.car, color: 'var(--burnt-orange)' },
+                  { label: 'Vans & Commercial (van)', count: classCounts.van, pct: classPercentages.van, color: '#D9822B' },
+                  { label: 'Public Transit Buses (bus)', count: classCounts.bus, pct: classPercentages.bus, color: 'var(--muted-olive)' },
+                  { label: 'Others (Trucks & Specialized)', count: classCounts.others, pct: classPercentages.others, color: '#888982' },
+                ].map((c) => (
+                  <div key={c.label}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-mono)', fontSize: '0.74rem', marginBottom: '0.25rem' }}>
+                      <span style={{ color: 'var(--warm-ivory)', fontWeight: 600 }}>{c.label}</span>
+                      <span style={{ color: 'var(--warm-ivory-dim)' }}>
+                        {c.count.toLocaleString()} ({c.pct}%)
                       </span>
-                      <span className="badge badge-orange">{latestRun.media_type.toUpperCase()}</span>
+                    </div>
+                    <div style={{ height: '7px', backgroundColor: 'var(--charcoal-900)', border: '1px solid var(--border-light)' }}>
+                      <div 
+                        style={{ 
+                          height: '100%', 
+                          width: `${c.pct}%`, 
+                          backgroundColor: c.color,
+                          transition: 'width 0.4s ease',
+                        }} 
+                      />
                     </div>
                   </div>
-
-                  <div style={{ fontSize: '0.68rem', color: 'var(--warm-ivory-dim)', marginTop: '0.35rem', fontFamily: 'var(--font-mono)' }}>
-                    RUN ID: {latestRun.id}
-                  </div>
-
-                  <div className="grid-2" style={{ marginTop: '0.5rem', gap: '0.5rem' }}>
-                    <div className="metric-pill">
-                      <span className="pill-label">Detections</span>
-                      <span className="pill-val">{latestRun.total_detections}</span>
-                    </div>
-                    <div className="metric-pill">
-                      <span className="pill-label">Tracked</span>
-                      <span className="pill-val">{latestRun.unique_vehicles}</span>
-                    </div>
-                    <div className="metric-pill">
-                      <span className="pill-label">Latency</span>
-                      <span className="pill-val">{latestRun.latency_ms} ms</span>
-                    </div>
-                    <div className="metric-pill">
-                      <span className="pill-label">Speed</span>
-                      <span className="pill-val">{latestRun.fps} FPS</span>
-                    </div>
-                  </div>
-
-                  <div style={{ fontSize: '0.68rem', color: 'var(--warm-ivory-dim)', marginTop: '0.45rem', fontStyle: 'italic' }}>
-                    {latestRun.run_type === 'test_run' || latestRun.filename.startsWith('test_') || latestRun.filename.startsWith('custom_cam')
-                      ? 'Automated test suite media processed by active checkpoint'
-                      : latestRun.total_detections > 0
-                        ? `Model reported ${latestRun.total_detections} detection(s) on genuine input`
-                        : 'No vehicle keypoints exceeded threshold on this input'}
-                  </div>
-
-                  <button 
-                    className="btn btn-primary"
-                    style={{ width: '100%', marginTop: '0.65rem', fontSize: '0.74rem' }}
-                    onClick={() => onSelectRun(latestRun)}
-                  >
-                    <Eye size={12} />
-                    View Full Predictions
-                  </button>
-                </div>
+                ))}
               </div>
             ) : (
-              <div className="empty-state-box">
-                <ImageIcon size={32} style={{ color: 'var(--muted-olive)', margin: '0 auto 0.5rem auto' }} />
-                <div style={{ color: 'var(--warm-ivory)', fontWeight: 600 }}>No processing runs yet</div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--warm-ivory-dim)', marginTop: '0.2rem' }}>
-                  Upload a media file or evaluate a reference benchmark to run your first vehicle detection.
-                </div>
+              <div style={{ padding: '2rem 1rem', textAlign: 'center', color: 'var(--warm-ivory-dim)', fontFamily: 'var(--font-mono)', fontSize: '0.74rem' }}>
+                No vehicle detections recorded in database yet. Process media to generate class proportions.
               </div>
             )}
           </div>
-        </div>
-      </section>
 
-      {/* 4. Traffic Insights & Class Distribution Block */}
-      <section className="grid-2">
-        {/* Class-wise Vehicle Counts */}
-        <div className="command-card">
-          <div className="command-card-header">
-            <span className="card-title">
-              <Car size={16} style={{ color: 'var(--burnt-orange)' }} />
-              Class-wise Vehicle Distribution
-            </span>
-            <span className="label-tactical">UA-DETRAC TAXONOMY</span>
+          {/* 4-Part Graph Explanation */}
+          <div className="chart-explanation-box">
+            <div className="chart-explanation-item">
+              <span className="chart-explanation-label">What it shows:</span>
+              Distribution of vehicle types classified by CenterNet keypoint classification heads across all executed runs.
+            </div>
+            <div className="chart-explanation-item">
+              <span className="chart-explanation-label">How calculated:</span>
+              Count of bounding boxes per class divided by total detections ({totalDetections}): <code>(Class Detections / {totalDetections || 1}) × 100</code>.
+            </div>
+            <div className="chart-explanation-item">
+              <span className="chart-explanation-label">How to interpret:</span>
+              {totalDetections > 0 ? (
+                `Cars represent ${classPercentages.car}% (${classCounts.car} of ${totalDetections}) of all localized objects. Vans represent ${classPercentages.van}%, Buses ${classPercentages.bus}%, and Others ${classPercentages.others}%.`
+              ) : (
+                'Requires executed runs to establish observable roadway traffic class proportions.'
+              )}
+            </div>
+            <div className="chart-explanation-item">
+              <span className="chart-explanation-label">Data context:</span>
+              Computed strictly from {totalDetections} bounding box detections across {totalRuns} operational records in SQLite.
+            </div>
           </div>
+        </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem', marginTop: '0.5rem' }}>
-            {[
-              { label: 'Passenger Cars', key: 'car', color: 'var(--burnt-orange)', count: classCounts.car, pct: classPercentages.car },
-              { label: 'Vans & Transporters', key: 'van', color: '#D9822B', count: classCounts.van, pct: classPercentages.van },
-              { label: 'Public Transit Buses', key: 'bus', color: 'var(--muted-olive)', count: classCounts.bus, pct: classPercentages.bus },
-              { label: 'Others (Trucks & Commercial)', key: 'others', color: '#888982', count: classCounts.others, pct: classPercentages.others },
-            ].map((cls) => (
-              <div key={cls.key}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-mono)', fontSize: '0.76rem', marginBottom: '0.3rem' }}>
-                  <span style={{ color: 'var(--warm-ivory)', fontWeight: 600 }}>{cls.label}</span>
-                  <span style={{ color: 'var(--warm-ivory-dim)' }}>
-                    {cls.count.toLocaleString()} ({cls.pct}%)
-                  </span>
+        {/* Chart 2: Detection Activity Over Time */}
+        <div className="command-card" style={{ marginBottom: 0, padding: '1.25rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '100%', boxSizing: 'border-box' }}>
+          <div>
+            <div className="command-card-header" style={{ marginBottom: '1rem', paddingBottom: '0.5rem' }}>
+              <span className="card-title" style={{ fontSize: '0.82rem' }}>
+                <TrendingUp size={15} style={{ color: 'var(--muted-olive)' }} />
+                Detection Activity Over Time
+              </span>
+              <span className="badge badge-charcoal" style={{ fontSize: '0.62rem' }}>
+                {timeSeriesData.length} RECORDED INTERVALS
+              </span>
+            </div>
+
+            {timeSeriesData.length > 1 ? (
+              <div>
+                <div style={{ height: '135px', width: '100%', marginBottom: '0.5rem', position: 'relative' }}>
+                  <svg width="100%" height="100%" viewBox="0 0 500 135" preserveAspectRatio="none">
+                    <line x1="0" y1="20" x2="500" y2="20" stroke="rgba(233,226,212,0.06)" strokeDasharray="3 3" />
+                    <line x1="0" y1="67" x2="500" y2="67" stroke="rgba(233,226,212,0.06)" strokeDasharray="3 3" />
+                    <line x1="0" y1="115" x2="500" y2="115" stroke="rgba(233,226,212,0.12)" />
+
+                    {(() => {
+                      const maxCount = Math.max(5, ...timeSeriesData.map((t) => t.detections));
+                      const points = timeSeriesData.map((t, idx) => {
+                        const x = (idx / Math.max(1, timeSeriesData.length - 1)) * 500;
+                        const y = 115 - (t.detections / maxCount) * 95;
+                        return `${x},${y}`;
+                      }).join(' ');
+
+                      return (
+                        <>
+                          <polyline
+                            fill="none"
+                            stroke="var(--burnt-orange)"
+                            strokeWidth="2.5"
+                            points={points}
+                          />
+                          {timeSeriesData.map((t, idx) => {
+                            const x = (idx / Math.max(1, timeSeriesData.length - 1)) * 500;
+                            const y = 115 - (t.detections / maxCount) * 95;
+                            return (
+                              <circle
+                                key={idx}
+                                cx={x}
+                                cy={y}
+                                r="4"
+                                fill="var(--burnt-orange)"
+                                stroke="var(--charcoal-900)"
+                                strokeWidth="1.5"
+                              />
+                            );
+                          })}
+                        </>
+                      );
+                    })()}
+                  </svg>
                 </div>
-                <div style={{ height: '8px', backgroundColor: 'var(--charcoal-900)', border: '1px solid var(--border-light)' }}>
-                  <div 
-                    style={{ 
-                      height: '100%', 
-                      width: `${cls.pct}%`, 
-                      backgroundColor: cls.color,
-                      transition: 'width 0.4s ease',
-                    }} 
-                  />
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-mono)', fontSize: '0.65rem', color: 'var(--warm-ivory-dim)' }}>
+                  <span>{timeSeriesData[0]?.date || 'T0'}</span>
+                  <span>{timeSeriesData[Math.floor(timeSeriesData.length / 2)]?.date || 'Mid'}</span>
+                  <span>{timeSeriesData[timeSeriesData.length - 1]?.date || 'Latest'}</span>
                 </div>
               </div>
-            ))}
-          </div>
-
-          <div 
-            style={{ 
-              marginTop: '1.25rem', 
-              paddingTop: '0.75rem', 
-              borderTop: '1px solid var(--border-light)',
-              display: 'flex',
-              justifyContent: 'space-between',
-              fontFamily: 'var(--font-mono)',
-              fontSize: '0.72rem',
-              color: 'var(--warm-ivory-dim)',
-            }}
-          >
-            <span>Total classified vehicles: {totalDetections.toLocaleString()}</span>
-            <span>Virtual tripwire passages: {summary?.total_line_crossings || 0}</span>
-          </div>
-        </div>
-
-        {/* Traffic Volume & Tracking Summary */}
-        <div className="command-card">
-          <div className="command-card-header">
-            <span className="card-title">
-              <BarChart3 size={16} style={{ color: 'var(--muted-olive)' }} />
-              Traffic Volume & Tracking Insights
-            </span>
-            <span className="badge badge-olive">GENUINE TELEMETRY</span>
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-            <div className="metric-callout">
-              <div className="callout-header">
-                <span className="callout-title">Cumulative Virtual Tripwire Crossings</span>
-                <span className="callout-val" style={{ color: 'var(--status-green)' }}>
-                  {summary?.total_line_crossings || 0}
+            ) : (
+              <div style={{ height: '135px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backgroundColor: 'var(--charcoal-900)', border: '1px dashed var(--border-light)' }}>
+                <LineChart size={24} style={{ color: 'var(--muted-olive)', marginBottom: '0.35rem' }} />
+                <span style={{ color: 'var(--warm-ivory)', fontSize: '0.74rem', fontWeight: 600 }}>Insufficient Temporal Intervals</span>
+                <span style={{ fontSize: '0.68rem', color: 'var(--warm-ivory-dim)', marginTop: '0.2rem' }}>
+                  Plotting a time-series curve requires multiple timestamped runs.
                 </span>
               </div>
-              <div className="callout-desc">
-                Counted across reference gate line in processed video streams.
-              </div>
-            </div>
+            )}
+          </div>
 
-            <div className="metric-callout">
-              <div className="callout-header">
-                <span className="callout-title">Track Density Occupancy</span>
-                <span className="callout-val" style={{ color: 'var(--burnt-orange)' }}>
-                  {runs.length > 0 ? 'Documented Spatial Estimate' : 'Awaiting Video'}
-                </span>
-              </div>
-              <div className="callout-desc">
-                Calculated from vehicle bounding box area relative to roadway corridor.
-              </div>
+          {/* 4-Part Graph Explanation */}
+          <div className="chart-explanation-box">
+            <div className="chart-explanation-item">
+              <span className="chart-explanation-label">What it shows:</span>
+              Temporal trajectory of localized vehicle volumes grouped across discrete execution intervals.
             </div>
-
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
-              <button 
-                className="btn btn-secondary" 
-                style={{ fontSize: '0.72rem' }}
-                onClick={() => onNavigate('traffic_analytics')}
-              >
-                Open Analytics Console
-                <ArrowRight size={12} />
-              </button>
+            <div className="chart-explanation-item">
+              <span className="chart-explanation-label">How calculated:</span>
+              Sum of detected bounding boxes grouped by day/run timestamp: <code>Σ(Detections per Interval)</code>.
+            </div>
+            <div className="chart-explanation-item">
+              <span className="chart-explanation-label">How to interpret:</span>
+              {timeSeriesData.length > 1 ? (
+                `Volume ranges between ${Math.min(...timeSeriesData.map(t => t.detections))} and ${Math.max(...timeSeriesData.map(t => t.detections))} detections across ${timeSeriesData.length} recorded intervals.`
+              ) : (
+                `Only ${timeSeriesData.length} interval recorded. Multi-period trends require additional inference runs.`
+              )}
+            </div>
+            <div className="chart-explanation-item">
+              <span className="chart-explanation-label">Data context:</span>
+              Sourced from genuine timestamps in SQLite table <code>runs</code>. Synthetic curves are never interpolated.
             </div>
           </div>
         </div>
-      </section>
+      </div>
 
-      {/* 5. Recent Activity Card */}
-      <section className="command-card">
-        <div className="command-card-header">
-          <span className="card-title">
-            <Clock size={16} style={{ color: 'var(--warm-ivory)' }} />
-            Recent Processing Activity
-          </span>
+      {/* =========================================================================
+          RECENT ACTIVITY TABLE (SECTION 4)
+          ========================================================================= */}
+      <div className="command-card" style={{ marginBottom: 0, padding: '1.25rem' }}>
+        <div className="command-card-header" style={{ marginBottom: '1rem', paddingBottom: '0.65rem' }}>
+          <div>
+            <span className="card-title" style={{ fontSize: '0.88rem' }}>
+              <Clock size={15} style={{ color: 'var(--burnt-orange)' }} />
+              Recent Execution Activity
+            </span>
+            <div style={{ fontSize: '0.72rem', color: 'var(--warm-ivory-dim)', fontFamily: 'var(--font-mono)', marginTop: '0.2rem' }}>
+              Showing {recentRuns.length} most recent genuine execution records from SQLite
+            </div>
+          </div>
+
           <button 
             className="btn btn-secondary" 
-            style={{ fontSize: '0.72rem', padding: '0.35rem 0.65rem' }}
-            onClick={() => onNavigate('history_dataset')}
+            style={{ padding: '0.35rem 0.75rem', fontSize: '0.72rem' }}
+            onClick={() => onNavigate('history')}
           >
-            View All Runs ({runs.length})
+            View Complete History
             <ArrowRight size={12} />
           </button>
         </div>
 
         {recentRuns.length === 0 ? (
-          <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--warm-ivory-dim)', fontFamily: 'var(--font-mono)' }}>
-            No recent activity recorded. Upload media above to run your first detection.
+          <div style={{ padding: '2.5rem 1rem', textAlign: 'center', color: 'var(--warm-ivory-dim)', fontFamily: 'var(--font-mono)' }}>
+            <Database size={28} style={{ color: 'var(--muted-olive)', margin: '0 auto 0.5rem auto' }} />
+            <div style={{ color: 'var(--warm-ivory)', fontWeight: 700, fontSize: '0.85rem' }}>
+              NO PERSISTED EXECUTION RECORDS YET
+            </div>
+            <div style={{ fontSize: '0.72rem', maxWidth: '420px', margin: '0.35rem auto 0 auto', lineHeight: 1.5 }}>
+              Process roadway imagery or video footage above to record operational inference runs in SQLite.
+            </div>
           </div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
@@ -487,12 +573,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               <thead>
                 <tr>
                   <th>Run ID</th>
-                  <th>Timestamp</th>
                   <th>Media Type</th>
                   <th>Filename</th>
-                  <th>Vehicles</th>
-                  <th>Tracked</th>
-                  <th>Duration / Latency</th>
+                  <th>Timestamp</th>
+                  <th>Detections</th>
+                  <th>Latency</th>
                   <th>Status</th>
                   <th>Action</th>
                 </tr>
@@ -501,31 +586,31 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 {recentRuns.map((run) => (
                   <tr key={run.id}>
                     <td style={{ color: 'var(--burnt-orange)', fontWeight: 600 }}>{run.id}</td>
-                    <td>{new Date(run.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</td>
                     <td>
                       <span className={`badge ${run.media_type === 'video' ? 'badge-orange' : 'badge-olive'}`}>
                         {run.media_type.toUpperCase()}
                       </span>
                     </td>
-                    <td style={{ maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <td style={{ maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={run.filename}>
                       {run.filename}
                     </td>
-                    <td style={{ fontWeight: 600 }}>{run.total_detections}</td>
-                    <td>{run.unique_vehicles}</td>
+                    <td>{new Date(run.timestamp).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}</td>
+                    <td style={{ fontWeight: 700, color: 'var(--warm-ivory)' }}>{run.total_detections}</td>
                     <td>{run.latency_ms} ms</td>
                     <td>
-                      <span className="badge badge-charcoal" style={{ fontSize: '0.65rem' }}>
-                        {run.weights_status.replace(/_/g, ' ')}
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', color: 'var(--status-green)', fontSize: '0.72rem', fontWeight: 600 }}>
+                        <CheckCircle2 size={12} />
+                        COMPLETED
                       </span>
                     </td>
                     <td>
-                      <button 
+                      <button
                         className="btn btn-secondary"
-                        style={{ padding: '0.25rem 0.55rem', fontSize: '0.68rem' }}
-                        onClick={() => onSelectRun(run)}
+                        style={{ padding: '0.2rem 0.5rem', fontSize: '0.68rem' }}
+                        onClick={() => setInspectedRun(run)}
                       >
                         <Eye size={11} />
-                        View Results
+                        Details
                       </button>
                     </td>
                   </tr>
@@ -534,46 +619,118 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </table>
           </div>
         )}
-      </section>
+      </div>
 
-      {/* 6. Model Status Card */}
-      <section className="command-card">
-        <div className="command-card-header">
-          <span className="card-title">
-            <Cpu size={16} style={{ color: 'var(--burnt-orange)' }} />
-            Model & Backend Hardware Telemetry
-          </span>
-          <span className="label-tactical">{modelStatus?.checkpoint_name || 'improved_v2_best.pth'}</span>
+      {/* =========================================================================
+          INSPECTED RUN DETAIL MODAL
+          ========================================================================= */}
+      {inspectedRun && (
+        <div 
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(20, 21, 19, 0.88)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            padding: '1.5rem',
+          }}
+          onClick={() => setInspectedRun(null)}
+        >
+          <div 
+            className="command-card"
+            style={{
+              maxWidth: '960px',
+              width: '100%',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              border: '1px solid var(--burnt-orange)',
+              backgroundColor: 'var(--charcoal-800)',
+              marginBottom: 0,
+              padding: '1.5rem',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="command-card-header" style={{ marginBottom: '1rem', paddingBottom: '0.65rem' }}>
+              <div>
+                <span className="card-title" style={{ fontSize: '0.9rem' }}>
+                  Run Details // {inspectedRun.id}
+                </span>
+                <div style={{ fontSize: '0.72rem', color: 'var(--warm-ivory-dim)', fontFamily: 'var(--font-mono)', marginTop: '0.2rem' }}>
+                  Source: {inspectedRun.filename} | Latency: {inspectedRun.latency_ms} ms | Detections: {inspectedRun.total_detections}
+                </div>
+              </div>
+              <button 
+                className="btn btn-secondary" 
+                style={{ padding: '0.25rem 0.5rem' }}
+                onClick={() => setInspectedRun(null)}
+              >
+                <X size={14} />
+              </button>
+            </div>
+
+            {/* Media Views */}
+            <div className="grid-2" style={{ gap: '1rem', marginBottom: '1rem' }}>
+              <div>
+                <div className="label-tactical" style={{ marginBottom: '0.35rem' }}>ORIGINAL INPUT</div>
+                <div style={{ height: '260px', backgroundColor: 'var(--charcoal-900)', border: '1px solid var(--border-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                  {inspectedRun.media_type === 'video' ? (
+                    <video controls src={inspectedRun.input_url} style={{ maxWidth: '100%', maxHeight: '100%' }} />
+                  ) : (
+                    <img alt="Source Input" src={inspectedRun.input_url} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <div className="label-tactical" style={{ marginBottom: '0.35rem', color: 'var(--burnt-orange)' }}>
+                  ANNOTATED DETECTION OUTPUT
+                </div>
+                <div style={{ height: '260px', backgroundColor: 'var(--charcoal-900)', border: '1px solid var(--border-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                  {inspectedRun.media_type === 'video' ? (
+                    <video controls src={inspectedRun.output_url} style={{ maxWidth: '100%', maxHeight: '100%' }} />
+                  ) : (
+                    <img alt="Annotated Output" src={inspectedRun.output_url} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Class Breakdown Chips */}
+            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
+              {Object.entries(inspectedRun.class_counts || {}).map(([cls, count]) => (
+                <div 
+                  key={cls}
+                  style={{
+                    padding: '0.4rem 0.75rem',
+                    backgroundColor: 'var(--charcoal-900)',
+                    border: '1px solid var(--border-light)',
+                    borderLeft: '3px solid var(--burnt-orange)',
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: '0.72rem',
+                  }}
+                >
+                  <span style={{ color: 'var(--warm-ivory-dim)', textTransform: 'uppercase' }}>{cls}: </span>
+                  <strong style={{ color: 'var(--warm-ivory)' }}>{count}</strong>
+                </div>
+              ))}
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+              <button 
+                className="btn btn-secondary"
+                onClick={() => setInspectedRun(null)}
+              >
+                Close Inspector
+              </button>
+            </div>
+          </div>
         </div>
-
-        <div className="grid-3">
-          <div className="telemetry-box">
-            <span className="telemetry-label">Active Architecture</span>
-            <span className="telemetry-val">Improved CenterNet V2</span>
-            <span className="telemetry-sub">ResNet-18 Backbone + CBAM Attention + 2x BiFPN Neck</span>
-          </div>
-
-          <div className="telemetry-box">
-            <span className="telemetry-label">Active Checkpoint</span>
-            <span className="telemetry-val" style={{ color: isWeightsLoaded ? 'var(--status-green)' : 'var(--burnt-orange)' }}>
-              {isWeightsLoaded ? (modelStatus?.checkpoint_name || 'improved_v2_best.pth') : 'None'}
-            </span>
-            <span className="telemetry-sub">
-              {isWeightsLoaded ? (modelStatus?.checkpoint_path || 'backend/checkpoints/improved_v2_best.pth') : 'Awaiting checkpoint file'}
-            </span>
-          </div>
-
-          <div className="telemetry-box">
-            <span className="telemetry-label">Compute Device</span>
-            <span className="telemetry-val">
-              {modelStatus?.device_display || (modelStatus?.is_cuda_available ? 'CUDA GPU' : 'CPU Host Processor')}
-            </span>
-            <span className="telemetry-sub">
-              {modelStatus?.gpu_name || 'Host CPU Processor with PyTorch Float32 Engine'}
-            </span>
-          </div>
-        </div>
-      </section>
+      )}
     </div>
   );
 };

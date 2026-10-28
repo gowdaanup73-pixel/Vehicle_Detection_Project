@@ -1,6 +1,10 @@
 export type NavigationTab = 
-  | 'dashboard' 
+  | 'overview'
   | 'detection_studio' 
+  | 'analytics' 
+  | 'model_evaluation' 
+  | 'history'
+  | 'dashboard' 
   | 'traffic_analytics' 
   | 'model_laboratory' 
   | 'history_dataset';
@@ -87,18 +91,47 @@ export interface RunRecord {
   run_type?: 'user_upload' | 'test_run' | 'demo_sample';
 }
 
+export interface ConfidenceBin {
+  bin: string;
+  min: number;
+  max: number;
+  count: number;
+}
+
+export interface RunTimePoint {
+  date: string;
+  detections: number;
+  runs: number;
+}
+
 export interface AnalyticsSummary {
   total_runs: number;
+  image_runs?: number;
+  video_runs?: number;
+  failed_runs?: number;
   total_detections: number;
   total_unique_vehicles: number;
   total_line_crossings: number;
   average_latency_ms: number;
+  median_latency_ms?: number;
   class_distribution: {
     car: number;
     van: number;
     bus: number;
     others: number;
   };
+  runs_over_time?: RunTimePoint[];
+  confidence_histogram?: ConfidenceBin[];
+  total_confidence_samples?: number;
+  per_run_breakdown?: Array<{
+    id: string;
+    filename: string;
+    media_type: 'image' | 'video';
+    detections: number;
+    unique_vehicles: number;
+    latency_ms: number;
+    timestamp: string;
+  }>;
 }
 
 export interface ExperimentItem {

@@ -27,7 +27,7 @@ import { ModelLaboratoryView } from './views/ModelLaboratoryView';
 import { DatasetRunsView } from './views/DatasetRunsView';
 
 export const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<NavigationTab>('dashboard');
+  const [activeTab, setActiveTab] = useState<NavigationTab>('overview');
   const [modelStatus, setModelStatus] = useState<ModelStatus | null>(null);
   const [summary, setSummary] = useState<AnalyticsSummary | null>(null);
   const [runs, setRuns] = useState<RunRecord[]>([]);
@@ -134,16 +134,16 @@ export const App: React.FC = () => {
       {/* Main Content Area */}
       <main className="platform-main">
         <div className="content-container">
-          {activeTab === 'dashboard' && (
+          {(activeTab === 'overview' || activeTab === 'dashboard') && (
             <DashboardView
               summary={summary}
               runs={runs}
               modelStatus={modelStatus}
+              experiments={experiments}
+              datasetInfo={datasetInfo}
               onNavigate={setActiveTab}
-              onSelectRun={(run) => {
-                setSelectedRun(run);
-                setActiveTab('history_dataset');
-              }}
+              onSelectRun={(run) => setSelectedRun(run)}
+              onDeleteRun={handleDeleteRun}
               onRunSample={handleRunSampleFromDashboard}
               onUploadFile={handleUploadFromDashboard}
               isProcessing={isProcessingSample}
@@ -161,7 +161,7 @@ export const App: React.FC = () => {
             />
           )}
 
-          {activeTab === 'traffic_analytics' && (
+          {(activeTab === 'analytics' || activeTab === 'traffic_analytics') && (
             <TrafficAnalyticsView
               summary={summary}
               latestVideoRun={latestVideoRun}
@@ -169,16 +169,17 @@ export const App: React.FC = () => {
             />
           )}
 
-          {activeTab === 'model_laboratory' && (
+          {(activeTab === 'model_evaluation' || activeTab === 'model_laboratory') && (
             <ModelLaboratoryView
               experiments={experiments}
               losses={losses}
               modelStatus={modelStatus}
+              datasetInfo={datasetInfo}
               onRefreshStatus={() => loadData(false)}
             />
           )}
 
-          {activeTab === 'history_dataset' && (
+          {(activeTab === 'history' || activeTab === 'history_dataset') && (
             <DatasetRunsView
               datasetInfo={datasetInfo}
               runs={runs}
