@@ -106,9 +106,11 @@ export interface RunTimePoint {
 
 export interface AnalyticsSummary {
   total_runs: number;
+  successful_runs?: number;
+  failed_runs?: number;
+  success_rate?: number;
   image_runs?: number;
   video_runs?: number;
-  failed_runs?: number;
   total_detections: number;
   total_unique_vehicles: number;
   total_line_crossings: number;

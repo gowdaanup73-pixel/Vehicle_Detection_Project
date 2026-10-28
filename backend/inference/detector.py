@@ -34,6 +34,8 @@ class VehicleDetector:
         self.input_size = input_size  # (W, H) = (512, 288)
         self.conf_thresh = default_conf_thresh
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.mean = torch.tensor([0.485, 0.456, 0.406], dtype=torch.float32, device=self.device).view(1, 3, 1, 1)
+        self.std = torch.tensor([0.229, 0.224, 0.225], dtype=torch.float32, device=self.device).view(1, 3, 1, 1)
 
         # Resolve checkpoint path
         chosen_path = checkpoint_path or DEFAULT_WEIGHTS_PATH
@@ -154,15 +156,13 @@ class VehicleDetector:
         img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
         resized = cv2.resize(img_rgb, (target_w, target_h), interpolation=cv2.INTER_LINEAR)
 
-        tensor = torch.from_numpy(resized).float().permute(2, 0, 1) / 255.0
-        mean = torch.tensor([0.485, 0.456, 0.406], dtype=torch.float32).view(3, 1, 1)
-        std = torch.tensor([0.229, 0.224, 0.225], dtype=torch.float32).view(3, 1, 1)
-        tensor = (tensor - mean) / std
+        tensor = torch.from_numpy(resized).float().permute(2, 0, 1).unsqueeze(0).to(self.device) / 255.0
+        tensor = (tensor - self.mean) / self.std
 
         scale_x = orig_w / float(target_w)
         scale_y = orig_h / float(target_h)
 
-        return tensor.unsqueeze(0).to(self.device), scale_x, scale_y
+        return tensor, scale_x, scale_y
 
     def detect(
         self,

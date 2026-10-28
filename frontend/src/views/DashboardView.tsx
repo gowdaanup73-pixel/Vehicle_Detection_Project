@@ -221,7 +221,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <div>
             <div className="kpi-card-title">Successfully Processed Files</div>
             <div className="kpi-card-value">
-              {totalRuns} <span style={{ fontSize: '0.9rem', color: 'var(--warm-ivory-dim)', fontWeight: 500 }}>runs</span>
+              {analytics?.successful_runs !== undefined ? analytics.successful_runs : totalRuns} <span style={{ fontSize: '0.9rem', color: 'var(--warm-ivory-dim)', fontWeight: 500 }}>runs</span>
             </div>
           </div>
           <div className="kpi-card-desc">
@@ -266,12 +266,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <div>
             <div className="kpi-card-title">Successful-Run Percentage</div>
             <div className="kpi-card-value" style={{ color: 'var(--status-green)' }}>
-              {totalRuns > 0 ? '100%' : 'N/A'}
+              {totalRuns > 0 ? `${analytics?.success_rate !== undefined ? analytics.success_rate : 100}%` : 'N/A'}
             </div>
           </div>
           <div className="kpi-card-desc">
             {totalRuns > 0 
-              ? `${totalRuns} completed / 0 failed runs (denominator: ${totalRuns} total attempts).` 
+              ? `${analytics?.successful_runs !== undefined ? analytics.successful_runs : totalRuns} completed / ${analytics?.failed_runs ?? 0} failed runs (denominator: ${totalRuns} total attempts).` 
               : 'No operational inference attempts recorded.'}
           </div>
         </div>

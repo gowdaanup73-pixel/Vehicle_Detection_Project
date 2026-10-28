@@ -7,7 +7,7 @@ import asyncio
 import os
 import shutil
 import uuid
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 import cv2
 import numpy as np
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
@@ -15,6 +15,53 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
+
+MAX_IMAGE_SIZE = 25 * 1024 * 1024  # 25 MB
+CHUNK_SIZE = 64 * 1024              # 64 KB
+
+
+def _secure_destination_path(
+    base_dir: str,
+    original_filename: str,
+    allowed_exts: Tuple[str, ...],
+    force_unique: bool = True,
+    media_label: str = "file",
+) -> Tuple[str, str]:
+    """
+    Validates file extension, generates a sanitized collision-free server filename,
+    and guarantees the canonical destination path resides strictly inside base_dir.
+    """
+    if not original_filename or not original_filename.strip():
+        raise HTTPException(status_code=400, detail="Missing or invalid filename.")
+
+    raw_name = os.path.basename(original_filename.strip().replace("\\", "/"))
+    stem, ext = os.path.splitext(raw_name)
+    ext = ext.lower()
+    if ext not in allowed_exts:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unsupported {media_label} format {ext}. Supported: {allowed_exts}",
+        )
+
+    clean_stem = "".join(c for c in stem if c.isalnum() or c in ("-", "_")).strip()
+    clean_stem = clean_stem[:64] if clean_stem else "upload"
+
+    if force_unique:
+        unique_id = uuid.uuid4().hex[:8]
+        safe_filename = f"{clean_stem}_{unique_id}{ext}"
+    else:
+        safe_filename = f"{clean_stem}{ext}"
+        if os.path.exists(os.path.join(base_dir, safe_filename)):
+            safe_filename = f"{clean_stem}_{uuid.uuid4().hex[:8]}{ext}"
+
+    dest_path = os.path.realpath(os.path.join(base_dir, safe_filename))
+    base_real = os.path.realpath(base_dir)
+
+    # Strict path traversal validation
+    if not (dest_path.startswith(base_real + os.sep) or dest_path == base_real):
+        raise HTTPException(status_code=400, detail="Invalid path traversal detected.")
+
+    return dest_path, safe_filename
 
 from backend.database.store import RunsDatabase
 from backend.inference.detector import VehicleDetector
@@ -114,12 +161,17 @@ def configure_model(req: ModelConfigRequest):
 @app.post("/api/model/upload-checkpoint")
 async def upload_checkpoint(file: UploadFile = File(...)):
     """Uploads a trained PyTorch model weights checkpoint file (.pth or .pt)."""
-    if not (file.filename.endswith(".pth") or file.filename.endswith(".pt")):
-        raise HTTPException(status_code=400, detail="Only .pth or .pt checkpoint files are accepted.")
+    dest_path, safe_filename = _secure_destination_path(
+        CHECKPOINTS_DIR, file.filename, (".pth", ".pt"), force_unique=False, media_label="checkpoint"
+    )
 
-    dest_path = os.path.join(CHECKPOINTS_DIR, file.filename)
-    with open(dest_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
+    try:
+        with open(dest_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+    except Exception as e:
+        if os.path.exists(dest_path):
+            os.remove(dest_path)
+        raise HTTPException(status_code=500, detail=f"Failed to save checkpoint: {str(e)}")
 
     res = detector.reload_weights(dest_path)
     return {
@@ -147,36 +199,77 @@ async def detect_image(
     """Processes an uploaded image through Improved CenterNet."""
     conf = _to_float(conf_thresh, 0.35)
     allowed_exts = (".jpg", ".jpeg", ".png", ".bmp", ".webp")
-    ext = os.path.splitext(file.filename)[1].lower()
-    if ext not in allowed_exts:
-        raise HTTPException(status_code=400, detail=f"Unsupported image format {ext}. Supported: {allowed_exts}")
+    uploads_dir = os.path.join(MEDIA_ROOT, "uploads")
+    upload_path, upload_filename = _secure_destination_path(
+        uploads_dir, file.filename, allowed_exts, force_unique=True, media_label="image"
+    )
 
-    upload_id = uuid.uuid4().hex[:8]
-    upload_filename = f"{upload_id}_{file.filename}"
-    upload_path = os.path.join(MEDIA_ROOT, "uploads", upload_filename)
+    # Stream in chunks with 25MB size limit to prevent memory bloat
+    file_size = 0
+    try:
+        with open(upload_path, "wb") as buffer:
+            while chunk := await file.read(CHUNK_SIZE):
+                file_size += len(chunk)
+                if file_size > MAX_IMAGE_SIZE:
+                    raise HTTPException(
+                        status_code=413,
+                        detail="Image file exceeds maximum permitted size of 25 MB.",
+                    )
+                buffer.write(chunk)
+    except HTTPException:
+        if os.path.exists(upload_path):
+            os.remove(upload_path)
+        raise
+    except Exception as e:
+        if os.path.exists(upload_path):
+            os.remove(upload_path)
+        raise HTTPException(status_code=500, detail=f"File upload error: {str(e)}")
 
-    contents = await file.read()
-    if not contents or len(contents) == 0:
+    if file_size == 0:
+        if os.path.exists(upload_path):
+            os.remove(upload_path)
         raise HTTPException(status_code=400, detail="Uploaded file is empty.")
 
-    with open(upload_path, "wb") as buffer:
-        buffer.write(contents)
-
-    # Validate image bytes decoding
-    nparr = np.frombuffer(contents, np.uint8)
-    img_bgr = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+    # Validate image decoding directly from saved file on disk (no duplicate memory buffering)
+    img_bgr = cv2.imread(upload_path)
     if img_bgr is None:
+        if os.path.exists(upload_path):
+            os.remove(upload_path)
         raise HTTPException(status_code=400, detail="Could not decode uploaded image bytes.")
+
+    input_url = f"/media/uploads/{upload_filename}"
+    actual_run_type = run_type or ("test_run" if file.filename.startswith(("test_", "custom_cam")) else "user_upload")
 
     try:
         result = await asyncio.to_thread(media_processor.process_image, upload_path, conf_thresh=conf)
     except Exception as e:
+        # Persist failed run for analytics accuracy
+        fail_id = f"failed_{uuid.uuid4().hex[:8]}"
+        db.save_run(
+            run_id=fail_id,
+            media_type="image",
+            filename=file.filename,
+            input_url=input_url,
+            annotated_url="",
+            model_name="Improved CenterNet (ResNet-18 + CBAM + BiFPN)",
+            weights_status="FAILED",
+            latency_ms=0.0,
+            fps=0.0,
+            total_detections=0,
+            unique_vehicles=0,
+            line_crossings=0,
+            class_counts={"car": 0, "van": 0, "bus": 0, "others": 0},
+            metadata={
+                "error": str(e),
+                "error_category": "inference_error",
+                "status": "FAILED",
+                "run_type": actual_run_type,
+            },
+            run_type=actual_run_type,
+        )
         raise HTTPException(status_code=500, detail=f"Image processing error: {str(e)}")
 
-    input_url = f"/media/uploads/{upload_filename}"
     annotated_url = f"/media/outputs/{result['annotated_filename']}"
-
-    actual_run_type = run_type or ("test_run" if file.filename.startswith(("test_", "custom_cam")) else "user_upload")
 
     # Persist in SQLite
     saved_run = db.save_run(
@@ -222,16 +315,21 @@ async def detect_video(
     """Processes an uploaded video frame-by-frame with CenterNet and Multi-Object Tracking."""
     conf = _to_float(conf_thresh, 0.35)
     allowed_exts = (".mp4", ".avi", ".mov", ".mkv", ".webm")
-    ext = os.path.splitext(file.filename)[1].lower()
-    if ext not in allowed_exts:
-        raise HTTPException(status_code=400, detail=f"Unsupported video format {ext}. Supported: {allowed_exts}")
+    uploads_dir = os.path.join(MEDIA_ROOT, "uploads")
+    upload_path, upload_filename = _secure_destination_path(
+        uploads_dir, file.filename, allowed_exts, force_unique=True, media_label="video"
+    )
 
-    upload_id = uuid.uuid4().hex[:8]
-    upload_filename = f"{upload_id}_{file.filename}"
-    upload_path = os.path.join(MEDIA_ROOT, "uploads", upload_filename)
+    try:
+        with open(upload_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+    except Exception as e:
+        if os.path.exists(upload_path):
+            os.remove(upload_path)
+        raise HTTPException(status_code=500, detail=f"Video upload error: {str(e)}")
 
-    with open(upload_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
+    input_url = f"/media/uploads/{upload_filename}"
+    actual_run_type = run_type or ("test_run" if file.filename.startswith(("test_", "custom_cam")) else "user_upload")
 
     try:
         frames_limit = int(max_frames) if not hasattr(max_frames, "default") else 150
@@ -244,14 +342,47 @@ async def detect_video(
             frame_stride=stride,
         )
     except ValueError as e:
+        fail_id = f"failed_{uuid.uuid4().hex[:8]}"
+        db.save_run(
+            run_id=fail_id,
+            media_type="video",
+            filename=file.filename,
+            input_url=input_url,
+            annotated_url="",
+            model_name="Improved CenterNet (ResNet-18 + CBAM + BiFPN)",
+            weights_status="FAILED",
+            latency_ms=0.0,
+            fps=0.0,
+            total_detections=0,
+            unique_vehicles=0,
+            line_crossings=0,
+            class_counts={"car": 0, "van": 0, "bus": 0, "others": 0},
+            metadata={"error": str(e), "error_category": "invalid_video", "status": "FAILED", "run_type": actual_run_type},
+            run_type=actual_run_type,
+        )
         raise HTTPException(status_code=400, detail=f"Invalid video file: {str(e)}")
     except Exception as e:
+        fail_id = f"failed_{uuid.uuid4().hex[:8]}"
+        db.save_run(
+            run_id=fail_id,
+            media_type="video",
+            filename=file.filename,
+            input_url=input_url,
+            annotated_url="",
+            model_name="Improved CenterNet (ResNet-18 + CBAM + BiFPN)",
+            weights_status="FAILED",
+            latency_ms=0.0,
+            fps=0.0,
+            total_detections=0,
+            unique_vehicles=0,
+            line_crossings=0,
+            class_counts={"car": 0, "van": 0, "bus": 0, "others": 0},
+            metadata={"error": str(e), "error_category": "inference_error", "status": "FAILED", "run_type": actual_run_type},
+            run_type=actual_run_type,
+        )
         raise HTTPException(status_code=500, detail=f"Video processing error: {str(e)}")
 
-    input_url = f"/media/uploads/{upload_filename}"
     annotated_url = f"/media/outputs/{result['annotated_filename']}"
-
-    actual_run_type = run_type or ("test_run" if file.filename.startswith(("test_", "custom_cam")) else "user_upload")
 
     saved_run = db.save_run(
         run_id=result["run_id"],
@@ -401,7 +532,37 @@ def get_run(run_id: str):
 
 @app.delete("/api/runs/{run_id}")
 def delete_run(run_id: str):
+    run = db.get_run(run_id)
+    if not run:
+        raise HTTPException(status_code=404, detail="Run not found or could not be deleted")
+
+    uploads_real = os.path.realpath(os.path.join(MEDIA_ROOT, "uploads"))
+    outputs_real = os.path.realpath(os.path.join(MEDIA_ROOT, "outputs"))
+
+    files_to_remove = []
+    for key, allowed_dir in [("input_url", uploads_real), ("annotated_url", outputs_real)]:
+        url = run.get(key)
+        if url and isinstance(url, str):
+            clean_rel = url.replace("/media/", "").lstrip("/\\")
+            candidate = os.path.realpath(os.path.join(MEDIA_ROOT, clean_rel))
+            # Verify candidate path stays strictly inside permitted media directory
+            if candidate.startswith(allowed_dir + os.sep):
+                basename = os.path.basename(candidate)
+                # Never delete shared sample benchmark media
+                if not basename.startswith("sample_"):
+                    files_to_remove.append(candidate)
+
+    # Delete database record first
     success = db.delete_run(run_id)
     if not success:
-        raise HTTPException(status_code=404, detail="Run not found or could not be deleted")
+        raise HTTPException(status_code=500, detail="Database deletion failed.")
+
+    # Safely remove owned files
+    for fpath in files_to_remove:
+        try:
+            if os.path.exists(fpath):
+                os.remove(fpath)
+        except OSError:
+            pass
+
     return {"success": True, "deleted_id": run_id}

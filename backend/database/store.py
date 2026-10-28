@@ -25,10 +25,13 @@ class RunsDatabase:
 
     @contextmanager
     def _get_connection(self):
-        conn = sqlite3.connect(self.db_path)
+        conn = sqlite3.connect(self.db_path, timeout=30.0)
         conn.row_factory = sqlite3.Row
         try:
             yield conn
+        except Exception:
+            conn.rollback()
+            raise
         finally:
             conn.close()
 
@@ -61,14 +64,6 @@ class RunsDatabase:
             cols = [col[1] for col in cursor.fetchall()]
             if "run_type" not in cols:
                 cursor.execute("ALTER TABLE runs ADD COLUMN run_type TEXT DEFAULT 'user_upload'")
-
-            # Purge demo highway samples from production operational records
-            cursor.execute("""
-                DELETE FROM runs 
-                WHERE filename LIKE 'sample_%' 
-                   OR metadata_json LIKE '%"is_sample_media": true%'
-                   OR metadata_json LIKE '%"is_sample_media":true%'
-            """)
             conn.commit()
 
     def save_run(
@@ -172,7 +167,7 @@ class RunsDatabase:
         with self._get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute("""
-                SELECT id, timestamp, media_type, filename, latency_ms, total_detections, 
+                SELECT id, timestamp, media_type, filename, weights_status, latency_ms, total_detections, 
                        unique_vehicles, line_crossings, class_counts_json, metadata_json
                 FROM runs 
                 WHERE filename NOT LIKE 'sample_%'
@@ -183,9 +178,31 @@ class RunsDatabase:
             total_runs = len(rows)
             image_runs = sum(1 for r in rows if r["media_type"] == "image")
             video_runs = sum(1 for r in rows if r["media_type"] == "video")
-            failed_runs = 0
 
-            latencies = [float(r["latency_ms"]) for r in rows if r["latency_ms"] is not None]
+            failed_runs = 0
+            successful_runs = 0
+            successful_rows = []
+
+            for r in rows:
+                meta = {}
+                try:
+                    meta = json.loads(r["metadata_json"] or "{}")
+                except Exception:
+                    pass
+                is_failed = (
+                    r["weights_status"] == "FAILED"
+                    or meta.get("status") == "FAILED"
+                    or meta.get("error") is not None
+                )
+                if is_failed:
+                    failed_runs += 1
+                else:
+                    successful_runs += 1
+                    successful_rows.append((r, meta))
+
+            success_rate = round((successful_runs / total_runs * 100.0), 1) if total_runs > 0 else 100.0
+
+            latencies = [float(r["latency_ms"]) for r, _ in successful_rows if r["latency_ms"] is not None and float(r["latency_ms"]) > 0]
             avg_latency = round(statistics.mean(latencies), 2) if latencies else 0.0
             median_latency = round(statistics.median(latencies), 2) if latencies else 0.0
 
@@ -199,7 +216,7 @@ class RunsDatabase:
             confidence_scores = []
             per_run_breakdown = []
 
-            for r in rows:
+            for r, meta in successful_rows:
                 dets = r["total_detections"] or 0
                 total_detections += dets
                 if r["media_type"] == "video":
@@ -230,15 +247,11 @@ class RunsDatabase:
                 except Exception:
                     pass
 
-                try:
-                    meta = json.loads(r["metadata_json"] or "{}")
-                    dets_list = meta.get("detections", [])
-                    for d in dets_list:
-                        score = d.get("score") or d.get("confidence")
-                        if score is not None:
-                            confidence_scores.append(float(score))
-                except Exception:
-                    pass
+                dets_list = meta.get("detections", [])
+                for d in dets_list:
+                    score = d.get("score") or d.get("confidence")
+                    if score is not None:
+                        confidence_scores.append(float(score))
 
             hist_bins = [
                 {"bin": "30-40%", "min": 0.30, "max": 0.40, "count": 0},
@@ -262,9 +275,11 @@ class RunsDatabase:
 
             return {
                 "total_runs": total_runs,
+                "successful_runs": successful_runs,
+                "failed_runs": failed_runs,
+                "success_rate": success_rate,
                 "image_runs": image_runs,
                 "video_runs": video_runs,
-                "failed_runs": failed_runs,
                 "total_detections": total_detections,
                 "total_unique_vehicles": total_unique,
                 "total_line_crossings": total_crossings,
