@@ -58,6 +58,27 @@ export const TrafficAnalyticsView: React.FC<TrafficAnalyticsViewProps> = ({
   const imageRuns = filteredRuns.filter((r) => r.media_type === 'image').length;
   const videoRuns = filteredRuns.filter((r) => r.media_type === 'video').length;
 
+  const failedRuns = useMemo(() => {
+    if (selectedMediaType === 'all' && summary?.failed_runs !== undefined) {
+      return summary.failed_runs;
+    }
+    return filteredRuns.filter((r) => r.weights_status === 'FAILED' || r.metadata?.status === 'FAILED' || r.metadata?.error).length;
+  }, [selectedMediaType, summary, filteredRuns]);
+
+  const successfulRuns = useMemo(() => {
+    if (selectedMediaType === 'all' && summary?.successful_runs !== undefined) {
+      return summary.successful_runs;
+    }
+    return totalRuns - failedRuns;
+  }, [selectedMediaType, summary, totalRuns, failedRuns]);
+
+  const successRate = useMemo(() => {
+    if (selectedMediaType === 'all' && summary?.success_rate !== undefined) {
+      return summary.success_rate;
+    }
+    return totalRuns > 0 ? Math.round((successfulRuns / totalRuns) * 1000) / 10 : 100;
+  }, [selectedMediaType, summary, totalRuns, successfulRuns]);
+
   const totalDetections = useMemo(() => {
     if (activeRun) return activeRun.total_detections || 0;
     if (selectedMediaType === 'all' && summary?.total_detections !== undefined && summary.total_detections > 0) {
@@ -365,11 +386,11 @@ export const TrafficAnalyticsView: React.FC<TrafficAnalyticsViewProps> = ({
           <div>
             <div className="kpi-card-title">Execution Reliability</div>
             <div className="kpi-card-value" style={{ color: 'var(--status-green)' }}>
-              {totalRuns > 0 ? '100%' : 'N/A'}
+              {totalRuns > 0 ? `${successRate}%` : 'N/A'}
             </div>
           </div>
           <div className="kpi-card-desc">
-            {totalRuns} successful / 0 failed runs (denominator: {totalRuns} total invocations)
+            {successfulRuns} successful / {failedRuns} failed runs (denominator: {totalRuns} total invocations)
           </div>
         </div>
       </div>
@@ -920,22 +941,22 @@ export const TrafficAnalyticsView: React.FC<TrafficAnalyticsViewProps> = ({
                 H. Execution Integrity & Success Rate
               </span>
               <span className="badge badge-charcoal" style={{ fontSize: '0.62rem' }}>
-                100% SUCCESSFUL
+                {totalRuns > 0 ? `${successRate}% SUCCESSFUL` : 'NO RUNS'}
               </span>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', fontFamily: 'var(--font-mono)', fontSize: '0.74rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.45rem 0.65rem', backgroundColor: 'var(--charcoal-900)', border: '1px solid var(--border-light)' }}>
                 <span>Successful Invocations:</span>
-                <strong style={{ color: 'var(--status-green)' }}>{totalRuns} runs (100%)</strong>
+                <strong style={{ color: 'var(--status-green)' }}>{successfulRuns} runs ({totalRuns > 0 ? Math.round((successfulRuns / totalRuns) * 100) : 100}%)</strong>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.45rem 0.65rem', backgroundColor: 'var(--charcoal-900)', border: '1px solid var(--border-light)' }}>
                 <span>Failed / Errored Runs:</span>
-                <strong style={{ color: 'var(--warm-ivory-dim)' }}>0 runs (0%)</strong>
+                <strong style={{ color: failedRuns > 0 ? '#ef4444' : 'var(--warm-ivory-dim)' }}>{failedRuns} runs ({totalRuns > 0 ? Math.round((failedRuns / totalRuns) * 100) : 0}%)</strong>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.45rem 0.65rem', backgroundColor: 'var(--charcoal-900)', border: '1px solid var(--border-light)' }}>
                 <span>Incomplete / Corrupted Files:</span>
-                <strong style={{ color: 'var(--warm-ivory-dim)' }}>0 runs (0%)</strong>
+                <strong style={{ color: 'var(--warm-ivory-dim)' }}>{failedRuns} runs ({totalRuns > 0 ? Math.round((failedRuns / totalRuns) * 100) : 0}%)</strong>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.45rem 0.65rem', backgroundColor: 'var(--charcoal-900)', border: '1px solid var(--border-light)' }}>
                 <span>Explicit Denominator:</span>
@@ -956,7 +977,7 @@ export const TrafficAnalyticsView: React.FC<TrafficAnalyticsViewProps> = ({
             <div className="chart-explanation-item">
               <span className="chart-explanation-label">How to interpret:</span>
               {totalRuns > 0 ? (
-                `100% operational success across ${totalRuns} executions with 0 recorded exceptions or failed database writes.`
+                `${successRate}% operational success across ${totalRuns} executions with ${failedRuns} recorded exceptions or failed database writes.`
               ) : (
                 'Awaiting first operational run to establish execution integrity.'
               )}

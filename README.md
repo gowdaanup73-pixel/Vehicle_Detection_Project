@@ -40,7 +40,7 @@ The platform is designed around 5 unified intelligence workflows:
 - **Virtual Tripwire Line Crossing**: Directional passage counts (Inbound vs. Outbound) across customizable reference gates.
 - **Documented Density Estimation**: Transparent spatial occupancy ratio (`Occupancy % = Σ BoundingBox Areas / Total Frame Area`) categorized into Light, Moderate, Dense, and Congested levels.
 
-### D. Model Laboratory
+### D. Model Laboratory & Metrics Dashboard
 - **Comparative Ablation Matrix**:
   - Baseline CenterNet (ResNet-18)
   - CenterNet + CBAM
@@ -49,7 +49,14 @@ The platform is designed around 5 unified intelligence workflows:
   - Edge / Quantized Model (INT8)
   - Real metrics: `mAP@0.5`, `mAP@[0.5:0.95]`, Precision, Recall, F1-Score, FPS, Latency (ms), Parameters, and GFLOPs.
   - **Honest Metric Reporting**: Unmeasured metrics are explicitly presented as *"Not evaluated"*, never fabricated.
-- **Training Convergence History**: 50-epoch loss curves (Total Loss, Focal Heatmap Loss, L1 Size WH Loss, Subpixel Offset Reg Loss, and Validation mAP).
+- **6-Panel Interactive Metrics Dashboard (Recharts)**:
+  - Model Precision / Recall / F1 / mAP@0.5 comparative grouped bars
+  - Per-class F1-scores for proposed CenterNet V2
+  - Convergence loss curves & validation mAP@0.5 vs. epoch
+  - Inference throughput (FPS) vs. mAP@0.5 efficiency trade-off scatter plot
+  - 4×4 vehicle class confusion matrix grid (`car`, `van`, `bus`, `others`)
+  - Environmental scene breakdown (sunny, night, rainy, cloudy)
+- **Client-Side Metrics Export**: One-click *"Download metrics CSV"* button exporting unified benchmark telemetry with nulls converted to clean empty cells.
 - **PyTorch Checkpoint Connector**: Direct browser upload or local path configuration for custom `.pth` or `.pt` trained weights.
 
 ### E. Dataset & Runs
@@ -129,3 +136,116 @@ All 12 automated test cases pass with 100% success rate:
 - `test_density_estimation` (Documented spatial occupancy estimation)
 - `test_runs_database_crud` (SQLite persistence, analytics summary, deletions)
 - `test_api_health`, `test_api_model_status`, `test_api_experiments`, `test_api_dataset_info`, `test_api_detect_sample`
+- `test_api_metrics_valid_file`, `test_api_metrics_missing_file`, `test_api_metrics_malformed_file`, `test_api_metrics_null_handling`
+
+---
+
+## 6. Metrics Pipeline & Dashboard Guide
+
+The platform uses `backend/metrics.json` as the **single source of truth** for model evaluation telemetry. To maintain scientific integrity, unmeasured values are stored strictly as `null` and rendered on all frontend visualizations with an explicit **"Not evaluated"** empty state badge—guaranteeing no metrics are ever fabricated.
+
+### A. Populating `backend/metrics.json` from Training & Evaluation Notebooks
+
+When training or evaluating models in Google Colab or Jupyter notebooks, export model predictions and ground-truth validation annotations to JSON format:
+
+```python
+# In your notebook evaluation cell:
+import json
+
+# Format predictions: List of dicts with image_id, bbox [x1, y1, x2, y2], score, category
+predictions = [
+    {"image_id": "MVI_20011_img00001.jpg", "bbox": [102.4, 210.0, 312.0, 410.5], "score": 0.89, "category": "car"},
+]
+with open("predictions.json", "w") as f:
+    json.dump(predictions, f)
+
+# Ground truth annotations format
+ground_truths = [
+    {"image_id": "MVI_20011_img00001.jpg", "bbox": [100.0, 208.0, 315.0, 412.0], "category": "car"},
+]
+with open("ground_truth.json", "w") as f:
+    json.dump(ground_truths, f)
+```
+
+Then run the metrics exporter script from the repository root:
+```bash
+python scripts/export_metrics.py \
+  --predictions predictions.json \
+  --ground-truth ground_truth.json \
+  --history backend/metrics/training_history.csv \
+  --output backend/metrics.json
+```
+
+Or populate `backend/metrics.json` directly conforming to the validated Pydantic schema:
+```json
+{
+  "models": [
+    {
+      "name": "Baseline",
+      "precision": null,
+      "recall": 0.5325,
+      "f1": null,
+      "accuracy": null,
+      "mAP50": 0.5342,
+      "mAP50_95": 0.3087,
+      "fps": null,
+      "latency_ms": null,
+      "params": 14.8,
+      "gflops": 32.4
+    },
+    {
+      "name": "Improved CenterNet",
+      "precision": null,
+      "recall": 0.5545,
+      "f1": null,
+      "accuracy": null,
+      "mAP50": 0.5889,
+      "mAP50_95": 0.3361,
+      "fps": null,
+      "latency_ms": null,
+      "params": 16.9,
+      "gflops": 36.6
+    }
+  ],
+  "per_class": {
+    "car": {"precision": null, "recall": null, "f1": null, "ap50": 0.4783},
+    "van": {"precision": null, "recall": null, "f1": null, "ap50": 0.3781},
+    "bus": {"precision": null, "recall": null, "f1": null, "ap50": 0.4325},
+    "others": {"precision": null, "recall": null, "f1": null, "ap50": 0.0555}
+  },
+  "confusion_matrix": {
+    "classes": ["car", "van", "bus", "others"],
+    "matrix": null
+  },
+  "per_condition": {
+    "sunny": null,
+    "night": null,
+    "rainy": null,
+    "cloudy": null
+  },
+  "history": [
+    {"epoch": 1, "train_loss": 2.0866, "val_loss": 2.0215, "val_map_50": null}
+  ]
+}
+```
+
+### B. Dashboard Visualization Panels (Model Laboratory)
+
+1. **Grouped Bar Chart (Comparative Performance)**:
+   - Displays Precision, Recall, F1, and mAP@0.5 across comparative architectures (`Baseline`, `+CBAM`, `+BiFPN`, `Improved CenterNet`, `INT8`).
+   - Y-axis calibrated in percentage units (`%`).
+2. **Per-Class F1 Score Bars**:
+   - Visualizes classification balance across `car`, `van`, `bus`, and `others` for the proposed active checkpoint.
+3. **Loss & Validation mAP@0.5 vs. Epoch**:
+   - Dual-axis convergence progression plotting training total loss (L1 + focal), validation loss, and validation mAP@0.5 over training iterations.
+4. **Efficiency Trade-off Scatter Plot**:
+   - Compares inference frames-per-second (FPS) along the X-axis against detection accuracy (mAP@0.5) along the Y-axis.
+   - Proposed model checkpoint is highlighted in signature **Burnt Orange (`#C86B3C`)**.
+5. **4×4 Vehicle Class Confusion Matrix**:
+   - Tabular grid cross-referencing ground-truth annotations versus model predictions.
+6. **Environmental Scene Breakdown**:
+   - Evaluates performance stability across distinct illumination and weather settings (`sunny`, `night`, `rainy`, `cloudy`).
+
+### C. Client-Side Metrics CSV Export
+
+Click **"Download metrics CSV"** in the Model Laboratory top bar to instantly download a comprehensive `metrics.csv` containing comparative model telemetry, class breakdowns, environmental performance, and convergence history directly from the browser with null values formatted as clean empty cells.

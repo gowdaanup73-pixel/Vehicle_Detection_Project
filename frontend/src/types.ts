@@ -106,9 +106,11 @@ export interface RunTimePoint {
 
 export interface AnalyticsSummary {
   total_runs: number;
+  successful_runs?: number;
+  failed_runs?: number;
+  success_rate?: number;
   image_runs?: number;
   video_runs?: number;
-  failed_runs?: number;
   total_detections: number;
   total_unique_vehicles: number;
   total_line_crossings: number;
@@ -203,4 +205,47 @@ export interface DatasetInfo {
     downsampling_ratio: number;
     heatmap_resolution?: string;
   };
+}
+
+export interface ModelMetricItem {
+  name: string;
+  precision: number | null;
+  recall: number | null;
+  f1: number | null;
+  accuracy: number | null;
+  mAP50: number | null;
+  mAP50_95: number | null;
+  fps: number | null;
+  latency_ms: number | null;
+  params: number | null;
+  gflops: number | null;
+}
+
+export interface ClassMetricItem {
+  precision: number | null;
+  recall: number | null;
+  f1: number | null;
+  ap50?: number | null;
+}
+
+export interface MetricsData {
+  models: ModelMetricItem[];
+  per_class: Record<string, ClassMetricItem>;
+  confusion_matrix: {
+    classes: string[];
+    matrix: (number | null)[][] | null;
+  } | null;
+  per_condition: {
+    sunny: number | null;
+    night: number | null;
+    rainy: number | null;
+    cloudy: number | null;
+  };
+  history: Array<{
+    epoch: number;
+    train_loss: number | null;
+    val_loss: number | null;
+    val_map_50: number | null;
+  }>;
+  error?: string | null;
 }
