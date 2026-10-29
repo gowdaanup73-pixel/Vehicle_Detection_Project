@@ -1,32 +1,32 @@
 import React, { useMemo, useRef, useState } from 'react';
-import { 
-  AlertCircle, 
-  ArrowRight, 
-  BarChart3, 
-  CheckCircle2, 
-  Clock, 
-  Crosshair, 
-  Database, 
-  Eye, 
-  Film, 
-  ImageIcon, 
-  Info, 
-  LineChart, 
-  Play, 
-  RefreshCw, 
-  Trash2, 
-  TrendingUp, 
-  Upload, 
-  X, 
-  Zap 
+import {
+  AlertCircle,
+  ArrowRight,
+  BarChart3,
+  CheckCircle2,
+  Clock,
+  Crosshair,
+  Database,
+  Eye,
+  Film,
+  ImageIcon,
+  Info,
+  LineChart,
+  Play,
+  RefreshCw,
+  Trash2,
+  TrendingUp,
+  Upload,
+  X,
+  Zap
 } from 'lucide-react';
-import { 
-  AnalyticsSummary, 
-  DatasetInfo, 
-  ExperimentItem, 
-  ModelStatus, 
-  NavigationTab, 
-  RunRecord 
+import {
+  AnalyticsSummary,
+  DatasetInfo,
+  ExperimentItem,
+  ModelStatus,
+  NavigationTab,
+  RunRecord
 } from '../types';
 
 interface DashboardViewProps {
@@ -175,22 +175,22 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
           {/* Connection Status Badge */}
-          <div 
-            style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '0.5rem', 
-              padding: '0.35rem 0.65rem', 
-              backgroundColor: 'var(--charcoal-800)', 
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              padding: '0.35rem 0.65rem',
+              backgroundColor: 'var(--charcoal-800)',
               border: '1px solid var(--border-medium)',
               fontFamily: 'var(--font-mono)',
               fontSize: '0.72rem',
               fontWeight: 600,
             }}
           >
-            <span 
-              className="status-indicator" 
-              style={{ backgroundColor: isBackendHealthy ? 'var(--status-green)' : 'var(--status-red)' }} 
+            <span
+              className="status-indicator"
+              style={{ backgroundColor: isBackendHealthy ? 'var(--status-green)' : 'var(--status-red)' }}
             />
             <span style={{ color: isBackendHealthy ? 'var(--warm-ivory)' : 'var(--status-red)' }}>
               {isBackendHealthy ? 'SQLite Live Storage Connected' : 'Backend Disconnected'}
@@ -199,8 +199,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
           {/* Real Refresh Button */}
           {onRefresh && (
-            <button 
-              className="btn btn-secondary" 
+            <button
+              className="btn btn-secondary"
               style={{ padding: '0.35rem 0.65rem', fontSize: '0.72rem' }}
               onClick={onRefresh}
               title="Refresh telemetry from backend"
@@ -221,7 +221,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <div>
             <div className="kpi-card-title">Successfully Processed Files</div>
             <div className="kpi-card-value">
-              {analytics?.successful_runs !== undefined ? analytics.successful_runs : totalRuns} <span style={{ fontSize: '0.9rem', color: 'var(--warm-ivory-dim)', fontWeight: 500 }}>runs</span>
+              {summary?.successful_runs !== undefined ? summary.successful_runs : totalRuns} <span style={{ fontSize: '0.9rem', color: 'var(--warm-ivory-dim)', fontWeight: 500 }}>runs</span>
             </div>
           </div>
           <div className="kpi-card-desc">
@@ -239,7 +239,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </div>
           </div>
           <div className="kpi-card-desc">
-            {totalDetections > 0 
+            {totalDetections > 0
               ? `Car: ${classCounts.car} | Van: ${classCounts.van} | Bus: ${classCounts.bus} | Others: ${classCounts.others}`
               : 'Bounding boxes localized with keypoint confidence ≥ 0.35.'}
           </div>
@@ -255,7 +255,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </div>
           </div>
           <div className="kpi-card-desc">
-            {medianLatency 
+            {medianLatency
               ? `Median forward pass + decoding time (~${processingFps || '0'} FPS on ${modelStatus?.device_display || 'CPU'}).`
               : 'Measured per forward pass via Python time.perf_counter.'}
           </div>
@@ -266,12 +266,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <div>
             <div className="kpi-card-title">Successful-Run Percentage</div>
             <div className="kpi-card-value" style={{ color: 'var(--status-green)' }}>
-              {totalRuns > 0 ? `${analytics?.success_rate !== undefined ? analytics.success_rate : 100}%` : 'N/A'}
+              {totalRuns > 0 ? `${summary?.success_rate !== undefined ? summary.success_rate : 100}%` : 'N/A'}
             </div>
           </div>
           <div className="kpi-card-desc">
-            {totalRuns > 0 
-              ? `${analytics?.successful_runs !== undefined ? analytics.successful_runs : totalRuns} completed / ${analytics?.failed_runs ?? 0} failed runs (denominator: ${totalRuns} total attempts).` 
+            {totalRuns > 0
+              ? `${summary?.successful_runs !== undefined ? summary.successful_runs : totalRuns} completed / ${summary?.failed_runs ?? 0} failed runs (denominator: ${totalRuns} total attempts).`
               : 'No operational inference attempts recorded.'}
           </div>
         </div>
@@ -280,15 +280,15 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       {/* =========================================================================
           FAST INGESTION TRIGGER CORRIDOR
           ========================================================================= */}
-      <div 
+      <div
         className="command-card"
-        style={{ 
-          padding: '1rem 1.25rem', 
-          marginBottom: 0, 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          alignItems: 'center', 
-          flexWrap: 'wrap', 
+        style={{
+          padding: '1rem 1.25rem',
+          marginBottom: 0,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
           gap: '1rem',
           backgroundColor: 'var(--charcoal-800)',
           borderLeft: '4px solid var(--burnt-orange)',
@@ -304,9 +304,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
         </div>
 
-        <input 
-          type="file" 
-          ref={fileInputRef} 
+        <input
+          type="file"
+          ref={fileInputRef}
           style={{ display: 'none' }}
           accept="image/*,video/*"
           onChange={(e) => {
@@ -317,16 +317,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         />
 
         <div style={{ display: 'flex', gap: '0.65rem', flexWrap: 'wrap' }}>
-          <button 
-            className="btn btn-primary" 
+          <button
+            className="btn btn-primary"
             style={{ padding: '0.4rem 0.85rem', fontSize: '0.74rem' }}
             onClick={() => fileInputRef.current?.click()}
           >
             <Upload size={12} />
             Select Media File
           </button>
-          <button 
-            className="btn btn-secondary" 
+          <button
+            className="btn btn-secondary"
             style={{ padding: '0.4rem 0.85rem', fontSize: '0.74rem' }}
             onClick={() => onRunSample('image')}
             disabled={isProcessing}
@@ -334,8 +334,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             <Play size={12} style={{ color: 'var(--burnt-orange)' }} />
             Run Image Sample
           </button>
-          <button 
-            className="btn btn-secondary" 
+          <button
+            className="btn btn-secondary"
             style={{ padding: '0.4rem 0.85rem', fontSize: '0.74rem' }}
             onClick={() => onRunSample('video')}
             disabled={isProcessing}
@@ -343,8 +343,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             <Film size={12} style={{ color: 'var(--muted-olive)' }} />
             Run Video Stream
           </button>
-          <button 
-            className="btn btn-secondary" 
+          <button
+            className="btn btn-secondary"
             style={{ padding: '0.4rem 0.85rem', fontSize: '0.74rem' }}
             onClick={() => onNavigate('detection_studio')}
           >
@@ -387,13 +387,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                       </span>
                     </div>
                     <div style={{ height: '7px', backgroundColor: 'var(--charcoal-900)', border: '1px solid var(--border-light)' }}>
-                      <div 
-                        style={{ 
-                          height: '100%', 
-                          width: `${c.pct}%`, 
+                      <div
+                        style={{
+                          height: '100%',
+                          width: `${c.pct}%`,
                           backgroundColor: c.color,
                           transition: 'width 0.4s ease',
-                        }} 
+                        }}
                       />
                     </div>
                   </div>
@@ -547,8 +547,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </div>
           </div>
 
-          <button 
-            className="btn btn-secondary" 
+          <button
+            className="btn btn-secondary"
             style={{ padding: '0.35rem 0.75rem', fontSize: '0.72rem' }}
             onClick={() => onNavigate('history')}
           >
@@ -625,7 +625,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           INSPECTED RUN DETAIL MODAL
           ========================================================================= */}
       {inspectedRun && (
-        <div 
+        <div
           style={{
             position: 'fixed',
             top: 0,
@@ -641,7 +641,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           }}
           onClick={() => setInspectedRun(null)}
         >
-          <div 
+          <div
             className="command-card"
             style={{
               maxWidth: '960px',
@@ -664,8 +664,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   Source: {inspectedRun.filename} | Latency: {inspectedRun.latency_ms} ms | Detections: {inspectedRun.total_detections}
                 </div>
               </div>
-              <button 
-                className="btn btn-secondary" 
+              <button
+                className="btn btn-secondary"
                 style={{ padding: '0.25rem 0.5rem' }}
                 onClick={() => setInspectedRun(null)}
               >
@@ -692,9 +692,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 </div>
                 <div style={{ height: '260px', backgroundColor: 'var(--charcoal-900)', border: '1px solid var(--border-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
                   {inspectedRun.media_type === 'video' ? (
-                    <video controls src={inspectedRun.output_url} style={{ maxWidth: '100%', maxHeight: '100%' }} />
+                    <video controls src={inspectedRun.annotated_url} style={{ maxWidth: '100%', maxHeight: '100%' }} />
                   ) : (
-                    <img alt="Annotated Output" src={inspectedRun.output_url} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+                    <img alt="Annotated Output" src={inspectedRun.annotated_url} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
                   )}
                 </div>
               </div>
@@ -703,7 +703,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             {/* Class Breakdown Chips */}
             <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
               {Object.entries(inspectedRun.class_counts || {}).map(([cls, count]) => (
-                <div 
+                <div
                   key={cls}
                   style={{
                     padding: '0.4rem 0.75rem',
@@ -721,7 +721,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
-              <button 
+              <button
                 className="btn btn-secondary"
                 onClick={() => setInspectedRun(null)}
               >

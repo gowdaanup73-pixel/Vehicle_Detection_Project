@@ -19,8 +19,21 @@ def main():
 
     # 1. Start Backend Uvicorn Process
     print("\n[+] Launching FastAPI Inference Backend on http://127.0.0.1:8000 ...")
-    backend_cmd = [sys.executable, "-m", "uvicorn", "backend.api.app:app", "--host", "127.0.0.1", "--port", "8000"]
-    backend_proc = subprocess.Popen(backend_cmd, cwd=BASE_DIR)
+    backend_py = sys.executable
+    candidate_venvs = [
+        os.path.join(BASE_DIR, "backend", "venv", "Scripts", "python.exe"),
+        os.path.join(BASE_DIR, "venv", "Scripts", "python.exe"),
+    ]
+    for c in candidate_venvs:
+        if os.path.exists(c):
+            backend_py = c
+            break
+
+    env = os.environ.copy()
+    env["PYTHONPATH"] = BASE_DIR + (os.pathsep + env["PYTHONPATH"] if "PYTHONPATH" in env else "")
+
+    backend_cmd = [backend_py, "-m", "uvicorn", "backend.api.app:app", "--host", "127.0.0.1", "--port", "8000"]
+    backend_proc = subprocess.Popen(backend_cmd, cwd=BASE_DIR, env=env)
 
     time.sleep(1.5)
 
