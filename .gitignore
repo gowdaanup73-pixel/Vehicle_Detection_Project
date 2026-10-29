@@ -26,6 +26,8 @@ wheels/
 *.pth
 *.pt
 !backend/checkpoints/README.md
+checkpoints/
+datasets/
 
 # Media uploads and output artifacts
 backend/media/uploads/*
