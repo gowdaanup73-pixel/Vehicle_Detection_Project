@@ -15,6 +15,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
+from backend.api.metrics_schema import MetricsResponse, load_metrics_data
 
 MAX_IMAGE_SIZE = 25 * 1024 * 1024  # 25 MB
 CHUNK_SIZE = 64 * 1024              # 64 KB
@@ -510,6 +511,12 @@ def get_experiments():
 @app.get("/api/experiments/losses")
 def get_experiment_losses():
     return experiments_service.get_loss_history()
+
+
+@app.get("/api/metrics", response_model=MetricsResponse)
+def get_metrics():
+    metrics_path = os.path.join(BASE_DIR, "metrics.json")
+    return load_metrics_data(metrics_path)
 
 
 @app.get("/api/dataset/info")

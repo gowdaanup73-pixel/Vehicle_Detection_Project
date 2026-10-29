@@ -1,0 +1,184 @@
+{
+  "models": [
+    {
+      "name": "Baseline",
+      "precision": null,
+      "recall": 0.5325,
+      "f1": null,
+      "accuracy": null,
+      "mAP50": 0.5342,
+      "mAP50_95": 0.3087,
+      "fps": null,
+      "latency_ms": null,
+      "params": 14.8,
+      "gflops": 32.4
+    },
+    {
+      "name": "+CBAM",
+      "precision": null,
+      "recall": null,
+      "f1": null,
+      "accuracy": null,
+      "mAP50": null,
+      "mAP50_95": null,
+      "fps": null,
+      "latency_ms": null,
+      "params": null,
+      "gflops": null
+    },
+    {
+      "name": "+BiFPN",
+      "precision": null,
+      "recall": null,
+      "f1": null,
+      "accuracy": null,
+      "mAP50": null,
+      "mAP50_95": null,
+      "fps": null,
+      "latency_ms": null,
+      "params": null,
+      "gflops": null
+    },
+    {
+      "name": "Improved CenterNet",
+      "precision": null,
+      "recall": 0.5545,
+      "f1": null,
+      "accuracy": null,
+      "mAP50": 0.5889,
+      "mAP50_95": 0.3361,
+      "fps": null,
+      "latency_ms": null,
+      "params": 16.9,
+      "gflops": 36.6
+    },
+    {
+      "name": "INT8",
+      "precision": null,
+      "recall": null,
+      "f1": null,
+      "accuracy": null,
+      "mAP50": null,
+      "mAP50_95": null,
+      "fps": null,
+      "latency_ms": null,
+      "params": null,
+      "gflops": null
+    }
+  ],
+  "per_class": {
+    "car": {
+      "precision": null,
+      "recall": null,
+      "f1": null,
+      "ap50": 0.4783
+    },
+    "van": {
+      "precision": null,
+      "recall": null,
+      "f1": null,
+      "ap50": 0.3781
+    },
+    "bus": {
+      "precision": null,
+      "recall": null,
+      "f1": null,
+      "ap50": 0.4325
+    },
+    "others": {
+      "precision": null,
+      "recall": null,
+      "f1": null,
+      "ap50": 0.0555
+    }
+  },
+  "confusion_matrix": {
+    "classes": [
+      "car",
+      "van",
+      "bus",
+      "others"
+    ],
+    "matrix": null
+  },
+  "per_condition": {
+    "sunny": null,
+    "night": null,
+    "rainy": null,
+    "cloudy": null
+  },
+  "history": [
+    {
+      "epoch": 1,
+      "train_loss": 2.0866,
+      "val_loss": 2.0215,
+      "val_map_50": null
+    },
+    {
+      "epoch": 2,
+      "train_loss": 1.1816,
+      "val_loss": 1.8448,
+      "val_map_50": null
+    },
+    {
+      "epoch": 3,
+      "train_loss": 0.9317,
+      "val_loss": 1.7956,
+      "val_map_50": null
+    },
+    {
+      "epoch": 4,
+      "train_loss": 0.7915,
+      "val_loss": 2.0048,
+      "val_map_50": null
+    },
+    {
+      "epoch": 5,
+      "train_loss": 0.7036,
+      "val_loss": 1.9866,
+      "val_map_50": null
+    },
+    {
+      "epoch": 6,
+      "train_loss": 0.6393,
+      "val_loss": 2.1822,
+      "val_map_50": null
+    },
+    {
+      "epoch": 7,
+      "train_loss": 0.5884,
+      "val_loss": 2.2104,
+      "val_map_50": null
+    },
+    {
+      "epoch": 8,
+      "train_loss": 0.5498,
+      "val_loss": 2.2619,
+      "val_map_50": null
+    },
+    {
+      "epoch": 9,
+      "train_loss": 0.5247,
+      "val_loss": 2.3471,
+      "val_map_50": null
+    },
+    {
+      "epoch": 10,
+      "train_loss": 0.4998,
+      "val_loss": 2.4512,
+      "val_map_50": null
+    },
+    {
+      "epoch": 11,
+      "train_loss": 0.4782,
+      "val_loss": 2.4820,
+      "val_map_50": null
+    },
+    {
+      "epoch": 12,
+      "train_loss": 0.4562,
+      "val_loss": 2.4903,
+      "val_map_50": null
+    }
+  ]
+}
