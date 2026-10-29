@@ -8,6 +8,7 @@ Verifies:
 5. SQLite runs persistence and analytics aggregation
 6. FastAPI REST endpoints health and responses
 """
+import json
 import os
 import shutil
 import tempfile
@@ -156,18 +157,18 @@ class TestApiEndpoints:
         data = res.json()
         assert len(data["experiments"]) == 3  # Baseline, V1, V2 (fabricated INT8 pruned model removed)
         v2 = next(e for e in data["experiments"] if e["id"] == "exp_improved_centernet_v2")
-        assert v2["map_50"] == 0.5982
-        assert v2["map_50_95"] == 0.3479
-        assert v2["ap_75"] == 0.3636
-        assert v2["class_ap_50"]["car"] == 0.4778
-        assert v2["class_ap_50"]["van"] == 0.4182
-        assert v2["class_ap_50"]["bus"] == 0.4481
-        assert v2["class_ap_50"]["others"] == 0.0476
+        assert v2["map_50"] == 0.5889
+        assert v2["map_50_95"] == 0.3361
+        assert v2["ap_75"] == 0.3409
+        assert v2["class_ap_50"]["car"] == 0.4783
+        assert v2["class_ap_50"]["van"] == 0.3781
+        assert v2["class_ap_50"]["bus"] == 0.4325
+        assert v2["class_ap_50"]["others"] == 0.0555
         assert v2["precision"] is None  # Unmeasured marked as Not evaluated
-        assert v2["recall"] is None
+        assert v2["recall"] == 0.5545
         assert v2["f1_score"] is None
-        assert v2["evaluation_type"] == "Validation Split"
-        assert "2,092" in v2["evaluation_split"]
+        assert v2["evaluation_type"] == "Historical Validation Results"
+        assert "1,417" in v2["evaluation_split"]
 
     def test_api_dataset_info(self):
         client = TestClient(app)
@@ -495,6 +496,108 @@ class TestApiEndpoints:
         assert run2_db["total_detections"] == d2["total_detections"]
         assert run1_db["run_type"] == "test_run"
         assert run2_db["run_type"] == "test_run"
+
+    def test_api_metrics_valid_file(self):
+        client = TestClient(app)
+        res = client.get("/api/metrics")
+        assert res.status_code == 200
+        data = res.json()
+        assert data["error"] is None
+        assert "models" in data
+        assert len(data["models"]) == 5
+        model_names = [m["name"] for m in data["models"]]
+        assert "Baseline" in model_names
+        assert "+CBAM" in model_names
+        assert "+BiFPN" in model_names
+        assert "Improved CenterNet" in model_names
+        assert "INT8" in model_names
+
+        # Baseline and Improved CenterNet have measured mAP50
+        baseline = next(m for m in data["models"] if m["name"] == "Baseline")
+        assert baseline["mAP50"] == 0.5342
+        assert baseline["precision"] is None
+        assert baseline["f1"] is None
+
+        improved = next(m for m in data["models"] if m["name"] == "Improved CenterNet")
+        assert improved["mAP50"] == 0.5889
+        assert improved["mAP50_95"] == 0.3361
+        assert improved["recall"] == 0.5545
+
+        # Check per-class
+        assert "car" in data["per_class"]
+        assert "van" in data["per_class"]
+        assert "bus" in data["per_class"]
+        assert "others" in data["per_class"]
+        assert data["per_class"]["car"]["ap50"] == 0.4783
+
+        # Check confusion matrix and condition fields
+        assert "confusion_matrix" in data
+        assert "per_condition" in data
+        assert "history" in data
+        assert len(data["history"]) >= 1
+
+    def test_api_metrics_missing_file(self, monkeypatch, tmp_path):
+        from backend.api import app as app_module
+        monkeypatch.setattr(app_module, "BASE_DIR", str(tmp_path))
+
+        client = TestClient(app)
+        res = client.get("/api/metrics")
+        assert res.status_code == 200
+        data = res.json()
+        assert data["error"] is not None
+        assert "not found" in data["error"].lower()
+        assert len(data["models"]) == 5
+        for m in data["models"]:
+            assert m["precision"] is None
+            assert m["mAP50"] is None
+            assert m["f1"] is None
+        assert data["confusion_matrix"]["matrix"] is None
+        assert data["history"] == []
+
+    def test_api_metrics_malformed_file(self, monkeypatch, tmp_path):
+        from backend.api import app as app_module
+        bad_file = tmp_path / "metrics.json"
+        bad_file.write_text("{ this is completely invalid json }}}", encoding="utf-8")
+        monkeypatch.setattr(app_module, "BASE_DIR", str(tmp_path))
+
+        client = TestClient(app)
+        res = client.get("/api/metrics")
+        assert res.status_code == 200
+        data = res.json()
+        assert data["error"] is not None
+        assert "malformed" in data["error"].lower() or "json" in data["error"].lower()
+        assert len(data["models"]) == 5
+        assert data["models"][0]["mAP50"] is None
+
+    def test_api_metrics_null_handling(self, monkeypatch, tmp_path):
+        from backend.api import app as app_module
+        null_metrics = {
+            "models": [
+                {"name": "Baseline", "precision": None, "mAP50": None},
+                {"name": "Improved CenterNet", "precision": None, "mAP50": 0.5889}
+            ],
+            "per_class": {
+                "car": {"precision": None, "f1": None, "ap50": 0.4783}
+            },
+            "confusion_matrix": {"classes": ["car", "van", "bus", "others"], "matrix": None},
+            "per_condition": {"sunny": None, "night": None, "rainy": None, "cloudy": None},
+            "history": []
+        }
+        test_file = tmp_path / "metrics.json"
+        test_file.write_text(json.dumps(null_metrics), encoding="utf-8")
+        monkeypatch.setattr(app_module, "BASE_DIR", str(tmp_path))
+
+        client = TestClient(app)
+        res = client.get("/api/metrics")
+        assert res.status_code == 200
+        data = res.json()
+        assert data["error"] is None
+        base = next(m for m in data["models"] if m["name"] == "Baseline")
+        assert base["precision"] is None
+        assert base["mAP50"] is None
+        imp = next(m for m in data["models"] if m["name"] == "Improved CenterNet")
+        assert imp["mAP50"] == 0.5889
+        assert imp["precision"] is None
 
 
 
