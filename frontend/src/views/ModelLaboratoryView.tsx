@@ -21,6 +21,7 @@ import {
   Zap 
 } from 'lucide-react';
 import { configureModel, uploadCheckpoint } from '../api';
+import { MetricsCharts } from '../components/MetricsCharts';
 import { DatasetInfo, ExperimentItem, LossPoint, ModelStatus } from '../types';
 
 interface ModelLaboratoryViewProps {
@@ -583,6 +584,9 @@ export const ModelLaboratoryView: React.FC<ModelLaboratoryViewProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Metrics Dashboard Visualizations */}
+      <MetricsCharts />
 
       {/* Ablation Study Comparative Experiment Table */}
       <div className="command-card">

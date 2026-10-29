@@ -3,6 +3,7 @@ import {
   DatasetInfo,
   ExperimentItem,
   LossPoint,
+  MetricsData,
   ModelStatus,
   RunRecord,
 } from './types';
@@ -125,5 +126,11 @@ export async function listRuns(mediaType?: string): Promise<RunRecord[]> {
 export async function deleteRun(runId: string) {
   const res = await fetch(`${API_BASE}/runs/${runId}`, { method: 'DELETE' });
   if (!res.ok) throw new Error('Delete run failed');
+  return res.json();
+}
+
+export async function fetchMetrics(): Promise<MetricsData> {
+  const res = await fetch(`${API_BASE}/metrics`);
+  if (!res.ok) throw new Error('Metrics fetch failed');
   return res.json();
 }
