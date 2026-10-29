@@ -3,6 +3,7 @@ import {
   AlertCircle,
   BarChart3,
   CloudRain,
+  Download,
   Grid3X3,
   LineChart as LineChartIcon,
   RefreshCw,
@@ -161,6 +162,72 @@ const ChartSkeleton = () => (
   </div>
 );
 
+export const downloadMetricsCsv = (metrics) => {
+  if (!metrics) return;
+
+  const cell = (v) => (v == null ? '' : String(v));
+  const rows = [];
+
+  // 1. Model comparison metrics
+  rows.push(['Model', 'Precision', 'Recall', 'F1', 'Accuracy', 'mAP50', 'mAP50_95', 'FPS', 'Latency_ms', 'Params_M', 'GFLOPs']);
+  for (const m of metrics.models || []) {
+    rows.push([
+      cell(m.name),
+      cell(m.precision),
+      cell(m.recall),
+      cell(m.f1),
+      cell(m.accuracy),
+      cell(m.mAP50),
+      cell(m.mAP50_95),
+      cell(m.fps),
+      cell(m.latency_ms),
+      cell(m.params),
+      cell(m.gflops),
+    ]);
+  }
+
+  rows.push([]);
+  // 2. Per-Class Metrics
+  rows.push(['Class', 'Precision', 'Recall', 'F1', 'AP50']);
+  for (const [cls, val] of Object.entries(metrics.per_class || {})) {
+    rows.push([
+      cell(cls),
+      cell(val?.precision),
+      cell(val?.recall),
+      cell(val?.f1),
+      cell(val?.ap50),
+    ]);
+  }
+
+  rows.push([]);
+  // 3. Environmental Condition mAP
+  rows.push(['Condition', 'mAP50']);
+  for (const [cond, val] of Object.entries(metrics.per_condition || {})) {
+    rows.push([cell(cond), cell(val)]);
+  }
+
+  rows.push([]);
+  // 4. Convergence History
+  rows.push(['Epoch', 'Train_Loss', 'Val_Loss', 'Val_mAP50']);
+  for (const h of metrics.history || []) {
+    rows.push([cell(h.epoch), cell(h.train_loss), cell(h.val_loss), cell(h.val_map_50)]);
+  }
+
+  const csvContent = rows
+    .map((r) => r.map((c) => (c.includes(',') ? `"${c.replace(/"/g, '""')}"` : c)).join(','))
+    .join('\r\n');
+
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.setAttribute('href', url);
+  link.setAttribute('download', 'metrics.csv');
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+};
+
 /**
  * @param {Object} [props]
  * @param {any} [props.metrics]
@@ -286,6 +353,17 @@ export const MetricsCharts = ({
           )}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            style={{ padding: '0.35rem 0.65rem', fontSize: '0.72rem', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}
+            onClick={() => downloadMetricsCsv(metrics)}
+            title="Download metrics as CSV"
+            aria-label="Download metrics CSV"
+          >
+            <Download size={12} style={{ color: BURNT_ORANGE }} />
+            <span>Download metrics CSV</span>
+          </button>
           {downloadButton}
           <button
             type="button"
