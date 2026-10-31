@@ -29,11 +29,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
   modelStatus,
   onRefresh,
   isBackendHealthy,
-  isDemoMode = false,
-  onToggleDemo,
+  isDemoMode: _isDemoMode = false,
+  onToggleDemo: _onToggleDemo,
 }) => {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const isTrainedActive = modelStatus?.weights_loaded ?? false;
+  const isWeightsLoaded = Boolean(modelStatus?.weights_loaded);
+  const activeCheckpointName = modelStatus?.checkpoint_name || (modelStatus?.checkpoint_path ? modelStatus.checkpoint_path.split(/[\\/]/).pop() : null);
 
   const navItems: Array<{ id: NavigationTab; label: string; icon: React.ReactNode }> = [
     { id: 'overview', label: 'Overview', icon: <LayoutDashboard size={18} /> },
@@ -122,12 +123,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
           {/* Backend Status */}
           <div className="sidebar-status-row">
-            <span style={{ color: 'var(--warm-ivory-dim)' }}>Backend API</span>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: isBackendHealthy ? 'var(--status-green)' : 'var(--status-red)', fontWeight: 600 }}>
+            <span className="sidebar-status-label">Backend API</span>
+            <span className="sidebar-status-val" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', color: isBackendHealthy ? 'var(--status-green)' : 'var(--status-red)', fontWeight: 600 }}>
               <span 
                 style={{ 
                   width: '6px', 
                   height: '6px', 
+                  borderRadius: '50%',
                   backgroundColor: isBackendHealthy ? 'var(--status-green)' : 'var(--status-red)' 
                 }} 
               />
@@ -137,62 +139,30 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
           {/* Device */}
           <div className="sidebar-status-row">
-            <span style={{ color: 'var(--warm-ivory-dim)' }}>Accelerator</span>
-            <span style={{ color: 'var(--warm-ivory)', fontWeight: 600, fontSize: '0.74rem' }}>
-              {modelStatus?.device_display || (modelStatus?.is_cuda_available ? 'CUDA GPU' : 'CPU Mode')}
+            <span className="sidebar-status-label">Accelerator</span>
+            <span className="sidebar-status-val" style={{ color: 'var(--warm-ivory)', fontWeight: 600, fontSize: '0.72rem' }}>
+              {modelStatus?.device_display || (modelStatus?.is_cuda_available ? 'CUDA GPU' : (modelStatus ? 'CPU Mode' : '—'))}
             </span>
-          </div>
-
-          {/* Demo Mode Toggle Card */}
-          <div className="sidebar-status-card" style={{ borderLeft: isDemoMode ? '3px solid var(--burnt-orange)' : '3px solid var(--border-medium)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
-              <span style={{ fontSize: '0.68rem', color: isDemoMode ? 'var(--burnt-orange)' : 'var(--warm-ivory-dim)', fontWeight: 700, letterSpacing: '0.04em' }}>
-                DEMO MODE
-              </span>
-              {onToggleDemo && (
-                <button
-                  type="button"
-                  onClick={onToggleDemo}
-                  style={{
-                    padding: '0.15rem 0.45rem',
-                    fontSize: '0.62rem',
-                    fontFamily: 'var(--font-mono)',
-                    fontWeight: 700,
-                    backgroundColor: isDemoMode ? 'var(--burnt-orange)' : 'var(--charcoal-800)',
-                    color: isDemoMode ? '#fff' : 'var(--warm-ivory-dim)',
-                    border: '1px solid var(--border-medium)',
-                    cursor: 'pointer',
-                  }}
-                  title="Toggle live simulated telemetry without writing to disk"
-                  aria-label="Toggle demo mode"
-                >
-                  {isDemoMode ? 'ON' : 'OFF'}
-                </button>
-              )}
-            </div>
-            <div style={{ fontSize: '0.68rem', color: isDemoMode ? 'var(--burnt-orange)' : 'var(--warm-ivory-dim)', lineHeight: 1.3 }}>
-              {isDemoMode ? 'Simulating live telemetry (2500ms)' : 'Real SQLite telemetry'}
-            </div>
           </div>
 
           {/* Model Weights State */}
           <div className="sidebar-status-card">
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.2rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.2rem' }}>
               <span style={{ fontSize: '0.68rem', color: 'var(--muted-olive)', fontWeight: 700 }}>CHECKPOINT</span>
               <span 
                 className="badge" 
                 style={{ 
                   fontSize: '0.62rem',
                   padding: '0.1rem 0.35rem',
-                  backgroundColor: isTrainedActive ? 'rgba(104,133,68,0.2)' : 'rgba(200,107,60,0.2)',
-                  color: isTrainedActive ? 'var(--status-green)' : 'var(--burnt-orange)',
+                  backgroundColor: isWeightsLoaded ? 'rgba(104,133,68,0.2)' : 'rgba(200,107,60,0.2)',
+                  color: isWeightsLoaded ? 'var(--status-green)' : 'var(--burnt-orange)',
                 }}
               >
-                {isTrainedActive ? 'ACTIVE' : 'UNCONFIGURED'}
+                {isWeightsLoaded ? 'ACTIVE' : 'UNCONFIGURED'}
               </span>
             </div>
-            <div style={{ fontSize: '0.72rem', color: 'var(--warm-ivory-muted)', lineHeight: 1.4, fontFamily: 'var(--font-mono)' }}>
-              {isTrainedActive ? (modelStatus?.checkpoint_name || 'improved_v2_best.pth') : 'No checkpoint loaded'}
+            <div style={{ fontSize: '0.72rem', color: 'var(--warm-ivory-muted)', lineHeight: 1.4, fontFamily: 'var(--font-mono)', minWidth: 0, overflowWrap: 'anywhere' }}>
+              {isWeightsLoaded && activeCheckpointName ? activeCheckpointName : (modelStatus ? 'No checkpoint loaded' : 'Connecting to backend...')}
             </div>
           </div>
         </div>

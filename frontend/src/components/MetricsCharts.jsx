@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import {
   AlertCircle,
   BarChart3,
-  CloudRain,
   Download,
   Grid3X3,
   LineChart as LineChartIcon,
@@ -27,7 +26,7 @@ import {
   ZAxis,
 } from 'recharts';
 import { fetchMetrics } from '../api';
-import { ChartWatermark, DemoBadge } from './DemoBadge';
+import { ChartWatermark, DemoChip, DemoSwitch } from './DemoBadge';
 
 const CHARCOAL = '#222320';
 const IVORY = '#E9E2D4';
@@ -206,13 +205,6 @@ export const downloadMetricsCsv = (metrics, isDemo = false) => {
   }
 
   rows.push([]);
-  // 3. Environmental Condition mAP
-  rows.push(['Condition', 'mAP50']);
-  for (const [cond, val] of Object.entries(metrics.per_condition || {})) {
-    rows.push([cell(cond), cell(val)]);
-  }
-
-  rows.push([]);
   // 4. Convergence History
   rows.push(['Epoch', 'Train_Loss', 'Val_Loss', 'Val_mAP50']);
   for (const h of metrics.history || []) {
@@ -331,22 +323,15 @@ export const MetricsCharts = ({
   const cmMatrix = metrics?.confusion_matrix?.matrix;
   const hasConfusionMatrix = Array.isArray(cmMatrix) && cmMatrix.length === cmClasses.length;
 
-  // Weather conditions
-  const conditionData = Object.entries(metrics?.per_condition || {}).map(([cond, val]) => ({
-    condition: cond.charAt(0).toUpperCase() + cond.slice(1),
-    'mAP@0.5': val != null ? Number((val * 100).toFixed(1)) : null,
-  }));
-  const hasConditionData = conditionData.some((d) => d['mAP@0.5'] != null);
-
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }} aria-label="Metrics Dashboard">
       {/* Top Bar with Status and Optional Download Button */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <div className="label-tactical" style={{ color: BURNT_ORANGE }}>
-            METRICS DASHBOARD // 6-PANEL COMPARATIVE EVALUATION
+            METRICS DASHBOARD // 5-PANEL COMPARATIVE EVALUATION
           </div>
-          {isDemoActive && <DemoBadge />}
+          {isDemoActive && <DemoChip />}
           {activeError && (
             <span
               style={{
@@ -375,12 +360,18 @@ export const MetricsCharts = ({
             <span>Download metrics CSV</span>
           </button>
           {downloadButton}
+          {demoData?.setDemoMode && (
+            <DemoSwitch
+              isDemoMode={isDemoActive}
+              onToggle={demoData.setDemoMode}
+            />
+          )}
           <button
             type="button"
             className="btn btn-secondary"
             style={{ padding: '0.35rem 0.65rem', fontSize: '0.72rem' }}
-            onClick={handleRetry}
-            title="Reload metrics data"
+            onClick={isDemoActive ? demoData?.refresh : handleRetry}
+            title={isDemoActive ? 'Refresh demo dataset (simulated drift)' : 'Reload metrics data'}
             aria-label="Refresh metrics"
           >
             <RefreshCw size={12} /> Refresh
@@ -388,11 +379,11 @@ export const MetricsCharts = ({
         </div>
       </div>
 
-      {/* Grid of 6 Charts */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(420px, 1fr))', gap: '1rem' }}>
+      {/* Grid of 5 Charts: 3 top row, 2 wide bottom row */}
+      <div className="metrics-grid-5">
         
         {/* CHART A: Grouped Bars: Precision / Recall / F1 / mAP50 */}
-        <div className="command-card" style={{ position: 'relative' }} aria-label="Comparative Model Metrics Chart">
+        <div className="command-card metrics-col-2" style={{ position: 'relative' }} aria-label="Comparative Model Metrics Chart">
           {isDemoActive && <ChartWatermark />}
           <div className="command-card-header">
             <span className="card-title">
@@ -423,7 +414,7 @@ export const MetricsCharts = ({
         </div>
 
         {/* CHART B: Per-class F1 bars (proposed model) */}
-        <div className="command-card" style={{ position: 'relative' }} aria-label="Per-Class F1 Chart">
+        <div className="command-card metrics-col-2" style={{ position: 'relative' }} aria-label="Per-Class F1 Chart">
           {isDemoActive && <ChartWatermark />}
           <div className="command-card-header">
             <span className="card-title">
@@ -451,7 +442,7 @@ export const MetricsCharts = ({
         </div>
 
         {/* CHART C: Loss + validation mAP vs epoch */}
-        <div className="command-card" style={{ position: 'relative' }} aria-label="Loss and Validation mAP vs Epoch Chart">
+        <div className="command-card metrics-col-2" style={{ position: 'relative' }} aria-label="Loss and Validation mAP vs Epoch Chart">
           {isDemoActive && <ChartWatermark />}
           <div className="command-card-header">
             <span className="card-title">
@@ -484,7 +475,7 @@ export const MetricsCharts = ({
         </div>
 
         {/* CHART D: Scatter FPS vs mAP50 */}
-        <div className="command-card" style={{ position: 'relative' }} aria-label="FPS vs mAP Trade-off Chart">
+        <div className="command-card metrics-col-3" style={{ position: 'relative' }} aria-label="FPS vs mAP Trade-off Chart">
           {isDemoActive && <ChartWatermark />}
           <div className="command-card-header">
             <span className="card-title">
@@ -516,7 +507,7 @@ export const MetricsCharts = ({
         </div>
 
         {/* CHART E: Confusion matrix grid */}
-        <div className="command-card" style={{ position: 'relative' }} aria-label="Confusion Matrix Grid">
+        <div className="command-card metrics-col-3" style={{ position: 'relative' }} aria-label="Confusion Matrix Grid">
           {isDemoActive && <ChartWatermark />}
           <div className="command-card-header">
             <span className="card-title">
@@ -570,34 +561,6 @@ export const MetricsCharts = ({
               </div>
             ) : (
               <NotEvaluatedState message="4×4 vehicle confusion matrix has not been computed for this checkpoint." />
-            )}
-          </div>
-        </div>
-
-        {/* CHART F: mAP per weather condition */}
-        <div className="command-card" style={{ position: 'relative' }} aria-label="Weather Condition Performance Chart">
-          {isDemoActive && <ChartWatermark />}
-          <div className="command-card-header">
-            <span className="card-title">
-              <CloudRain size={15} style={{ color: BURNT_ORANGE }} />
-              mAP@0.5 per Weather Condition
-            </span>
-            <span className="label-tactical">ENVIRONMENTAL</span>
-          </div>
-          <div style={{ padding: '1rem', height: '280px' }}>
-            {hasConditionData ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={conditionData} margin={{ top: 10, right: 10, left: -15, bottom: 10 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke={BORDER_LIGHT} />
-                  <XAxis dataKey="condition" stroke={IVORY} fontSize={11} />
-                  <YAxis stroke={IVORY} fontSize={10} domain={[0, 100]} unit="%" />
-                  <Tooltip content={<CustomTooltip unit="%" />} />
-                  <Legend wrapperStyle={{ fontSize: '0.7rem', color: IVORY }} />
-                  <Bar dataKey="mAP@0.5" fill={OLIVE} />
-                </BarChart>
-              </ResponsiveContainer>
-            ) : (
-              <NotEvaluatedState message="Per-condition mAP (sunny, night, rainy, cloudy) has not been evaluated." />
             )}
           </div>
         </div>
