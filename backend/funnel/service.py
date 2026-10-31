@@ -91,12 +91,19 @@ class FunnelService:
                 if isinstance(res, asyncio.TimeoutError):
                     errors[provider_name] = f"{provider_name} request timed out after 10s"
                 else:
-                    errors[provider_name] = f"{provider_name} error: {str(res)}"
+                    errors[provider_name] = str(res)
             elif isinstance(res, list):
                 images.extend(res)
 
         # Truncate to requested limit
         images = images[:limit]
+
+        error_msg: Optional[str] = None
+        if errors:
+            if len(images) == 0:
+                error_msg = "; ".join(errors.values())
+            else:
+                error_msg = f"Notice: {'; '.join(errors.values())}"
 
         result = FunnelSearchResult(
             query=cleaned_query,
@@ -105,12 +112,16 @@ class FunnelService:
             limit=limit,
             total=len(images),
             images=images,
+            results=list(images),
             presets=list(DEFAULT_PRESETS),
+            error=error_msg,
             errors=errors,
         )
 
-        async with self._lock:
-            self._cache[cache_key] = (now, result)
+        # Cache only when at least one result succeeded to allow prompt retries on outage
+        if len(images) > 0:
+            async with self._lock:
+                self._cache[cache_key] = (now, result)
 
         return result
 

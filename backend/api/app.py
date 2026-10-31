@@ -586,13 +586,26 @@ async def funnel_search(
 ):
     """Searches open-licensed images from Openverse and/or Wikimedia Commons."""
     client_ip = request.client.host if request.client else "127.0.0.1"
-    return await funnel_service.search(
-        query=q,
-        source=source,
-        page=page,
-        limit=limit,
-        client_ip=client_ip,
-    )
+    try:
+        return await funnel_service.search(
+            query=q,
+            source=source,
+            page=page,
+            limit=limit,
+            client_ip=client_ip,
+        )
+    except Exception as e:
+        return FunnelSearchResult(
+            query=q,
+            source=source,
+            page=page,
+            limit=limit,
+            total=0,
+            images=[],
+            results=[],
+            error=str(e),
+            errors={"service": str(e)},
+        )
 
 
 class FunnelItemInput(BaseModel):

@@ -33,6 +33,8 @@ class FunnelSearchResult(BaseModel):
     page: int
     limit: int
     total: int
-    images: List[FunnelImage]
+    images: List[FunnelImage] = Field(default_factory=list)
+    results: List[FunnelImage] = Field(default_factory=list)
     presets: List[str] = Field(default_factory=lambda: list(DEFAULT_PRESETS))
+    error: Optional[str] = None
     errors: Dict[str, str] = Field(default_factory=dict)

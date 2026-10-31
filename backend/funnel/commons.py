@@ -37,10 +37,23 @@ class WikimediaCommonsProvider:
             "Accept": "application/json",
         }
 
-        async with httpx.AsyncClient(timeout=10.0, follow_redirects=True) as client:
-            resp = await client.get(url, params=params, headers=headers)
-            resp.raise_for_status()
-            data = resp.json()
+        try:
+            async with httpx.AsyncClient(timeout=10.0, follow_redirects=True) as client:
+                resp = await client.get(url, params=params, headers=headers)
+                if resp.status_code == 429:
+                    raise Exception("Wikimedia Commons is rate-limiting, try again in a moment")
+                if resp.status_code == 404:
+                    raise Exception("Wikimedia Commons API endpoint not found")
+                if resp.status_code >= 500:
+                    raise Exception("Wikimedia Commons service temporarily unavailable")
+                resp.raise_for_status()
+                data = resp.json()
+        except httpx.TimeoutException:
+            raise Exception("Wikimedia Commons request timed out")
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 429:
+                raise Exception("Wikimedia Commons is rate-limiting, try again in a moment")
+            raise Exception(f"Wikimedia Commons HTTP {e.response.status_code}")
 
         pages = data.get("query", {}).get("pages", {})
         results: List[FunnelImage] = []

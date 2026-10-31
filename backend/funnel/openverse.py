@@ -8,23 +8,39 @@ class OpenverseProvider:
     provider_name = "openverse"
 
     async def search(self, query: str, page: int = 1, limit: int = 20) -> List[FunnelImage]:
-        limit = min(max(1, limit), 30)
+        # Openverse anonymous access enforces page_size <= 20
+        page_size = min(max(1, limit), 20)
         url = "https://api.openverse.org/v1/images/"
         params = {
             "q": query,
             "license_type": "commercial",
             "page": page,
-            "page_size": limit,
+            "page_size": page_size,
         }
         headers = {
             "User-Agent": get_user_agent(),
             "Accept": "application/json",
         }
 
-        async with httpx.AsyncClient(timeout=10.0, follow_redirects=True) as client:
-            resp = await client.get(url, params=params, headers=headers)
-            resp.raise_for_status()
-            data = resp.json()
+        try:
+            async with httpx.AsyncClient(timeout=10.0, follow_redirects=True) as client:
+                resp = await client.get(url, params=params, headers=headers)
+                if resp.status_code == 429:
+                    raise Exception("Openverse is rate-limiting, try again or switch to Wikimedia Commons")
+                if resp.status_code == 401:
+                    raise Exception("Openverse anonymous rate limit reached, switch to Wikimedia Commons")
+                if resp.status_code == 404:
+                    raise Exception("Openverse endpoint not found")
+                if resp.status_code >= 500:
+                    raise Exception("Openverse service temporarily unavailable")
+                resp.raise_for_status()
+                data = resp.json()
+        except httpx.TimeoutException:
+            raise Exception("Openverse request timed out, try again or switch to Wikimedia Commons")
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 429:
+                raise Exception("Openverse is rate-limiting, try again or switch to Wikimedia Commons")
+            raise Exception(f"Openverse HTTP {e.response.status_code}")
 
         results_list = data.get("results", [])
         images: List[FunnelImage] = []
