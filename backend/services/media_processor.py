@@ -47,6 +47,7 @@ class MediaProcessor:
         tracked_vehicles: Optional[List[Dict]] = None,
         tripwire_y: Optional[int] = None,
         crossings_info: Optional[Dict] = None,
+        header_tag: Optional[str] = None,
     ) -> np.ndarray:
         """
         Renders HUD-grade industrial tactical annotations:
@@ -143,7 +144,7 @@ class MediaProcessor:
             )
 
         # Header watermark / telemetry badge
-        h_tag = "IMPROVED CENTERNET [RESNET-18 + CBAM + BIFPN] // UA-DETRAC"
+        h_tag = header_tag or "IMPROVED CENTERNET [RESNET-18 + CBAM + BIFPN] // UA-DETRAC"
         cv2.putText(img, h_tag, (16, 26), cv2.FONT_HERSHEY_SIMPLEX, 0.45, COLOR_WARM_IVORY, 1, cv2.LINE_AA)
         
         return img
@@ -152,13 +153,15 @@ class MediaProcessor:
         self,
         image_path: str,
         conf_thresh: float = 0.35,
+        detector=None,
     ) -> Dict:
         """Processes a single image, generates annotations, and computes class counts."""
         img_bgr = cv2.imread(image_path)
         if img_bgr is None:
             raise ValueError(f"Could not read image file at {image_path}")
 
-        det_result = self.detector.detect(img_bgr, conf_thresh=conf_thresh)
+        det = detector or self.detector
+        det_result = det.detect(img_bgr, conf_thresh=conf_thresh)
         detections = det_result["detections"]
 
         # Class counts
@@ -170,13 +173,16 @@ class MediaProcessor:
             else:
                 class_counts["others"] += 1
 
-        annotated_img = self.draw_industrial_annotation(img_bgr, detections)
+        header_tag = getattr(det, "header_tag", det_result.get("header_tag"))
+        annotated_img = self.draw_industrial_annotation(img_bgr, detections, header_tag=header_tag)
 
         # Save annotated image
         run_id = f"run_{uuid.uuid4().hex[:8]}"
         out_filename = f"{run_id}_annotated.jpg"
         out_path = os.path.join(self.outputs_dir, out_filename)
         cv2.imwrite(out_path, annotated_img)
+
+        model_name = getattr(det, "model_name", det_result.get("model_name", "Improved CenterNet (ResNet-18 + CBAM + BiFPN)"))
 
         return {
             "run_id": run_id,
@@ -192,10 +198,12 @@ class MediaProcessor:
             "model_status": det_result["model_status"],
             "is_trained_weights_loaded": det_result["is_trained_weights_loaded"],
             "execution_mode": det_result["execution_mode"],
-            "checkpoint": det_result.get("checkpoint") or os.path.basename(self.detector.checkpoint_path),
-            "checkpoint_path": self.detector.checkpoint_path,
-            "device": str(self.detector.device),
-            "device_display": self.detector.get_system_status().get("device_display", "CPU"),
+            "model_name": model_name,
+            "header_tag": header_tag,
+            "checkpoint": det_result.get("checkpoint") or os.path.basename(getattr(det, "checkpoint_path", "")),
+            "checkpoint_path": getattr(det, "checkpoint_path", ""),
+            "device": str(getattr(det, "device", "cpu")),
+            "device_display": det.get_system_status().get("device_display", "CPU") if hasattr(det, "get_system_status") else "CPU",
         }
 
     def process_video(
@@ -204,7 +212,9 @@ class MediaProcessor:
         conf_thresh: float = 0.35,
         max_frames: int = 300,
         frame_stride: int = 1,
+        detector=None,
     ) -> Dict:
+        det = detector or self.detector
         """
         Performs frame-by-frame detection and multi-object tracking on video.
         Generates annotated output video, cumulative line-crossing analytics,
@@ -252,7 +262,7 @@ class MediaProcessor:
             t_frame_start = time.perf_counter()
 
             # Run detection
-            det_res = self.detector.detect(frame, conf_thresh=conf_thresh)
+            det_res = det.detect(frame, conf_thresh=conf_thresh)
             dets = det_res["detections"]
             total_detections_sum += len(dets)
 
@@ -276,12 +286,14 @@ class MediaProcessor:
             density_info = tracker.compute_density_estimate(orig_w, orig_h)
 
             # Draw tactical HUD annotations
+            header_tag = getattr(det, 'header_tag', None)
             annotated_frame = self.draw_industrial_annotation(
                 frame,
                 dets,
                 tracked_vehicles=tracked,
                 tripwire_y=tripwire_y,
                 crossings_info=tracker.line_crossings,
+                header_tag=header_tag,
             )
 
             out_writer.write(annotated_frame)
@@ -352,7 +364,8 @@ class MediaProcessor:
             "density_summary": tracker.compute_density_estimate(orig_w, orig_h),
             "model_status": self.detector.model_status,
             "is_trained_weights_loaded": self.detector.weights_loaded,
-            "execution_mode": "PYTORCH_IMPROVED_CENTERNET_V2",
+            "execution_mode": "TORCHVISION_FASTER_RCNN_PRETRAINED" if "Pretrained" in getattr(det, "model_name", "") else "PYTORCH_IMPROVED_CENTERNET_V2",
+            "model_name": getattr(det, "model_name", "Improved CenterNet (ResNet-18 + CBAM + BiFPN)"),
             "checkpoint": os.path.basename(self.detector.checkpoint_path),
             "checkpoint_path": self.detector.checkpoint_path,
             "device": str(self.detector.device),

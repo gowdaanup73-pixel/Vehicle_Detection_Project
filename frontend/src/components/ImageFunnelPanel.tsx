@@ -16,6 +16,7 @@ import { searchFunnelImages, detectFunnelBatch } from '../api';
 
 interface ImageFunnelPanelProps {
   confThresh?: number;
+  detector?: string;
   onRunCompleted?: (run: RunRecord) => void;
   onInspectResult?: (result: FunnelBatchItemResult) => void;
 }
@@ -29,6 +30,7 @@ const PRESETS = [
 
 export const ImageFunnelPanel: React.FC<ImageFunnelPanelProps> = ({
   confThresh = 0.35,
+  detector = 'centernet',
   onRunCompleted,
   onInspectResult,
 }) => {
@@ -129,7 +131,7 @@ export const ImageFunnelPanel: React.FC<ImageFunnelPanelProps> = ({
 
     try {
       setBatchProgress({ current: Math.ceil(selectedImages.length / 2), total: selectedImages.length });
-      const resp = await detectFunnelBatch(items, confThresh);
+      const resp = await detectFunnelBatch(items, confThresh, detector);
       setBatchProgress({ current: selectedImages.length, total: selectedImages.length });
       setBatchResults(resp.results);
       setBatchSummary({
@@ -343,7 +345,7 @@ export const ImageFunnelPanel: React.FC<ImageFunnelPanelProps> = ({
         {isBatchDetecting && batchProgress && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--warm-ivory)' }}>
-              <span>Running batch inference through Improved CenterNet...</span>
+              <span>Running batch inference through {detector === 'pretrained' ? 'Pretrained Faster R-CNN (COCO)' : 'Improved CenterNet'}...</span>
               <span>{batchProgress.current} / {batchProgress.total}</span>
             </div>
             <div

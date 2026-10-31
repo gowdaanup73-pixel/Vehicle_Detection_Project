@@ -307,3 +307,10 @@ export interface FunnelBatchResponse {
   failed: number;
   results: FunnelBatchItemResult[];
 }
+
+export interface DetectorOption {
+  id: string;
+  name: string;
+  available: boolean;
+  active: boolean;
+}

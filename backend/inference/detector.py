@@ -45,6 +45,8 @@ class VehicleDetector:
                 chosen_path = alt_path
 
         self.checkpoint_path = chosen_path
+        self.model_name = "Improved CenterNet (ResNet-18 + CBAM + BiFPN)"
+        self.header_tag = "IMPROVED CENTERNET [RESNET-18 + CBAM + BIFPN] // UA-DETRAC"
         self.weights_loaded = False
         self.model_status = "INITIALIZING"
         self.last_load_error: Optional[str] = None
@@ -208,5 +210,135 @@ class VehicleDetector:
             "model_status": self.model_status,
             "is_trained_weights_loaded": True,
             "execution_mode": "PYTORCH_IMPROVED_CENTERNET_V2",
+            "model_name": self.model_name,
+            "header_tag": self.header_tag,
             "checkpoint": os.path.basename(self.checkpoint_path),
         }
+
+
+COCO_VEHICLE_MAP = {
+    "car": "car",
+    "bus": "bus",
+    "truck": "van",
+    "motorcycle": "others",
+    "bicycle": "others",
+}
+
+
+class PretrainedFasterRCNNDetector:
+    """
+    Pretrained Faster R-CNN (ResNet-50 FPN) from torchvision.
+    Filters and maps COCO categories into our 4 target vehicle classes:
+    car -> car, bus -> bus, truck -> van, motorcycle/bicycle -> others.
+    """
+    def __init__(self, default_conf_thresh: float = 0.35):
+        self.conf_thresh = default_conf_thresh
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.model_name = "Pretrained Faster R-CNN (COCO)"
+        self.header_tag = "PRETRAINED FASTER R-CNN [RESNET-50 FPN] // COCO"
+        self.checkpoint_path = "torchvision://fasterrcnn_resnet50_fpn_coco"
+        self.model_status = "INITIALIZING"
+        self.last_load_error: Optional[str] = None
+        self.model = None
+        self.categories = []
+        self._load_model()
+
+    def _load_model(self):
+        try:
+            from torchvision.models.detection import fasterrcnn_resnet50_fpn, FasterRCNN_ResNet50_FPN_Weights
+            weights = FasterRCNN_ResNet50_FPN_Weights.DEFAULT
+            self.categories = weights.meta["categories"]
+            self.model = fasterrcnn_resnet50_fpn(weights=weights).to(self.device)
+            self.model.eval()
+            self.model_status = "CONFIGURED_ACTIVE"
+            self.last_load_error = None
+        except Exception as e:
+            self.model = None
+            self.model_status = "LOAD_ERROR"
+            self.last_load_error = f"Failed to download or load pretrained torchvision Faster R-CNN weights: {str(e)}"
+
+    def get_system_status(self) -> Dict[str, any]:
+        import platform
+        is_cuda = torch.cuda.is_available()
+        cpu_info = platform.processor() or "Host CPU"
+        device_display = f"CUDA ({torch.cuda.get_device_name(0)})" if is_cuda else f"CPU ({cpu_info})"
+        return {
+            "model_name": self.model_name,
+            "architecture": {
+                "backbone": "ResNet-50",
+                "neck": "FPN",
+                "classes": VEHICLE_CLASSES,
+                "dataset": "COCO Pretrained (torchvision)",
+            },
+            "device": str(self.device),
+            "device_display": device_display,
+            "is_cuda_available": is_cuda,
+            "gpu_name": torch.cuda.get_device_name(0) if is_cuda else "None (CPU Execution)",
+            "weights_loaded": self.model is not None,
+            "model_status": self.model_status,
+            "checkpoint_path": self.checkpoint_path,
+            "checkpoint_name": "fasterrcnn_resnet50_fpn_coco.pth",
+            "last_load_error": self.last_load_error,
+            "confidence_threshold": self.conf_thresh,
+        }
+
+    def detect(self, img_bgr: np.ndarray, conf_thresh: Optional[float] = None) -> Dict[str, any]:
+        if self.model is None or self.model_status != "CONFIGURED_ACTIVE":
+            raise RuntimeError(self.last_load_error or "Pretrained model is not loaded.")
+
+        conf = conf_thresh if conf_thresh is not None else self.conf_thresh
+        t0 = time.perf_counter()
+
+        img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
+        tensor = torch.from_numpy(img_rgb).permute(2, 0, 1).float().to(self.device) / 255.0
+
+        with torch.inference_mode():
+            outputs = self.model([tensor])[0]
+
+        detections = []
+        boxes = outputs["boxes"].detach().cpu().numpy()
+        scores = outputs["scores"].detach().cpu().numpy()
+        labels = outputs["labels"].detach().cpu().numpy()
+
+        for box, score, label_idx in zip(boxes, scores, labels):
+            if score < conf:
+                continue
+            cat_name = self.categories[label_idx] if label_idx < len(self.categories) else ""
+            if cat_name not in COCO_VEHICLE_MAP:
+                continue
+            mapped_class = COCO_VEHICLE_MAP[cat_name]
+            class_id = VEHICLE_CLASSES.index(mapped_class) if mapped_class in VEHICLE_CLASSES else 3
+            detections.append({
+                "bbox": [round(float(box[0]), 2), round(float(box[1]), 2), round(float(box[2]), 2), round(float(box[3]), 2)],
+                "score": round(float(score), 4),
+                "confidence": round(float(score), 4),
+                "class_id": int(class_id),
+                "class_name": mapped_class,
+            })
+
+        latency_ms = round((time.perf_counter() - t0) * 1000.0, 2)
+        return {
+            "detections": detections,
+            "total_detections": len(detections),
+            "latency_ms": latency_ms,
+            "model_status": self.model_status,
+            "is_trained_weights_loaded": True,
+            "execution_mode": "TORCHVISION_FASTER_RCNN_PRETRAINED",
+            "model_name": self.model_name,
+            "header_tag": self.header_tag,
+            "checkpoint": "fasterrcnn_resnet50_fpn_coco.pth",
+        }
+
+
+_cached_pretrained_detector: Optional[PretrainedFasterRCNNDetector] = None
+
+
+def get_pretrained_detector() -> PretrainedFasterRCNNDetector:
+    """Returns singleton instance of PretrainedFasterRCNNDetector."""
+    global _cached_pretrained_detector
+    if _cached_pretrained_detector is None:
+        detector = PretrainedFasterRCNNDetector()
+        if detector.model_status != "CONFIGURED_ACTIVE":
+            raise RuntimeError(detector.last_load_error or "Failed to load pretrained weights.")
+        _cached_pretrained_detector = detector
+    return _cached_pretrained_detector

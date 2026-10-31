@@ -601,3 +601,104 @@ class TestApiEndpoints:
 
 
 
+
+    def test_api_detectors_endpoint(self):
+        client = TestClient(app)
+        res = client.get("/api/detectors")
+        assert res.status_code == 200
+        data = res.json()
+        assert isinstance(data, list)
+        assert len(data) >= 2
+        detector_ids = [d["id"] for d in data]
+        assert "centernet" in detector_ids
+        assert "pretrained" in detector_ids
+
+        centernet = next(d for d in data if d["id"] == "centernet")
+        assert centernet["active"] is True
+        assert centernet["available"] is True
+
+        pretrained = next(d for d in data if d["id"] == "pretrained")
+        assert "Pretrained Faster R-CNN" in pretrained["name"]
+
+    def test_pretrained_detector_class_mapping(self):
+        from unittest.mock import MagicMock
+        from backend.inference.detector import PretrainedFasterRCNNDetector, COCO_VEHICLE_MAP
+
+        # Verify exact class mappings required by specification:
+        # car->car, bus->bus, truck->van, motorcycle/bicycle->others
+        assert COCO_VEHICLE_MAP["car"] == "car"
+        assert COCO_VEHICLE_MAP["bus"] == "bus"
+        assert COCO_VEHICLE_MAP["truck"] == "van"
+        assert COCO_VEHICLE_MAP["motorcycle"] == "others"
+        assert COCO_VEHICLE_MAP["bicycle"] == "others"
+
+        detector = PretrainedFasterRCNNDetector()
+        assert detector.model_name == "Pretrained Faster R-CNN (COCO)"
+
+        # Mock model output to verify mapping logic
+        mock_output = {
+            "boxes": torch.tensor([[10.0, 10.0, 50.0, 50.0],
+                                  [20.0, 20.0, 80.0, 80.0],
+                                  [30.0, 30.0, 90.0, 90.0],
+                                  [40.0, 40.0, 70.0, 70.0],
+                                  [50.0, 50.0, 80.0, 80.0],
+                                  [0.0, 0.0, 10.0, 10.0]]),
+            "scores": torch.tensor([0.95, 0.90, 0.85, 0.80, 0.75, 0.99]),
+            # Indices for: car (3), bus (6), truck (8), motorcycle (4), bicycle (2), person (1)
+            "labels": torch.tensor([3, 6, 8, 4, 2, 1]),
+        }
+
+        orig_model = detector.model
+        detector.model = MagicMock(return_value=[mock_output])
+        try:
+            dummy_bgr = np.zeros((100, 100, 3), dtype=np.uint8)
+            res = detector.detect(dummy_bgr, conf_thresh=0.5)
+            dets = res["detections"]
+            assert len(dets) == 5  # person should be omitted
+            classes = [d["class_name"] for d in dets]
+            assert "car" in classes
+            assert "bus" in classes
+            assert "van" in classes
+            assert classes.count("others") == 2  # motorcycle and bicycle
+            assert "person" not in classes
+        finally:
+            detector.model = orig_model
+
+    def test_detector_selection_on_detect_routes(self):
+        client = TestClient(app)
+        img_bytes = cv2.imencode(".jpg", np.full((100, 100, 3), 128, dtype=np.uint8))[1].tobytes()
+
+        # 1. CenterNet selection
+        res_centernet = client.post(
+            "/api/detect/image",
+            files={"file": ("test_det.jpg", img_bytes, "image/jpeg")},
+            data={"conf_thresh": "0.35", "detector": "centernet"},
+        )
+        assert res_centernet.status_code == 200
+        assert "CenterNet" in res_centernet.json().get("model_name", "")
+
+        # 2. Pretrained Faster R-CNN selection
+        res_pretrained = client.post(
+            "/api/detect/image",
+            files={"file": ("test_det.jpg", img_bytes, "image/jpeg")},
+            data={"conf_thresh": "0.35", "detector": "pretrained"},
+        )
+        assert res_pretrained.status_code == 200
+        assert "Pretrained Faster R-CNN" in res_pretrained.json().get("model_name", "")
+
+    def test_pretrained_detector_unavailable_error(self, monkeypatch):
+        from backend.api import app as app_module
+        def mock_failing_get():
+            raise RuntimeError("Connection timed out while downloading weights")
+
+        monkeypatch.setattr(app_module, "get_pretrained_detector", mock_failing_get)
+        client = TestClient(app)
+        img_bytes = cv2.imencode(".jpg", np.zeros((50, 50, 3), dtype=np.uint8))[1].tobytes()
+
+        res = client.post(
+            "/api/detect/image",
+            files={"file": ("test_err.jpg", img_bytes, "image/jpeg")},
+            data={"detector": "pretrained"},
+        )
+        assert res.status_code == 503
+        assert "unavailable" in res.json().get("detail", "").lower()
