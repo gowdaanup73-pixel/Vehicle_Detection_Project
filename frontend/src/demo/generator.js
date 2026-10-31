@@ -339,3 +339,4 @@ export function getDemoTrafficTick(tick = 0, seed = 42) {
     line_crossings,
   };
 }
+

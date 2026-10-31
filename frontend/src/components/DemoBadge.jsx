@@ -61,3 +61,4 @@ export const ChartWatermark = () => (
     DEMO SIMULATION
   </div>
 );
+

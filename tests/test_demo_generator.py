@@ -17,3 +17,4 @@ def test_demo_generator_unit_tests():
     )
     assert res.returncode == 0, f"Node unit tests failed:\nSTDOUT:\n{res.stdout}\nSTDERR:\n{res.stderr}"
     assert "fail 0" in res.stdout
+
