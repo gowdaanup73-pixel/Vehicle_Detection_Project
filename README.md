@@ -229,6 +229,7 @@ Or populate `backend/metrics.json` directly conforming to the validated Pydantic
 }
 ```
 
+
 ### B. Dashboard Visualization Panels (Model Laboratory)
 
 The Model Laboratory arranges 5 responsive visualization panels across a 2-row layout (3 columns top, 2 wide columns bottom):
@@ -271,6 +272,43 @@ The application includes an integrated **Demo Mode** designed for demonstration 
   - Each refresh generates a new dataset from a fresh seed that smoothly drifts from the previous metrics via small, clamped random-walk steps (preserving harmonic mean consistency between Precision, Recall, and F1, while ensuring the proposed `Improved CenterNet` architecture remains optimal).
   - Recharts animated transitions visually illustrate live metrics drift upon refresh.
 - **Safety & Isolation**:
+  - **Zero Database / File Mutation**: Demo data is strictly computed in memory on the client side and is **never written** to ackend/metrics.json, SQLite (ackend/data/runs.db), or any real run record.
+  - **Visual Indicator Badges**: A persistent high-contrast [DEMO DATA - SIMULATED] badge is displayed in the headers of all views with active charts.
+  - **Chart Watermarks**: A subtle DEMO DATA // SIMULATED watermark overlay is embedded directly inside every rendered visualization card.
+  - **Safe CSV Export**: Exporting metrics while Demo Mode is active stamps the generated filename as metrics_DEMO.csv and marks every data row with a DEMO SIMULATED provenance tag.
+
+
+---
+
+## Image Funnel (Open-Licensed Online Imagery)
+
+The **Image Funnel** allows users in Detection Studio to search, preview, and batch-evaluate open-licensed roadway imagery from online repositories directly within the platform.
+
+### A. Supported Repositories & API Integration
+1. **Wikimedia Commons**:
+   - Queries `commons.wikimedia.org/w/api.php` via `generator=search` across File namespace (`6`), fetching `imageinfo` with ~1280px thumbnails (`iiurlwidth=1280`) and structured `extmetadata` (Artist, LicenseShortName, LicenseUrl).
+2. **Openverse**:
+   - Queries `api.openverse.org/v1/images/` filtering strictly for commercial-use-compatible licenses (`license_type=commercial`).
+3. **Descriptive User-Agent & Compliance**:
+   - All outgoing requests identify with a descriptive User-Agent header: `VehicleDetectionDemo/1.0 (contact: <CONTACT_EMAIL>)`.
+   - Responses are cached in memory for 10 minutes to minimize upstream provider load.
+   - Per-IP rate limiting (60 requests/min) and 10-second request timeouts protect service availability.
+   - Graceful degradation: if a provider is unreachable, times out, or experiences an outage, available results are returned alongside an informational notice without breaking the user experience.
+
+### B. Batch Inference & Operational Guardrails
+- **Controlled Concurrency**: Batch detection is limited to maximum 20 images per request, processed with concurrency restricted to 3 workers.
+- **SSRF Protection & Network Isolation**:
+  - Validates URLs against Server-Side Request Forgery (SSRF).
+  - Restricts schemes strictly to `http` and `https`.
+  - Resolves hostnames and blocks connections to private networks, loopbacks (`127.0.0.0/8`, `::1`), link-local (`169.254.0.0/16`), and internal cloud metadata endpoints (`metadata.google.internal`).
+  - Enforces 25 MB maximum image size limits with chunked streaming and validates OpenCV image decodability.
+- **Attribution & Provenance Tracking**:
+  - Stores `source_url`, `creator`, `license`, and `source_page_url` as first-class columns in the SQLite database via a non-destructive migration.
+  - Funnel execution records are explicitly tagged with `source="funnel"` and `run_type="funnel"`, ensuring they remain distinct from ground-truth model benchmark metrics.
+  - Full attribution details are accessible in Detection Studio hover cards, canvas telemetry strips, and History Run Inspectors.
+
+> [!IMPORTANT]
+> **Dataset Usage Notice**: Images retrieved through the Image Funnel are intended solely for live demonstration, inference testing, and visual model validation. They must **not** be incorporated into a training or fine-tuning dataset without independently verifying license covenants, commercial terms, and attribution requirements.
   - **Zero Database / File Mutation**: Demo data is strictly computed in memory on the client side and is **never written** to `backend/metrics.json`, SQLite (`backend/data/runs.db`), or any real run record.
   - **Visual Indicators**: A clean `DEMO` chip appears in the page header next to the toggle switch.
   - **Chart Watermarks**: A subtle `DEMO SIMULATION` watermark overlay is embedded inside every chart card.

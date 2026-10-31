@@ -6,6 +6,8 @@ import {
   MetricsData,
   ModelStatus,
   RunRecord,
+  FunnelSearchResult,
+  FunnelBatchResponse,
 } from './types';
 
 const API_BASE = '/api';
@@ -132,5 +134,97 @@ export async function deleteRun(runId: string) {
 export async function fetchMetrics(): Promise<MetricsData> {
   const res = await fetch(`${API_BASE}/metrics`);
   if (!res.ok) throw new Error('Metrics fetch failed');
+  return res.json();
+}
+
+
+export async function searchFunnelImages(
+  query: string,
+  source: 'openverse' | 'commons' | 'both' = 'both',
+  page: number = 1,
+  limit: number = 20
+): Promise<FunnelSearchResult> {
+  const params = new URLSearchParams({
+    q: query,
+    source,
+    page: String(page),
+    limit: String(limit),
+  });
+  try {
+    const res = await fetch(`${API_BASE}/funnel/search?${params.toString()}`);
+    if (!res.ok) {
+      if (res.status === 404) {
+        return {
+          query,
+          source,
+          page,
+          limit,
+          total: 0,
+          images: [],
+          results: [],
+          presets: [],
+          error: 'Search service endpoint returned 404. Ensure backend is running and reloaded.',
+          errors: { service: '404 Not Found' },
+        };
+      }
+      const err = await res.json().catch(() => ({ detail: res.statusText }));
+      return {
+        query,
+        source,
+        page,
+        limit,
+        total: 0,
+        images: [],
+        results: [],
+        presets: [],
+        error: err.detail || `Search failed with HTTP status ${res.status}`,
+        errors: { service: err.detail || String(res.status) },
+      };
+    }
+    const data = await res.json();
+    return {
+      ...data,
+      results: data.results || data.images || [],
+      images: data.images || data.results || [],
+    };
+  } catch (e: any) {
+    return {
+      query,
+      source,
+      page,
+      limit,
+      total: 0,
+      images: [],
+      results: [],
+      presets: [],
+      error: 'Network connection failed. Check backend server connection or try again.',
+      errors: { network: e.message || 'Network error' },
+    };
+  }
+}
+
+export async function detectFunnelBatch(
+  items: Array<{
+    image_url: string;
+    title?: string;
+    creator?: string;
+    license?: string;
+    source_page_url?: string;
+  }>,
+  confThresh: number = 0.35
+): Promise<FunnelBatchResponse> {
+  const res = await fetch(`${API_BASE}/funnel/detect-batch`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      items,
+      image_urls: items.map((i) => i.image_url),
+      conf_thresh: confThresh,
+    }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new Error(err.detail || 'Batch detection failed');
+  }
   return res.json();
 }

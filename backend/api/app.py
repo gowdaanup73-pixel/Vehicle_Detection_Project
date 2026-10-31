@@ -10,7 +10,8 @@ import uuid
 from typing import Dict, List, Optional, Tuple
 import cv2
 import numpy as np
-from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, Query, Request, UploadFile
+from backend.funnel import FunnelSearchResult, funnel_service, download_image_from_url, validate_url_for_ssrf
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -573,3 +574,230 @@ def delete_run(run_id: str):
             pass
 
     return {"success": True, "deleted_id": run_id}
+
+
+@app.get("/api/funnel/search", response_model=FunnelSearchResult)
+async def funnel_search(
+    request: Request,
+    q: str = Query("traffic bus street", description="Search query"),
+    source: str = Query("both", description="Source provider: openverse, commons, or both"),
+    page: int = Query(1, ge=1, description="Page number"),
+    limit: int = Query(20, ge=1, le=30, description="Results limit (max 30)"),
+):
+    """Searches open-licensed images from Openverse and/or Wikimedia Commons."""
+    client_ip = request.client.host if request.client else "127.0.0.1"
+    try:
+        return await funnel_service.search(
+            query=q,
+            source=source,
+            page=page,
+            limit=limit,
+            client_ip=client_ip,
+        )
+    except Exception as e:
+        return FunnelSearchResult(
+            query=q,
+            source=source,
+            page=page,
+            limit=limit,
+            total=0,
+            images=[],
+            results=[],
+            error=str(e),
+            errors={"service": str(e)},
+        )
+
+
+class FunnelItemInput(BaseModel):
+    image_url: str
+    title: Optional[str] = None
+    creator: Optional[str] = None
+    license: Optional[str] = None
+    source_page_url: Optional[str] = None
+
+
+class FunnelBatchRequest(BaseModel):
+    image_urls: List[str] = []
+    items: Optional[List[FunnelItemInput]] = None
+    detector: Optional[str] = None
+    conf_thresh: Optional[float] = 0.35
+
+
+@app.post("/api/detect/url")
+async def detect_url(
+    url: str = Form(...),
+    conf_thresh: float = Form(0.35),
+    run_type: Optional[str] = Form(None),
+):
+    """Processes an image from a remote URL with SSRF protection."""
+    conf = _to_float(conf_thresh, 0.35)
+    uploads_dir = os.path.join(MEDIA_ROOT, "uploads")
+    local_path = await download_image_from_url(url, uploads_dir)
+    filename = os.path.basename(local_path)
+    input_url = f"/media/uploads/{filename}"
+    actual_run_type = run_type or "url_download"
+
+    try:
+        result = await asyncio.to_thread(media_processor.process_image, local_path, conf_thresh=conf)
+    except Exception as e:
+        fail_id = f"failed_{uuid.uuid4().hex[:8]}"
+        db.save_run(
+            run_id=fail_id,
+            media_type="image",
+            filename=filename,
+            input_url=input_url,
+            annotated_url="",
+            model_name="Improved CenterNet (ResNet-18 + CBAM + BiFPN)",
+            weights_status="FAILED",
+            latency_ms=0.0,
+            fps=0.0,
+            total_detections=0,
+            unique_vehicles=0,
+            line_crossings=0,
+            class_counts={"car": 0, "van": 0, "bus": 0, "others": 0},
+            metadata={"error": str(e), "status": "FAILED", "run_type": actual_run_type, "source_url": url},
+            run_type=actual_run_type,
+            source="url",
+            source_url=url,
+        )
+        raise HTTPException(status_code=500, detail=f"Image processing error: {str(e)}")
+
+    annotated_url = f"/media/outputs/{result['annotated_filename']}"
+    saved_run = db.save_run(
+        run_id=result["run_id"],
+        media_type="image",
+        filename=filename,
+        input_url=input_url,
+        annotated_url=annotated_url,
+        model_name="Improved CenterNet (ResNet-18 + CBAM + BiFPN)",
+        weights_status=result["model_status"],
+        latency_ms=result["latency_ms"],
+        fps=result["fps"],
+        total_detections=result["total_detections"],
+        unique_vehicles=result["unique_vehicles"],
+        line_crossings=0,
+        class_counts=result["class_counts"],
+        metadata={
+            "conf_thresh": conf,
+            "execution_mode": result["execution_mode"],
+            "checkpoint": result.get("checkpoint"),
+            "device": result.get("device_display"),
+            "run_type": actual_run_type,
+            "source_url": url,
+            "detections": result.get("detections", []),
+        },
+        run_type=actual_run_type,
+        source="url",
+        source_url=url,
+    )
+
+    result["input_url"] = input_url
+    result["annotated_url"] = annotated_url
+    result["saved_run"] = saved_run
+    result["run_type"] = actual_run_type
+    return result
+
+
+@app.post("/api/funnel/detect-batch")
+async def funnel_detect_batch(batch_req: FunnelBatchRequest):
+    """Batch-runs vehicle detection on open-licensed funnel images with limited concurrency (3)."""
+    input_items: List[FunnelItemInput] = []
+    if batch_req.items:
+        input_items = list(batch_req.items)
+    elif batch_req.image_urls:
+        input_items = [FunnelItemInput(image_url=u) for u in batch_req.image_urls]
+
+    if not input_items:
+        raise HTTPException(status_code=400, detail="No image URLs provided in batch request.")
+
+    if len(input_items) > 20:
+        raise HTTPException(status_code=400, detail="Maximum batch size is 20 images.")
+
+    semaphore = asyncio.Semaphore(3)
+    uploads_dir = os.path.join(MEDIA_ROOT, "uploads")
+    conf = _to_float(batch_req.conf_thresh, 0.35)
+
+    async def process_single(item: FunnelItemInput) -> Dict:
+        async with semaphore:
+            try:
+                local_path = await download_image_from_url(item.image_url, uploads_dir)
+                filename = os.path.basename(local_path)
+                input_url = f"/media/uploads/{filename}"
+
+                result = await asyncio.to_thread(media_processor.process_image, local_path, conf_thresh=conf)
+                annotated_url = f"/media/outputs/{result['annotated_filename']}"
+
+                saved_run = db.save_run(
+                    run_id=result["run_id"],
+                    media_type="image",
+                    filename=filename,
+                    input_url=input_url,
+                    annotated_url=annotated_url,
+                    model_name="Improved CenterNet (ResNet-18 + CBAM + BiFPN)",
+                    weights_status=result["model_status"],
+                    latency_ms=result["latency_ms"],
+                    fps=result["fps"],
+                    total_detections=result["total_detections"],
+                    unique_vehicles=result["unique_vehicles"],
+                    line_crossings=0,
+                    class_counts=result["class_counts"],
+                    metadata={
+                        "conf_thresh": conf,
+                        "execution_mode": result["execution_mode"],
+                        "checkpoint": result.get("checkpoint"),
+                        "device": result.get("device_display"),
+                        "run_type": "funnel",
+                        "source": "funnel",
+                        "source_url": item.image_url,
+                        "creator": item.creator,
+                        "license": item.license,
+                        "source_page_url": item.source_page_url,
+                        "title": item.title,
+                        "detections": result.get("detections", []),
+                    },
+                    run_type="funnel",
+                    source="funnel",
+                    source_url=item.image_url,
+                    creator=item.creator,
+                    license=item.license,
+                    source_page_url=item.source_page_url,
+                )
+
+                return {
+                    "image_url": item.image_url,
+                    "status": "success",
+                    "run_id": result["run_id"],
+                    "input_url": input_url,
+                    "annotated_url": annotated_url,
+                    "total_detections": result["total_detections"],
+                    "unique_vehicles": result["unique_vehicles"],
+                    "class_counts": result["class_counts"],
+                    "latency_ms": result["latency_ms"],
+                    "fps": result["fps"],
+                    "title": item.title,
+                    "creator": item.creator,
+                    "license": item.license,
+                    "source_page_url": item.source_page_url,
+                    "detections": result.get("detections", []),
+                    "saved_run": saved_run,
+                }
+            except Exception as e:
+                return {
+                    "image_url": item.image_url,
+                    "status": "failed",
+                    "error": str(e),
+                    "title": item.title,
+                    "creator": item.creator,
+                    "license": item.license,
+                    "source_page_url": item.source_page_url,
+                }
+
+    tasks = [process_single(item) for item in input_items]
+    results = await asyncio.gather(*tasks)
+
+    return {
+        "total": len(input_items),
+        "successful": sum(1 for r in results if r["status"] == "success"),
+        "failed": sum(1 for r in results if r["status"] == "failed"),
+        "results": results,
+    }

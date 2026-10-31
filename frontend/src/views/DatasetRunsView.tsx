@@ -226,7 +226,12 @@ export const DatasetRunsView: React.FC<DatasetRunsViewProps> = ({
                         </span>
                       </td>
                       <td style={{ maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {run.filename}
+                        <div>{run.filename}</div>
+                        {(run.creator || run.license) && (
+                          <div style={{ fontSize: '0.62rem', color: 'var(--burnt-orange)', marginTop: '2px' }}>
+                            {run.license || 'Open License'} {run.creator ? `// ${run.creator}` : ''}
+                          </div>
+                        )}
                       </td>
                       <td style={{ fontWeight: 700, color: 'var(--warm-ivory)' }}>
                         {run.total_detections}
@@ -397,6 +402,30 @@ export const DatasetRunsView: React.FC<DatasetRunsViewProps> = ({
                   <div>Weights Status: <span style={{ color: 'var(--warm-ivory)' }}>{selectedRun.weights_status}</span></div>
                   <div>Media Type: <span style={{ color: 'var(--warm-ivory)' }}>{selectedRun.media_type}</span></div>
                 </div>
+                {(selectedRun.creator || selectedRun.license || selectedRun.source_page_url) && (
+                  <div style={{ marginTop: '0.6rem', paddingTop: '0.6rem', borderTop: '1px solid rgba(233, 226, 212, 0.1)' }}>
+                    <div style={{ color: 'var(--burnt-orange)', fontWeight: 700, marginBottom: '0.3rem' }}>
+                      IMAGE ATTRIBUTION (OPEN LICENSE)
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.4rem', color: 'var(--warm-ivory-dim)' }}>
+                      {selectedRun.creator && <div>Creator: <span style={{ color: 'var(--warm-ivory)' }}>{selectedRun.creator}</span></div>}
+                      {selectedRun.license && <div>License: <span style={{ color: 'var(--warm-ivory)' }}>{selectedRun.license}</span></div>}
+                      {selectedRun.source_page_url && (
+                        <div style={{ gridColumn: 'span 2' }}>
+                          Source Page:{' '}
+                          <a
+                            href={selectedRun.source_page_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{ color: 'var(--burnt-orange)', textDecoration: 'underline' }}
+                          >
+                            {selectedRun.source_page_url}
+                          </a>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 

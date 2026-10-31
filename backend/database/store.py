@@ -56,14 +56,29 @@ class RunsDatabase:
                     class_counts_json TEXT NOT NULL,
                     timeline_json TEXT,
                     metadata_json TEXT,
-                    run_type TEXT DEFAULT 'user_upload'
+                    run_type TEXT DEFAULT 'user_upload',
+                    source TEXT DEFAULT 'user_upload',
+                    source_url TEXT DEFAULT NULL,
+                    creator TEXT DEFAULT NULL,
+                    license TEXT DEFAULT NULL,
+                    source_page_url TEXT DEFAULT NULL
                 )
             """)
-            # Ensure run_type column exists if table was created in an older schema
+            # Ensure migration columns exist if table was created in an older schema
             cursor.execute("PRAGMA table_info(runs)")
             cols = [col[1] for col in cursor.fetchall()]
             if "run_type" not in cols:
                 cursor.execute("ALTER TABLE runs ADD COLUMN run_type TEXT DEFAULT 'user_upload'")
+            if "source" not in cols:
+                cursor.execute("ALTER TABLE runs ADD COLUMN source TEXT DEFAULT 'user_upload'")
+            if "source_url" not in cols:
+                cursor.execute("ALTER TABLE runs ADD COLUMN source_url TEXT DEFAULT NULL")
+            if "creator" not in cols:
+                cursor.execute("ALTER TABLE runs ADD COLUMN creator TEXT DEFAULT NULL")
+            if "license" not in cols:
+                cursor.execute("ALTER TABLE runs ADD COLUMN license TEXT DEFAULT NULL")
+            if "source_page_url" not in cols:
+                cursor.execute("ALTER TABLE runs ADD COLUMN source_page_url TEXT DEFAULT NULL")
             conn.commit()
 
     def save_run(
@@ -85,6 +100,11 @@ class RunsDatabase:
         metadata: Optional[Dict] = None,
         timestamp: Optional[str] = None,
         run_type: str = "user_upload",
+        source: str = "user_upload",
+        source_url: Optional[str] = None,
+        creator: Optional[str] = None,
+        license: Optional[str] = None,
+        source_page_url: Optional[str] = None,
     ) -> Optional[Dict]:
         # Do not insert demo sample runs into production operational history
         if filename.startswith("sample_") or (metadata and metadata.get("is_sample_media")):
@@ -93,6 +113,15 @@ class RunsDatabase:
         now_iso = timestamp or datetime.now().isoformat()
         meta = dict(metadata or {})
         meta["run_type"] = run_type
+        meta["source"] = source
+        if source_url:
+            meta["source_url"] = source_url
+        if creator:
+            meta["creator"] = creator
+        if license:
+            meta["license"] = license
+        if source_page_url:
+            meta["source_page_url"] = source_page_url
 
         with self._get_connection() as conn:
             cursor = conn.cursor()
@@ -101,8 +130,9 @@ class RunsDatabase:
                     id, timestamp, media_type, filename, input_url, annotated_url,
                     model_name, weights_status, latency_ms, fps,
                     total_detections, unique_vehicles, line_crossings,
-                    class_counts_json, timeline_json, metadata_json, run_type
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    class_counts_json, timeline_json, metadata_json, run_type,
+                    source, source_url, creator, license, source_page_url
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 run_id,
                 now_iso,
@@ -121,6 +151,11 @@ class RunsDatabase:
                 json.dumps(timeline) if timeline else None,
                 json.dumps(meta),
                 run_type,
+                source,
+                source_url,
+                creator,
+                license,
+                source_page_url,
             ))
             conn.commit()
 
@@ -310,4 +345,9 @@ class RunsDatabase:
             d["metadata"] = {}
 
         d["run_type"] = d.get("run_type") or (d.get("metadata") or {}).get("run_type", "user_upload")
+        d["source"] = d.get("source") or (d.get("metadata") or {}).get("source", "user_upload")
+        d["source_url"] = d.get("source_url") or (d.get("metadata") or {}).get("source_url")
+        d["creator"] = d.get("creator") or (d.get("metadata") or {}).get("creator")
+        d["license"] = d.get("license") or (d.get("metadata") or {}).get("license")
+        d["source_page_url"] = d.get("source_page_url") or (d.get("metadata") or {}).get("source_page_url")
         return d
