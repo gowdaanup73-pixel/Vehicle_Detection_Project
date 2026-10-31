@@ -275,7 +275,9 @@ export interface FunnelSearchResult {
   limit: number;
   total: number;
   images: FunnelImage[];
+  results?: FunnelImage[];
   presets: string[];
+  error?: string | null;
   errors?: Record<string, string>;
 }
 

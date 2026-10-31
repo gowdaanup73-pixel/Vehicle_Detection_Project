@@ -150,12 +150,57 @@ export async function searchFunnelImages(
     page: String(page),
     limit: String(limit),
   });
-  const res = await fetch(`${API_BASE}/funnel/search?${params.toString()}`);
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ detail: res.statusText }));
-    throw new Error(err.detail || 'Funnel search failed');
+  try {
+    const res = await fetch(`${API_BASE}/funnel/search?${params.toString()}`);
+    if (!res.ok) {
+      if (res.status === 404) {
+        return {
+          query,
+          source,
+          page,
+          limit,
+          total: 0,
+          images: [],
+          results: [],
+          presets: [],
+          error: 'Search service endpoint returned 404. Ensure backend is running and reloaded.',
+          errors: { service: '404 Not Found' },
+        };
+      }
+      const err = await res.json().catch(() => ({ detail: res.statusText }));
+      return {
+        query,
+        source,
+        page,
+        limit,
+        total: 0,
+        images: [],
+        results: [],
+        presets: [],
+        error: err.detail || `Search failed with HTTP status ${res.status}`,
+        errors: { service: err.detail || String(res.status) },
+      };
+    }
+    const data = await res.json();
+    return {
+      ...data,
+      results: data.results || data.images || [],
+      images: data.images || data.results || [],
+    };
+  } catch (e: any) {
+    return {
+      query,
+      source,
+      page,
+      limit,
+      total: 0,
+      images: [],
+      results: [],
+      presets: [],
+      error: 'Network connection failed. Check backend server connection or try again.',
+      errors: { network: e.message || 'Network error' },
+    };
   }
-  return res.json();
 }
 
 export async function detectFunnelBatch(

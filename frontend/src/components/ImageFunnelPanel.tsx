@@ -54,16 +54,27 @@ export const ImageFunnelPanel: React.FC<ImageFunnelPanelProps> = ({
     setBatchSummary(null);
 
     try {
-      const data = await searchFunnelImages(targetQuery, targetSource, 1, 24);
-      setImages(data.images || []);
+      const data = await searchFunnelImages(targetQuery, targetSource, 1, 20);
+      const retrieved = data.results && data.results.length > 0 ? data.results : (data.images || []);
+      setImages(retrieved);
       setProviderErrors(data.errors || {});
-      if ((data.images || []).length === 0) {
-        if (data.errors && Object.keys(data.errors).length > 0) {
-          setSearchError('Provider unavailable or returned no images for this query.');
+
+      if (data.error) {
+        if (retrieved.length === 0) {
+          setSearchError(data.error);
+        } else {
+          setSearchError(null);
         }
+      } else if (retrieved.length === 0) {
+        setSearchError(null);
       }
     } catch (err: any) {
-      setSearchError(err.message || 'Failed to search images');
+      const msg = err.message || 'Unable to connect to search service';
+      setSearchError(
+        msg.includes('404') || msg.toLowerCase().includes('not found')
+          ? 'Search service endpoint not found (404). Please ensure backend daemon is running.'
+          : msg
+      );
       setImages([]);
     } finally {
       setIsLoading(false);
@@ -404,14 +415,30 @@ export const ImageFunnelPanel: React.FC<ImageFunnelPanelProps> = ({
         {!isLoading && searchError && images.length === 0 && (
           <div style={{ padding: '1.5rem', textAlign: 'center', color: 'var(--warm-ivory-dim)', fontSize: '0.82rem' }}>
             <AlertCircle size={22} style={{ color: 'var(--burnt-orange)', margin: '0 auto 0.5rem auto' }} />
-            <div>{searchError}</div>
-            <button
-              onClick={() => performSearch(query, source)}
-              className="btn btn-secondary"
-              style={{ marginTop: '0.75rem', fontSize: '0.75rem', padding: '0.3rem 0.7rem' }}
-            >
-              Retry Search
-            </button>
+            <div style={{ color: 'var(--warm-ivory)', marginBottom: '0.5rem', maxWidth: '480px', margin: '0 auto' }}>
+              {searchError}
+            </div>
+            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center', marginTop: '0.75rem', flexWrap: 'wrap' }}>
+              <button
+                onClick={() => performSearch(query, source)}
+                className="btn btn-primary"
+                style={{ fontSize: '0.75rem', padding: '0.35rem 0.75rem' }}
+              >
+                Retry Search
+              </button>
+              {source !== 'commons' && (
+                <button
+                  onClick={() => {
+                    setSource('commons');
+                    performSearch(query, 'commons');
+                  }}
+                  className="btn btn-secondary"
+                  style={{ fontSize: '0.75rem', padding: '0.35rem 0.75rem' }}
+                >
+                  Switch to Wikimedia Commons
+                </button>
+              )}
+            </div>
           </div>
         )}
 
