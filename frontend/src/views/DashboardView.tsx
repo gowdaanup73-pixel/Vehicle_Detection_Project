@@ -20,6 +20,7 @@ import {
   X,
   Zap
 } from 'lucide-react';
+import { DemoBadge, ChartWatermark } from '../components/DemoBadge';
 import {
   AnalyticsSummary,
   DatasetInfo,
@@ -43,6 +44,7 @@ interface DashboardViewProps {
   onRefresh?: () => void;
   isProcessing: boolean;
   isBackendHealthy: boolean;
+  demoData?: any;
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = ({
@@ -57,6 +59,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   onRefresh,
   isProcessing,
   isBackendHealthy,
+  demoData,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
@@ -68,11 +71,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const videoRuns = runs.filter((r) => r.media_type === 'video').length;
 
   const totalDetections = useMemo(() => {
+    if (demoData?.isDemoMode) {
+      return demoData.rollingHistory?.reduce((acc: number, r: any) => acc + (r.detections || 0), 0) || demoData.currentTickData?.detections || 0;
+    }
     if (summary?.total_detections !== undefined && summary.total_detections > 0) {
       return summary.total_detections;
     }
     return runs.reduce((acc, r) => acc + (r.total_detections || 0), 0);
-  }, [summary, runs]);
+  }, [summary, runs, demoData]);
 
   // Real Latency (Mean & Median)
   const latencies = useMemo(() => {
@@ -80,6 +86,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   }, [runs]);
 
   const medianLatency = useMemo(() => {
+    if (demoData?.isDemoMode && demoData.currentTickData?.latency_ms) {
+      return demoData.currentTickData.latency_ms.toFixed(1);
+    }
     if (summary?.median_latency_ms) return summary.median_latency_ms.toFixed(1);
     if (latencies.length === 0) return null;
     const sorted = [...latencies].sort((a, b) => a - b);
@@ -99,6 +108,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
   // Genuine Class Counts Aggregation
   const classCounts = useMemo(() => {
+    if (demoData?.isDemoMode && demoData.currentTickData?.class_counts) {
+      return demoData.currentTickData.class_counts;
+    }
     if (summary?.class_distribution) {
       return summary.class_distribution;
     }
@@ -125,7 +137,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   }, [classCounts, totalDetections]);
 
   // Detection Activity Over Time Series
-  const timeSeriesData = useMemo(() => {
+  const timeSeriesData: Array<{ date: string; detections: number; runs?: number }> = useMemo(() => {
+    if (demoData?.isDemoMode && demoData.rollingHistory?.length > 0) {
+      return demoData.rollingHistory;
+    }
     if (summary?.runs_over_time && summary.runs_over_time.length > 0) {
       return summary.runs_over_time;
     }
@@ -174,6 +189,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+          {demoData?.isDemoMode && <DemoBadge />}
           {/* Connection Status Badge */}
           <div
             style={{
@@ -447,6 +463,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             {timeSeriesData.length > 1 ? (
               <div>
                 <div style={{ height: '135px', width: '100%', marginBottom: '0.5rem', position: 'relative' }}>
+                  {demoData?.isDemoMode && <ChartWatermark />}
                   <svg width="100%" height="100%" viewBox="0 0 500 135" preserveAspectRatio="none">
                     <line x1="0" y1="20" x2="500" y2="20" stroke="rgba(233,226,212,0.06)" strokeDasharray="3 3" />
                     <line x1="0" y1="67" x2="500" y2="67" stroke="rgba(233,226,212,0.06)" strokeDasharray="3 3" />

@@ -249,3 +249,31 @@ Or populate `backend/metrics.json` directly conforming to the validated Pydantic
 ### C. Client-Side Metrics CSV Export
 
 Click **"Download metrics CSV"** in the Model Laboratory top bar to instantly download a comprehensive `metrics.csv` containing comparative model telemetry, class breakdowns, environmental performance, and convergence history directly from the browser with null values formatted as clean empty cells.
+
+
+---
+
+## Demo Mode (Simulated Telemetry)
+
+The application includes an integrated **Demo Mode** designed for demonstration and offline evaluation without requiring prior dataset inference runs or execution records.
+
+### A. How to Enable
+1. **Interactive UI Toggle**:
+   - Locate the **DEMO MODE** switch in the application sidebar.
+   - Click to toggle between **[OFF]** (live production telemetry) and **[ON]** (simulated demonstration stream).
+   - The selection is stored client-side in browser localStorage and persists across page reloads.
+2. **Environment Variable**:
+   - Set VITE_DEMO_MODE=true in .env (or environment configuration) to default Demo Mode to active on initial launch.
+
+### B. What It Does
+- **Simulated Real-Time Stream**:
+  - Emits simulated traffic telemetry ticks every 2.5 seconds (2500 ms) via a seeded, deterministic pseudo-random generator (mulberry32) with smooth random-walk variations.
+  - Mimics diurnal traffic oscillations (morning and evening rush-hour curves) for vehicle detection volumes, unique vehicle tracking, FPS, latency, class counts, and lane occupancy.
+  - Generates realistic benchmark metrics across comparative models (Baseline, +CBAM, +BiFPN, Improved CenterNet, INT8), class-level breakdowns, environmental conditions, and convergence curves.
+  - Maintains a 30-point rolling history window for live time-series trajectory graphs.
+  - Automatically pauses simulation timers when the browser tab is hidden/minimized to conserve resources.
+- **Safety & Isolation**:
+  - **Zero Database / File Mutation**: Demo data is strictly computed in memory on the client side and is **never written** to ackend/metrics.json, SQLite (ackend/data/runs.db), or any real run record.
+  - **Visual Indicator Badges**: A persistent high-contrast [DEMO DATA - SIMULATED] badge is displayed in the headers of all views with active charts.
+  - **Chart Watermarks**: A subtle DEMO DATA // SIMULATED watermark overlay is embedded directly inside every rendered visualization card.
+  - **Safe CSV Export**: Exporting metrics while Demo Mode is active stamps the generated filename as metrics_DEMO.csv and marks every data row with a DEMO SIMULATED provenance tag.

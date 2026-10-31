@@ -19,6 +19,8 @@ interface SidebarProps {
   modelStatus: ModelStatus | null;
   onRefresh: () => void;
   isBackendHealthy: boolean;
+  isDemoMode?: boolean;
+  onToggleDemo?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -27,6 +29,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   modelStatus,
   onRefresh,
   isBackendHealthy,
+  isDemoMode = false,
+  onToggleDemo,
 }) => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const isTrainedActive = modelStatus?.weights_loaded ?? false;
@@ -137,6 +141,38 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <span style={{ color: 'var(--warm-ivory)', fontWeight: 600, fontSize: '0.74rem' }}>
               {modelStatus?.device_display || (modelStatus?.is_cuda_available ? 'CUDA GPU' : 'CPU Mode')}
             </span>
+          </div>
+
+          {/* Demo Mode Toggle Card */}
+          <div className="sidebar-status-card" style={{ borderLeft: isDemoMode ? '3px solid var(--burnt-orange)' : '3px solid var(--border-medium)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
+              <span style={{ fontSize: '0.68rem', color: isDemoMode ? 'var(--burnt-orange)' : 'var(--warm-ivory-dim)', fontWeight: 700, letterSpacing: '0.04em' }}>
+                DEMO MODE
+              </span>
+              {onToggleDemo && (
+                <button
+                  type="button"
+                  onClick={onToggleDemo}
+                  style={{
+                    padding: '0.15rem 0.45rem',
+                    fontSize: '0.62rem',
+                    fontFamily: 'var(--font-mono)',
+                    fontWeight: 700,
+                    backgroundColor: isDemoMode ? 'var(--burnt-orange)' : 'var(--charcoal-800)',
+                    color: isDemoMode ? '#fff' : 'var(--warm-ivory-dim)',
+                    border: '1px solid var(--border-medium)',
+                    cursor: 'pointer',
+                  }}
+                  title="Toggle live simulated telemetry without writing to disk"
+                  aria-label="Toggle demo mode"
+                >
+                  {isDemoMode ? 'ON' : 'OFF'}
+                </button>
+              )}
+            </div>
+            <div style={{ fontSize: '0.68rem', color: isDemoMode ? 'var(--burnt-orange)' : 'var(--warm-ivory-dim)', lineHeight: 1.3 }}>
+              {isDemoMode ? 'Simulating live telemetry (2500ms)' : 'Real SQLite telemetry'}
+            </div>
           </div>
 
           {/* Model Weights State */}
