@@ -240,10 +240,23 @@ h1, h2, h3, h4, h5, h6 {
 
 .sidebar-status-row {
   display: flex;
+  align-items: flex-start;
   justify-content: space-between;
+  gap: 0.75rem;
   font-family: var(--font-mono);
   font-size: 0.72rem;
-  margin-bottom: 0.4rem;
+  margin-bottom: 0.5rem;
+}
+
+.sidebar-status-label {
+  color: var(--warm-ivory-dim);
+  flex-shrink: 0;
+}
+
+.sidebar-status-val {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  text-align: right;
 }
 
 .sidebar-status-card {
