@@ -2,6 +2,7 @@ from .base import FunnelImage, FunnelSearchResult, DEFAULT_PRESETS, get_user_age
 from .commons import WikimediaCommonsProvider
 from .openverse import OpenverseProvider
 from .service import FunnelService, funnel_service
+from .downloader import validate_url_for_ssrf, download_image_from_url
 
 __all__ = [
     "FunnelImage",
@@ -12,4 +13,6 @@ __all__ = [
     "OpenverseProvider",
     "FunnelService",
     "funnel_service",
+    "validate_url_for_ssrf",
+    "download_image_from_url",
 ]
