@@ -10,7 +10,6 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   getDemoClassMetrics,
-  getDemoConditionMap,
   getDemoConfusionMatrix,
   getDemoEpochHistory,
   getDemoMetrics,
@@ -164,7 +163,7 @@ export function useDemoData(overrideEnabled = undefined) {
   const demoMetrics = getDemoMetrics(42, tick);
   const demoClassMetrics = getDemoClassMetrics(42, tick);
   const demoConfusionMatrix = getDemoConfusionMatrix(42, tick);
-  const demoConditionMap = getDemoConditionMap(42, tick);
+  const demoConditionMap = null;
   const demoEpochHistory = getDemoEpochHistory(42, tick);
 
   const fullDemoMetricsPayload = {

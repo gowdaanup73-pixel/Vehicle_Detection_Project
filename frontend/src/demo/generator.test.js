@@ -5,7 +5,6 @@ import {
   getDemoMetrics,
   getDemoClassMetrics,
   getDemoConfusionMatrix,
-  getDemoConditionMap,
   getDemoEpochHistory,
   getDemoTrafficTick,
 } from './generator.js';
@@ -50,12 +49,6 @@ describe('Demo Generator Unit Tests', () => {
       }
     }
 
-    const conditionMap = getDemoConditionMap(100);
-    for (const [cond, val] of Object.entries(conditionMap)) {
-      assert.ok(typeof val === 'number', `${cond} is not number`);
-      assert.ok(!Number.isNaN(val), `${cond} is NaN`);
-      assert.ok(val >= 0 && val <= 1, `${cond} = ${val} out of [0, 1]`);
-    }
   });
 
   test('F1 is bounded between min and max of precision and recall', () => {

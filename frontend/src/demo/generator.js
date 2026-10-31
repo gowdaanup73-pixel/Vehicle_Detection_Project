@@ -152,7 +152,7 @@ export function getDemoMetrics(seed = 42, tick = 0) {
   models.models = models;
   models.per_class = getDemoClassMetrics(seed, tick);
   models.confusion_matrix = getDemoConfusionMatrix(seed, tick);
-  models.per_condition = getDemoConditionMap(seed, tick);
+  models.per_condition = null;
   models.history = getDemoEpochHistory(seed, tick);
 
   return models;
@@ -218,21 +218,6 @@ export function getDemoConfusionMatrix(seed = 42, tick = 0) {
   return { classes, matrix };
 }
 
-/**
- * Returns mAP per environmental condition.
- * @param {number} [seed=42]
- * @param {number} [tick=0]
- * @returns {{sunny: number, night: number, rainy: number, cloudy: number}}
- */
-export function getDemoConditionMap(seed = 42, tick = 0) {
-  const rng = mulberry32(seed + tick * 59 + 303);
-  return {
-    sunny: Number(randomWalk(0.624, 0.624, 0.58, 0.66, 0.004, 0.12, rng).toFixed(4)),
-    cloudy: Number(randomWalk(0.589, 0.589, 0.54, 0.63, 0.004, 0.12, rng).toFixed(4)),
-    night: Number(randomWalk(0.531, 0.531, 0.48, 0.58, 0.004, 0.12, rng).toFixed(4)),
-    rainy: Number(randomWalk(0.485, 0.485, 0.44, 0.53, 0.004, 0.12, rng).toFixed(4)),
-  };
-}
 
 /**
  * Returns 12-epoch training loss and validation mAP progression.
