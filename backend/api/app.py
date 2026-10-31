@@ -66,7 +66,7 @@ def _secure_destination_path(
     return dest_path, safe_filename
 
 from backend.database.store import RunsDatabase
-from backend.inference.detector import VehicleDetector
+from backend.inference.detector import VehicleDetector, get_pretrained_detector
 from backend.services.dataset_service import DatasetService
 from backend.services.experiments_service import ExperimentsService
 from backend.services.media_processor import MediaProcessor
@@ -83,6 +83,23 @@ os.makedirs(os.path.join(MEDIA_ROOT, "outputs"), exist_ok=True)
 db = RunsDatabase()
 detector = VehicleDetector()
 media_processor = MediaProcessor(detector=detector, media_root=MEDIA_ROOT)
+
+
+def resolve_detector(detector_name: Optional[str] = None):
+    """Resolves detector instance by name/id. Defaults to CenterNet."""
+    d_name = (detector_name or "").strip().lower()
+    if d_name in ("pretrained", "faster_rcnn", "fasterrcnn", "coco"):
+        try:
+            return get_pretrained_detector()
+        except Exception as e:
+            raise HTTPException(
+                status_code=503,
+                detail=f"Pretrained Faster R-CNN detector unavailable: {str(e)}",
+            )
+    return detector
+
+
+
 experiments_service = ExperimentsService()
 dataset_service = DatasetService()
 
@@ -117,6 +134,31 @@ def get_health():
         "weights_status": detector.model_status,
         "is_weights_loaded": detector.weights_loaded,
     }
+
+
+@app.get("/api/detectors")
+def list_detectors():
+    """Returns available detector models."""
+    pretrained_avail = True
+    try:
+        get_pretrained_detector()
+    except Exception:
+        pretrained_avail = False
+
+    return [
+        {
+            "id": "centernet",
+            "name": "Improved CenterNet (ResNet-18 + CBAM + BiFPN)",
+            "available": bool(getattr(detector, "weights_loaded", True)),
+            "active": True,
+        },
+        {
+            "id": "pretrained",
+            "name": "Pretrained Faster R-CNN (COCO)",
+            "available": pretrained_avail,
+            "active": False,
+        },
+    ]
 
 
 @app.get("/api/model/status")
@@ -197,6 +239,7 @@ async def detect_image(
     file: UploadFile = File(...),
     conf_thresh: float = Form(0.35),
     run_type: Optional[str] = Form(None),
+    detector: Optional[str] = Form("centernet"),
 ):
     """Processes an uploaded image through Improved CenterNet."""
     conf = _to_float(conf_thresh, 0.35)
@@ -241,9 +284,10 @@ async def detect_image(
 
     input_url = f"/media/uploads/{upload_filename}"
     actual_run_type = run_type or ("test_run" if file.filename.startswith(("test_", "custom_cam")) else "user_upload")
+    active_det = resolve_detector(detector)
 
     try:
-        result = await asyncio.to_thread(media_processor.process_image, upload_path, conf_thresh=conf)
+        result = await asyncio.to_thread(media_processor.process_image, upload_path, conf_thresh=conf, detector=active_det)
     except Exception as e:
         # Persist failed run for analytics accuracy
         fail_id = f"failed_{uuid.uuid4().hex[:8]}"
@@ -253,7 +297,7 @@ async def detect_image(
             filename=file.filename,
             input_url=input_url,
             annotated_url="",
-            model_name="Improved CenterNet (ResNet-18 + CBAM + BiFPN)",
+            model_name=getattr(active_det, "model_name", "Improved CenterNet (ResNet-18 + CBAM + BiFPN)"),
             weights_status="FAILED",
             latency_ms=0.0,
             fps=0.0,
@@ -280,7 +324,7 @@ async def detect_image(
         filename=file.filename,
         input_url=input_url,
         annotated_url=annotated_url,
-        model_name="Improved CenterNet (ResNet-18 + CBAM + BiFPN)",
+        model_name=result.get("model_name", getattr(active_det, "model_name", "Improved CenterNet (ResNet-18 + CBAM + BiFPN)")),
         weights_status=result["model_status"],
         latency_ms=result["latency_ms"],
         fps=result["fps"],
@@ -426,12 +470,16 @@ async def detect_sample(
     request: Request,
     media_type: Optional[str] = None,
     conf_thresh: Optional[float] = None,
+    detector: Optional[str] = None,
 ):
     """Triggers immediate analysis on pre-calibrated sample road footage."""
     m_type = media_type or "image"
     conf_val = conf_thresh if conf_thresh is not None else 0.35
 
     # Check query params first
+    det_param = detector
+    if "detector" in request.query_params:
+        det_param = request.query_params["detector"]
     if "media_type" in request.query_params:
         m_type = request.query_params["media_type"]
     if "conf_thresh" in request.query_params:
@@ -442,6 +490,8 @@ async def detect_sample(
     if "multipart/form-data" in content_type or "application/x-www-form-urlencoded" in content_type:
         try:
             form = await request.form()
+            if "detector" in form:
+                det_param = str(form["detector"])
             if "media_type" in form:
                 m_type = str(form["media_type"])
             if "conf_thresh" in form:
@@ -452,6 +502,8 @@ async def detect_sample(
         try:
             body = await request.json()
             if isinstance(body, dict):
+                if "detector" in body:
+                    det_param = str(body["detector"])
                 if "media_type" in body:
                     m_type = str(body["media_type"])
                 if "conf_thresh" in body:
@@ -464,12 +516,14 @@ async def detect_sample(
     sample_img_path, sample_vid_path = media_processor.generate_sample_road_media()
 
     try:
+        active_det = resolve_detector(det_param)
         if m_type == "video":
             result = await asyncio.to_thread(
                 media_processor.process_video,
                 video_path=sample_vid_path,
                 conf_thresh=conf,
                 max_frames=60,
+                detector=active_det,
             )
             filename = "sample_traffic_stream.mp4"
             input_url = "/media/uploads/sample_traffic_stream.mp4"
@@ -478,6 +532,7 @@ async def detect_sample(
                 media_processor.process_image,
                 image_path=sample_img_path,
                 conf_thresh=conf,
+                detector=active_det,
             )
             filename = "sample_highway_traffic.jpg"
             input_url = "/media/uploads/sample_highway_traffic.jpg"
@@ -628,6 +683,7 @@ async def detect_url(
     url: str = Form(...),
     conf_thresh: float = Form(0.35),
     run_type: Optional[str] = Form(None),
+    detector: Optional[str] = Form("centernet"),
 ):
     """Processes an image from a remote URL with SSRF protection."""
     conf = _to_float(conf_thresh, 0.35)
@@ -636,9 +692,10 @@ async def detect_url(
     filename = os.path.basename(local_path)
     input_url = f"/media/uploads/{filename}"
     actual_run_type = run_type or "url_download"
+    active_det = resolve_detector(detector)
 
     try:
-        result = await asyncio.to_thread(media_processor.process_image, local_path, conf_thresh=conf)
+        result = await asyncio.to_thread(media_processor.process_image, local_path, conf_thresh=conf, detector=active_det)
     except Exception as e:
         fail_id = f"failed_{uuid.uuid4().hex[:8]}"
         db.save_run(
@@ -647,7 +704,7 @@ async def detect_url(
             filename=filename,
             input_url=input_url,
             annotated_url="",
-            model_name="Improved CenterNet (ResNet-18 + CBAM + BiFPN)",
+            model_name=getattr(active_det, "model_name", "Improved CenterNet (ResNet-18 + CBAM + BiFPN)"),
             weights_status="FAILED",
             latency_ms=0.0,
             fps=0.0,
@@ -669,7 +726,7 @@ async def detect_url(
         filename=filename,
         input_url=input_url,
         annotated_url=annotated_url,
-        model_name="Improved CenterNet (ResNet-18 + CBAM + BiFPN)",
+        model_name=result.get("model_name", getattr(active_det, "model_name", "Improved CenterNet (ResNet-18 + CBAM + BiFPN)")),
         weights_status=result["model_status"],
         latency_ms=result["latency_ms"],
         fps=result["fps"],
@@ -716,6 +773,7 @@ async def funnel_detect_batch(batch_req: FunnelBatchRequest):
     semaphore = asyncio.Semaphore(3)
     uploads_dir = os.path.join(MEDIA_ROOT, "uploads")
     conf = _to_float(batch_req.conf_thresh, 0.35)
+    active_det = resolve_detector(batch_req.detector)
 
     async def process_single(item: FunnelItemInput) -> Dict:
         async with semaphore:
@@ -724,7 +782,7 @@ async def funnel_detect_batch(batch_req: FunnelBatchRequest):
                 filename = os.path.basename(local_path)
                 input_url = f"/media/uploads/{filename}"
 
-                result = await asyncio.to_thread(media_processor.process_image, local_path, conf_thresh=conf)
+                result = await asyncio.to_thread(media_processor.process_image, local_path, conf_thresh=conf, detector=active_det)
                 annotated_url = f"/media/outputs/{result['annotated_filename']}"
 
                 saved_run = db.save_run(
@@ -733,7 +791,7 @@ async def funnel_detect_batch(batch_req: FunnelBatchRequest):
                     filename=filename,
                     input_url=input_url,
                     annotated_url=annotated_url,
-                    model_name="Improved CenterNet (ResNet-18 + CBAM + BiFPN)",
+                    model_name=result.get("model_name", getattr(active_det, "model_name", "Improved CenterNet (ResNet-18 + CBAM + BiFPN)")),
                     weights_status=result["model_status"],
                     latency_ms=result["latency_ms"],
                     fps=result["fps"],
