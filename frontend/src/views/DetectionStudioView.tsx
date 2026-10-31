@@ -8,6 +8,7 @@ import {
   Eye, 
   FileJson, 
   Film, 
+  Globe, 
   ImageIcon, 
   Play, 
   RefreshCw, 
@@ -17,7 +18,8 @@ import {
   Zap 
 } from 'lucide-react';
 import { detectImage, detectSample, detectVideo } from '../api';
-import { DetectionItem, ModelStatus, RunRecord } from '../types';
+import { DetectionItem, FunnelBatchItemResult, ModelStatus, RunRecord } from '../types';
+import { ImageFunnelPanel } from '../components/ImageFunnelPanel';
 
 interface DetectionStudioViewProps {
   modelStatus: ModelStatus | null;
@@ -35,6 +37,29 @@ export const DetectionStudioView: React.FC<DetectionStudioViewProps> = ({
   onBenchmarkConsumed,
 }) => {
   const [activeMode, setActiveMode] = useState<'image' | 'video'>('image');
+  const [showFunnel, setShowFunnel] = useState<boolean>(false);
+
+  const handleInspectFunnelResult = (itemResult: FunnelBatchItemResult) => {
+    if (!itemResult) return;
+    setCurrentResult({
+      run_id: itemResult.run_id,
+      input_url: itemResult.input_url,
+      annotated_url: itemResult.annotated_url,
+      total_detections: itemResult.total_detections || 0,
+      unique_vehicles: itemResult.unique_vehicles || 0,
+      class_counts: itemResult.class_counts || {},
+      latency_ms: itemResult.latency_ms || 0,
+      fps: itemResult.fps || 0,
+      detections: itemResult.detections || [],
+      creator: itemResult.creator,
+      license: itemResult.license,
+      source_page_url: itemResult.source_page_url,
+      checkpoint: modelStatus?.checkpoint_name || 'improved_v2_best.pth',
+      device_display: modelStatus?.device_display || (modelStatus?.is_cuda_available ? 'CUDA GPU' : 'CPU'),
+      model_status: 'CONFIGURED_ACTIVE',
+    });
+    setViewMode('annotated');
+  };
   const [selectedFile, setSelectedFile] = useState<File | null>(preselectedFile);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [confThresh, setConfThresh] = useState<number>(0.35);
@@ -291,8 +316,25 @@ export const DetectionStudioView: React.FC<DetectionStudioViewProps> = ({
             <Film size={14} />
             Video Stream
           </button>
+          <button
+            className={`btn ${showFunnel ? 'btn-primary' : 'btn-secondary'}`}
+            onClick={() => setShowFunnel((prev) => !prev)}
+            title="Search open-licensed images online via Openverse and Wikimedia Commons"
+          >
+            <Globe size={14} />
+            Find Images Online
+          </button>
         </div>
       </div>
+
+      {/* Online Image Funnel Panel */}
+      {showFunnel && (
+        <ImageFunnelPanel
+          confThresh={confThresh}
+          onRunCompleted={onRunCompleted}
+          onInspectResult={handleInspectFunnelResult}
+        />
+      )}
 
       {/* Main Studio Grid */}
       <div className="grid-sidebar">
@@ -625,6 +667,37 @@ export const DetectionStudioView: React.FC<DetectionStudioViewProps> = ({
                   <span className="strip-label">SPEED:</span>
                   <span className="strip-val" style={{ color: 'var(--burnt-orange)' }}>{currentResult.fps} FPS</span>
                 </div>
+              </div>
+            )}
+
+            {/* Attribution Bar for Funnel Images */}
+            {currentResult && (currentResult.creator || currentResult.license || currentResult.source_page_url) && (
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.75rem',
+                  padding: '0.45rem 0.75rem',
+                  background: 'rgba(200, 107, 60, 0.08)',
+                  borderTop: '1px solid rgba(200, 107, 60, 0.2)',
+                  fontSize: '0.72rem',
+                  color: 'var(--warm-ivory)',
+                  flexWrap: 'wrap',
+                }}
+              >
+                <span style={{ color: 'var(--burnt-orange)', fontWeight: 600 }}>IMAGE ATTRIBUTION:</span>
+                {currentResult.creator && <span>Creator: <strong>{currentResult.creator}</strong></span>}
+                {currentResult.license && <span className="status-pill" style={{ fontSize: '0.65rem' }}>{currentResult.license}</span>}
+                {currentResult.source_page_url && (
+                  <a
+                    href={currentResult.source_page_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: 'var(--burnt-orange)', textDecoration: 'underline', marginLeft: 'auto' }}
+                  >
+                    View Source Page &rarr;
+                  </a>
+                )}
               </div>
             )}
           </div>

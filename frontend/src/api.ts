@@ -6,6 +6,8 @@ import {
   MetricsData,
   ModelStatus,
   RunRecord,
+  FunnelSearchResult,
+  FunnelBatchResponse,
 } from './types';
 
 const API_BASE = '/api';
@@ -132,5 +134,52 @@ export async function deleteRun(runId: string) {
 export async function fetchMetrics(): Promise<MetricsData> {
   const res = await fetch(`${API_BASE}/metrics`);
   if (!res.ok) throw new Error('Metrics fetch failed');
+  return res.json();
+}
+
+
+export async function searchFunnelImages(
+  query: string,
+  source: 'openverse' | 'commons' | 'both' = 'both',
+  page: number = 1,
+  limit: number = 20
+): Promise<FunnelSearchResult> {
+  const params = new URLSearchParams({
+    q: query,
+    source,
+    page: String(page),
+    limit: String(limit),
+  });
+  const res = await fetch(`${API_BASE}/funnel/search?${params.toString()}`);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new Error(err.detail || 'Funnel search failed');
+  }
+  return res.json();
+}
+
+export async function detectFunnelBatch(
+  items: Array<{
+    image_url: string;
+    title?: string;
+    creator?: string;
+    license?: string;
+    source_page_url?: string;
+  }>,
+  confThresh: number = 0.35
+): Promise<FunnelBatchResponse> {
+  const res = await fetch(`${API_BASE}/funnel/detect-batch`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      items,
+      image_urls: items.map((i) => i.image_url),
+      conf_thresh: confThresh,
+    }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new Error(err.detail || 'Batch detection failed');
+  }
   return res.json();
 }

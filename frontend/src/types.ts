@@ -88,7 +88,12 @@ export interface RunRecord {
   timeline?: TimelinePoint[];
   metadata?: Record<string, any>;
   is_sample?: boolean;
-  run_type?: 'user_upload' | 'test_run' | 'demo_sample';
+  run_type?: 'user_upload' | 'test_run' | 'demo_sample' | 'funnel';
+  source?: string;
+  source_url?: string;
+  creator?: string;
+  license?: string;
+  source_page_url?: string;
 }
 
 export interface ConfidenceBin {
@@ -248,4 +253,55 @@ export interface MetricsData {
     val_map_50: number | null;
   }>;
   error?: string | null;
+}
+
+
+export interface FunnelImage {
+  id: string;
+  thumbnail_url: string;
+  image_url: string;
+  title: string;
+  creator?: string | null;
+  license: string;
+  license_url?: string | null;
+  source_page_url: string;
+  provider: 'openverse' | 'commons' | string;
+}
+
+export interface FunnelSearchResult {
+  query: string;
+  source: string;
+  page: number;
+  limit: number;
+  total: number;
+  images: FunnelImage[];
+  presets: string[];
+  errors?: Record<string, string>;
+}
+
+export interface FunnelBatchItemResult {
+  image_url: string;
+  status: 'success' | 'failed';
+  run_id?: string;
+  input_url?: string;
+  annotated_url?: string;
+  total_detections?: number;
+  unique_vehicles?: number;
+  class_counts?: Record<string, number>;
+  latency_ms?: number;
+  fps?: number;
+  title?: string;
+  creator?: string;
+  license?: string;
+  source_page_url?: string;
+  error?: string;
+  detections?: DetectionItem[];
+  saved_run?: RunRecord;
+}
+
+export interface FunnelBatchResponse {
+  total: number;
+  successful: number;
+  failed: number;
+  results: FunnelBatchItemResult[];
 }
