@@ -231,6 +231,8 @@ Or populate `backend/metrics.json` directly conforming to the validated Pydantic
 
 ### B. Dashboard Visualization Panels (Model Laboratory)
 
+The Model Laboratory arranges 5 responsive visualization panels across a 2-row layout (3 columns top, 2 wide columns bottom):
+
 1. **Grouped Bar Chart (Comparative Performance)**:
    - Displays Precision, Recall, F1, and mAP@0.5 across comparative architectures (`Baseline`, `+CBAM`, `+BiFPN`, `Improved CenterNet`, `INT8`).
    - Y-axis calibrated in percentage units (`%`).
@@ -241,14 +243,12 @@ Or populate `backend/metrics.json` directly conforming to the validated Pydantic
 4. **Efficiency Trade-off Scatter Plot**:
    - Compares inference frames-per-second (FPS) along the X-axis against detection accuracy (mAP@0.5) along the Y-axis.
    - Proposed model checkpoint is highlighted in signature **Burnt Orange (`#C86B3C`)**.
-5. **4×4 Vehicle Class Confusion Matrix**:
+5. **4x4 Vehicle Class Confusion Matrix**:
    - Tabular grid cross-referencing ground-truth annotations versus model predictions.
-6. **Environmental Scene Breakdown**:
-   - Evaluates performance stability across distinct illumination and weather settings (`sunny`, `night`, `rainy`, `cloudy`).
 
 ### C. Client-Side Metrics CSV Export
 
-Click **"Download metrics CSV"** in the Model Laboratory top bar to instantly download a comprehensive `metrics.csv` containing comparative model telemetry, class breakdowns, environmental performance, and convergence history directly from the browser with null values formatted as clean empty cells.
+Click **"Download metrics CSV"** in the Model Laboratory top bar to instantly download a comprehensive `metrics.csv` containing comparative model telemetry, class breakdowns, and convergence history directly from the browser with null values formatted as clean empty cells.
 
 
 ---
@@ -258,22 +258,20 @@ Click **"Download metrics CSV"** in the Model Laboratory top bar to instantly do
 The application includes an integrated **Demo Mode** designed for demonstration and offline evaluation without requiring prior dataset inference runs or execution records.
 
 ### A. How to Enable
-1. **Interactive UI Toggle**:
-   - Locate the **DEMO MODE** switch in the application sidebar.
-   - Click to toggle between **[OFF]** (live production telemetry) and **[ON]** (simulated demonstration stream).
-   - The selection is stored client-side in browser localStorage and persists across page reloads.
+1. **Interactive Header Toggle**:
+   - A compact switch (~28x14px) is positioned directly in the page header immediately to the left of the **Refresh** button (keyboard shortcut: `Alt+D`).
+   - Click to toggle between live production telemetry and simulated demonstration mode.
+   - The selection is persisted client-side in browser `localStorage` and restored on page reload.
 2. **Environment Variable**:
-   - Set VITE_DEMO_MODE=true in .env (or environment configuration) to default Demo Mode to active on initial launch.
+   - Set `VITE_DEMO_MODE=true` in `.env` (or environment configuration) to default Demo Mode to active on launch.
 
 ### B. What It Does
-- **Simulated Real-Time Stream**:
-  - Emits simulated traffic telemetry ticks every 2.5 seconds (2500 ms) via a seeded, deterministic pseudo-random generator (mulberry32) with smooth random-walk variations.
-  - Mimics diurnal traffic oscillations (morning and evening rush-hour curves) for vehicle detection volumes, unique vehicle tracking, FPS, latency, class counts, and lane occupancy.
-  - Generates realistic benchmark metrics across comparative models (Baseline, +CBAM, +BiFPN, Improved CenterNet, INT8), class-level breakdowns, environmental conditions, and convergence curves.
-  - Maintains a 30-point rolling history window for live time-series trajectory graphs.
-  - Automatically pauses simulation timers when the browser tab is hidden/minimized to conserve resources.
+- **Refresh-Driven Simulation**:
+  - Zero continuous background timers or `setInterval` processes are run; telemetry updates are user-initiated via the **Refresh** button.
+  - Each refresh generates a new dataset from a fresh seed that smoothly drifts from the previous metrics via small, clamped random-walk steps (preserving harmonic mean consistency between Precision, Recall, and F1, while ensuring the proposed `Improved CenterNet` architecture remains optimal).
+  - Recharts animated transitions visually illustrate live metrics drift upon refresh.
 - **Safety & Isolation**:
-  - **Zero Database / File Mutation**: Demo data is strictly computed in memory on the client side and is **never written** to ackend/metrics.json, SQLite (ackend/data/runs.db), or any real run record.
-  - **Visual Indicator Badges**: A persistent high-contrast [DEMO DATA - SIMULATED] badge is displayed in the headers of all views with active charts.
-  - **Chart Watermarks**: A subtle DEMO DATA // SIMULATED watermark overlay is embedded directly inside every rendered visualization card.
-  - **Safe CSV Export**: Exporting metrics while Demo Mode is active stamps the generated filename as metrics_DEMO.csv and marks every data row with a DEMO SIMULATED provenance tag.
+  - **Zero Database / File Mutation**: Demo data is strictly computed in memory on the client side and is **never written** to `backend/metrics.json`, SQLite (`backend/data/runs.db`), or any real run record.
+  - **Visual Indicators**: A clean `DEMO` chip appears in the page header next to the toggle switch.
+  - **Chart Watermarks**: A subtle `DEMO SIMULATION` watermark overlay is embedded inside every chart card.
+  - **Safe CSV Export**: Exporting metrics while Demo Mode is active stamps the generated filename as `metrics_DEMO.csv` and marks every data row with a `DEMO SIMULATED` provenance tag.
