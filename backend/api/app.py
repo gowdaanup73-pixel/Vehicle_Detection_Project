@@ -10,7 +10,8 @@ import uuid
 from typing import Dict, List, Optional, Tuple
 import cv2
 import numpy as np
-from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, Query, Request, UploadFile
+from backend.funnel import FunnelSearchResult, funnel_service
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -573,3 +574,22 @@ def delete_run(run_id: str):
             pass
 
     return {"success": True, "deleted_id": run_id}
+
+
+@app.get("/api/funnel/search", response_model=FunnelSearchResult)
+async def funnel_search(
+    request: Request,
+    q: str = Query("traffic bus street", description="Search query"),
+    source: str = Query("both", description="Source provider: openverse, commons, or both"),
+    page: int = Query(1, ge=1, description="Page number"),
+    limit: int = Query(20, ge=1, le=30, description="Results limit (max 30)"),
+):
+    """Searches open-licensed images from Openverse and/or Wikimedia Commons."""
+    client_ip = request.client.host if request.client else "127.0.0.1"
+    return await funnel_service.search(
+        query=q,
+        source=source,
+        page=page,
+        limit=limit,
+        client_ip=client_ip,
+    )
