@@ -20,7 +20,7 @@ import {
   X,
   Zap
 } from 'lucide-react';
-import { DemoBadge, ChartWatermark } from '../components/DemoBadge';
+import { DemoBadge, ChartWatermark, DemoChip, DemoSwitch } from '../components/DemoBadge';
 import {
   AnalyticsSummary,
   DatasetInfo,
@@ -189,7 +189,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-          {demoData?.isDemoMode && <DemoBadge />}
+          {demoData?.isDemoMode && <DemoChip />}
           {/* Connection Status Badge */}
           <div
             style={{
@@ -213,13 +213,22 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </span>
           </div>
 
-          {/* Real Refresh Button */}
+          {/* Tiny Demo Switch immediately left of Refresh button */}
+          {demoData?.setDemoMode && (
+            <DemoSwitch
+              isDemoMode={Boolean(demoData?.isDemoMode)}
+              onToggle={demoData.setDemoMode}
+            />
+          )}
+
+          {/* Refresh Button */}
           {onRefresh && (
             <button
               className="btn btn-secondary"
               style={{ padding: '0.35rem 0.65rem', fontSize: '0.72rem' }}
-              onClick={onRefresh}
-              title="Refresh telemetry from backend"
+              onClick={demoData?.isDemoMode ? demoData.refresh : onRefresh}
+              title={demoData?.isDemoMode ? 'Refresh demo dataset (simulated drift)' : 'Refresh telemetry from backend'}
+              aria-label="Refresh telemetry"
             >
               <RefreshCw size={12} />
               Refresh

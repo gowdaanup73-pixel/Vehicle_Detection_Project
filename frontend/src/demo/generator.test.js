@@ -1,14 +1,16 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
 import {
   mulberry32,
   getDemoMetrics,
   getDemoClassMetrics,
   getDemoConfusionMatrix,
-  getDemoConditionMap,
   getDemoEpochHistory,
   getDemoTrafficTick,
 } from './generator.js';
+import { getStoredDemoMode, setStoredDemoMode } from './useDemoData.js';
 
 describe('Demo Generator Unit Tests', () => {
   test('Determinism with fixed seed', () => {
@@ -48,13 +50,6 @@ describe('Demo Generator Unit Tests', () => {
         assert.ok(!Number.isNaN(val), `${className} ${key} is NaN`);
         assert.ok(val >= 0 && val <= 1, `${className} ${key} = ${val} out of [0, 1]`);
       }
-    }
-
-    const conditionMap = getDemoConditionMap(100);
-    for (const [cond, val] of Object.entries(conditionMap)) {
-      assert.ok(typeof val === 'number', `${cond} is not number`);
-      assert.ok(!Number.isNaN(val), `${cond} is NaN`);
-      assert.ok(val >= 0 && val <= 1, `${cond} = ${val} out of [0, 1]`);
     }
   });
 
@@ -133,5 +128,58 @@ describe('Demo Generator Unit Tests', () => {
         );
       }
     }
+  });
+
+  test('Refresh drift produces a different but valid dataset with proposed model strictly best', () => {
+    const initial = getDemoMetrics(42, 0);
+    const refreshed = getDemoMetrics(Date.now(), 1, initial);
+    assert.notDeepEqual(refreshed, initial, 'Refreshed metrics should drift from initial');
+
+    const proposed = refreshed.models.find((m) => m.name === 'Improved CenterNet');
+    assert.ok(proposed, 'Improved CenterNet exists');
+
+    for (const m of refreshed.models) {
+      for (const key of ['precision', 'recall', 'f1', 'accuracy', 'mAP50', 'mAP50_95']) {
+        const val = m[key];
+        assert.ok(typeof val === 'number', `${m.name} ${key} is not number`);
+        assert.ok(!Number.isNaN(val), `${m.name} ${key} is NaN`);
+        assert.ok(val >= 0 && val <= 1, `${m.name} ${key} = ${val} out of [0, 1]`);
+      }
+      if (m.name !== 'Improved CenterNet') {
+        assert.ok(
+          proposed.mAP50 >= m.mAP50,
+          `Proposed mAP50 (${proposed.mAP50}) must be >= ${m.name} (${m.mAP50})`
+        );
+      }
+    }
+  });
+
+  test('Demo toggle persistence with localStorage', () => {
+    if (!globalThis.localStorage) {
+      const store = new Map();
+      globalThis.localStorage = {
+        getItem: (k) => (store.has(k) ? store.get(k) : null),
+        setItem: (k, v) => store.set(k, String(v)),
+        removeItem: (k) => store.delete(k),
+        clear: () => store.clear(),
+      };
+    }
+
+    setStoredDemoMode(true);
+    assert.equal(getStoredDemoMode(), true);
+
+    setStoredDemoMode(false);
+    assert.equal(getStoredDemoMode(), false);
+  });
+
+  test('No continuous timers or intervals left running in useDemoData', () => {
+    const hookPath = path.resolve(process.cwd(), 'src/demo/useDemoData.js');
+    const resolvedPath = fs.existsSync(hookPath)
+      ? hookPath
+      : path.resolve(process.cwd(), 'frontend/src/demo/useDemoData.js');
+    const hookContent = fs.readFileSync(resolvedPath, 'utf8');
+
+    assert.ok(!hookContent.includes('setInterval'), 'useDemoData.js must not contain setInterval');
+    assert.ok(!hookContent.includes('visibilitychange'), 'useDemoData.js must not contain visibilitychange');
   });
 });

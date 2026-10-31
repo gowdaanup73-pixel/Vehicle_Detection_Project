@@ -55,29 +55,37 @@ function calcF1(p, r) {
  * @param {number} [tick=0]
  * @returns {Array<Object>} List of model metrics
  */
-export function getDemoMetrics(seed = 42, tick = 0) {
+export function getDemoMetrics(seed = 42, tick = 0, prev = null) {
   const rng = mulberry32(seed + tick * 17);
+  const prevList = Array.isArray(prev) ? prev : prev?.models;
+  const findPrev = (name) => prevList?.find((m) => m.name === name);
+
+  const prevBase = findPrev('Baseline');
+  const prevCbam = findPrev('+CBAM');
+  const prevBifpn = findPrev('+BiFPN');
+  const prevProp = findPrev('Improved CenterNet');
+  const prevInt8 = findPrev('INT8');
 
   // Baseline definitions with small jitter
-  const pBase = randomWalk(0.582, 0.582, 0.55, 0.61, 0.005, 0.1, rng);
-  const rBase = randomWalk(0.5325, 0.5325, 0.50, 0.56, 0.005, 0.1, rng);
+  const pBase = randomWalk(prevBase?.precision ?? 0.582, 0.582, 0.55, 0.61, 0.005, 0.1, rng);
+  const rBase = randomWalk(prevBase?.recall ?? 0.5325, 0.5325, 0.50, 0.56, 0.005, 0.1, rng);
   const f1Base = calcF1(pBase, rBase);
 
-  const pCbam = randomWalk(0.601, 0.601, 0.57, 0.63, 0.005, 0.1, rng);
-  const rCbam = randomWalk(0.548, 0.548, 0.52, 0.57, 0.005, 0.1, rng);
+  const pCbam = randomWalk(prevCbam?.precision ?? 0.601, 0.601, 0.57, 0.63, 0.005, 0.1, rng);
+  const rCbam = randomWalk(prevCbam?.recall ?? 0.548, 0.548, 0.52, 0.57, 0.005, 0.1, rng);
   const f1Cbam = calcF1(pCbam, rCbam);
 
-  const pBifpn = randomWalk(0.623, 0.623, 0.59, 0.65, 0.005, 0.1, rng);
-  const rBifpn = randomWalk(0.561, 0.561, 0.53, 0.58, 0.005, 0.1, rng);
+  const pBifpn = randomWalk(prevBifpn?.precision ?? 0.623, 0.623, 0.59, 0.65, 0.005, 0.1, rng);
+  const rBifpn = randomWalk(prevBifpn?.recall ?? 0.561, 0.561, 0.53, 0.58, 0.005, 0.1, rng);
   const f1Bifpn = calcF1(pBifpn, rBifpn);
 
   // Proposed model: strictly best metrics
-  const pProp = randomWalk(0.665, 0.665, 0.64, 0.69, 0.005, 0.1, rng);
-  const rProp = randomWalk(0.584, 0.584, 0.565, 0.61, 0.005, 0.1, rng);
+  const pProp = randomWalk(prevProp?.precision ?? 0.665, 0.665, 0.64, 0.69, 0.005, 0.1, rng);
+  const rProp = randomWalk(prevProp?.recall ?? 0.584, 0.584, 0.565, 0.61, 0.005, 0.1, rng);
   const f1Prop = calcF1(pProp, rProp);
 
-  const pInt8 = randomWalk(0.568, 0.568, 0.53, 0.59, 0.005, 0.1, rng);
-  const rInt8 = randomWalk(0.512, 0.512, 0.48, 0.54, 0.005, 0.1, rng);
+  const pInt8 = randomWalk(prevInt8?.precision ?? 0.568, 0.568, 0.53, 0.59, 0.005, 0.1, rng);
+  const rInt8 = randomWalk(prevInt8?.recall ?? 0.512, 0.512, 0.48, 0.54, 0.005, 0.1, rng);
   const f1Int8 = calcF1(pInt8, rInt8);
 
   const models = [
@@ -150,10 +158,10 @@ export function getDemoMetrics(seed = 42, tick = 0) {
 
   // Attach full payload properties for seamless usage in chart views
   models.models = models;
-  models.per_class = getDemoClassMetrics(seed, tick);
-  models.confusion_matrix = getDemoConfusionMatrix(seed, tick);
-  models.per_condition = getDemoConditionMap(seed, tick);
-  models.history = getDemoEpochHistory(seed, tick);
+  models.per_class = getDemoClassMetrics(seed, tick, prev?.per_class);
+  models.confusion_matrix = getDemoConfusionMatrix(seed, tick, prev?.confusion_matrix);
+  models.per_condition = null;
+  models.history = getDemoEpochHistory(seed, tick, prev?.history);
 
   return models;
 }
@@ -164,7 +172,7 @@ export function getDemoMetrics(seed = 42, tick = 0) {
  * @param {number} [tick=0]
  * @returns {Record<string, {precision: number, recall: number, f1: number, ap50: number}>}
  */
-export function getDemoClassMetrics(seed = 42, tick = 0) {
+export function getDemoClassMetrics(seed = 42, tick = 0, prev = null) {
   const rng = mulberry32(seed + tick * 31 + 101);
 
   const classes = [
@@ -176,10 +184,11 @@ export function getDemoClassMetrics(seed = 42, tick = 0) {
 
   const result = {};
   for (const c of classes) {
-    const p = randomWalk(c.pBase, c.pBase, 0.1, 0.95, 0.006, 0.15, rng);
-    const r = randomWalk(c.rBase, c.rBase, 0.1, 0.95, 0.006, 0.15, rng);
+    const prevItem = prev?.[c.name];
+    const p = randomWalk(prevItem?.precision ?? c.pBase, c.pBase, 0.1, 0.95, 0.006, 0.15, rng);
+    const r = randomWalk(prevItem?.recall ?? c.rBase, c.rBase, 0.1, 0.95, 0.006, 0.15, rng);
     const f1 = calcF1(p, r);
-    const ap = randomWalk(c.apBase, c.apBase, 0.02, 0.90, 0.004, 0.15, rng);
+    const ap = randomWalk(prevItem?.ap50 ?? c.apBase, c.apBase, 0.02, 0.90, 0.004, 0.15, rng);
     result[c.name] = {
       precision: Number(p.toFixed(4)),
       recall: Number(r.toFixed(4)),
@@ -218,21 +227,6 @@ export function getDemoConfusionMatrix(seed = 42, tick = 0) {
   return { classes, matrix };
 }
 
-/**
- * Returns mAP per environmental condition.
- * @param {number} [seed=42]
- * @param {number} [tick=0]
- * @returns {{sunny: number, night: number, rainy: number, cloudy: number}}
- */
-export function getDemoConditionMap(seed = 42, tick = 0) {
-  const rng = mulberry32(seed + tick * 59 + 303);
-  return {
-    sunny: Number(randomWalk(0.624, 0.624, 0.58, 0.66, 0.004, 0.12, rng).toFixed(4)),
-    cloudy: Number(randomWalk(0.589, 0.589, 0.54, 0.63, 0.004, 0.12, rng).toFixed(4)),
-    night: Number(randomWalk(0.531, 0.531, 0.48, 0.58, 0.004, 0.12, rng).toFixed(4)),
-    rainy: Number(randomWalk(0.485, 0.485, 0.44, 0.53, 0.004, 0.12, rng).toFixed(4)),
-  };
-}
 
 /**
  * Returns 12-epoch training loss and validation mAP progression.
