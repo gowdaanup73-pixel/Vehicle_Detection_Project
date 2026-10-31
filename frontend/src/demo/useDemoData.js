@@ -1,13 +1,15 @@
 /**
  * useDemoData.js
- * React hook managing Demo Mode state and continuous 2500ms telemetry ticks.
+ * React hook managing Demo Mode state and user-triggered refresh.
+ *
  * Supports:
  * - Persistent opt-in toggle (localStorage with try/catch fallback, VITE_DEMO_MODE env)
- * - Auto-pausing when browser tab is hidden (document.hidden)
- * - Rolling window of 30 points for time-series charts
- * - Clean interval teardown on unmount
+ * - Refresh-driven dataset generation: calling refresh() creates a new dataset with a new seed,
+ *   smoothly drifting from the previous dataset via random-walk.
+ * - Rolling window of 30 points for time-series charts.
+ * - No background intervals or timers.
  */
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   getDemoClassMetrics,
   getDemoConfusionMatrix,
@@ -17,7 +19,6 @@ import {
 } from './generator';
 
 const STORAGE_KEY = 'demo_mode';
-const TICK_INTERVAL_MS = 2500;
 const ROLLING_WINDOW_SIZE = 30;
 
 /**
@@ -57,7 +58,7 @@ export function setStoredDemoMode(enabled) {
 }
 
 /**
- * Custom hook providing live-ticking simulated demo data.
+ * Custom hook providing refresh-driven simulated demo data.
  * @param {boolean} [overrideEnabled] Optional manual override
  */
 export function useDemoData(overrideEnabled = undefined) {
@@ -65,9 +66,17 @@ export function useDemoData(overrideEnabled = undefined) {
     return overrideEnabled !== undefined ? overrideEnabled : getStoredDemoMode();
   });
 
+  const [refreshKey, setRefreshKey] = useState(0);
   const [tick, setTick] = useState(0);
+
+  // Initial datasets
+  const [demoMetrics, setDemoMetricsState] = useState(() => getDemoMetrics(42, 0));
+  const [demoClassMetrics, setDemoClassMetricsState] = useState(() => getDemoClassMetrics(42, 0));
+  const [demoConfusionMatrix, setDemoConfusionMatrixState] = useState(() => getDemoConfusionMatrix(42, 0));
+  const [demoEpochHistory, setDemoEpochHistoryState] = useState(() => getDemoEpochHistory(42, 0));
+  const [currentTickData, setCurrentTickDataState] = useState(() => getDemoTrafficTick(0));
+
   const [rollingHistory, setRollingHistory] = useState(() => {
-    // Pre-populate with the initial 30 points so charts are immediately populated
     const initialPoints = [];
     for (let i = 0; i < ROLLING_WINDOW_SIZE; i++) {
       const t = getDemoTrafficTick(i);
@@ -90,14 +99,23 @@ export function useDemoData(overrideEnabled = undefined) {
     return initialPoints;
   });
 
-  const isPausedRef = useRef(false);
-  const tickRef = useRef(ROLLING_WINDOW_SIZE);
+  const tickRef = useRef(0);
+  const metricsRef = useRef(demoMetrics);
+  const classMetricsRef = useRef(demoClassMetrics);
+  const confusionMatrixRef = useRef(demoConfusionMatrix);
+  const epochHistoryRef = useRef(demoEpochHistory);
+  const currentTickRef = useRef(currentTickData);
 
-  const toggleDemoMode = (val) => {
-    const nextVal = typeof val === 'boolean' ? val : !isDemoMode;
-    setIsDemoModeState(nextVal);
-    setStoredDemoMode(nextVal);
-  };
+  /**
+   * @param {boolean} [val]
+   */
+  const toggleDemoMode = useCallback((val = undefined) => {
+    setIsDemoModeState((prev) => {
+      const nextVal = typeof val === 'boolean' ? val : !prev;
+      setStoredDemoMode(nextVal);
+      return nextVal;
+    });
+  }, []);
 
   useEffect(() => {
     if (overrideEnabled !== undefined) {
@@ -105,72 +123,58 @@ export function useDemoData(overrideEnabled = undefined) {
     }
   }, [overrideEnabled]);
 
-  useEffect(() => {
-    if (!isDemoMode) {
-      return;
-    }
+  const refresh = useCallback(() => {
+    const nextSeed = Date.now();
+    const nextTick = tickRef.current + 1;
+    tickRef.current = nextTick;
 
-    // Visibility change handler to pause ticks when the tab is backgrounded
-    const handleVisibilityChange = () => {
-      isPausedRef.current = document.hidden;
+    // Generate new smoothly drifting dataset using previous state
+    const newMetrics = getDemoMetrics(nextSeed, nextTick, metricsRef.current);
+    const newClassMetrics = getDemoClassMetrics(nextSeed, nextTick, classMetricsRef.current);
+    const newConfusionMatrix = getDemoConfusionMatrix(nextSeed, nextTick, confusionMatrixRef.current);
+    const newEpochHistory = getDemoEpochHistory(nextSeed, nextTick, epochHistoryRef.current);
+    const newTickData = getDemoTrafficTick(nextTick, currentTickRef.current, nextSeed);
+
+    const formattedPoint = {
+      tick: newTickData.tick,
+      time: newTickData.timeString,
+      date: newTickData.timeString,
+      detections: newTickData.detections,
+      unique_vehicles: newTickData.unique_vehicles,
+      fps: newTickData.fps,
+      latency_ms: newTickData.latency_ms,
+      occupancy_pct: newTickData.occupancy_pct,
+      class_counts: newTickData.class_counts,
+      car: newTickData.class_counts.car,
+      van: newTickData.class_counts.van,
+      bus: newTickData.class_counts.bus,
+      others: newTickData.class_counts.others,
     };
 
-    document.addEventListener('visibilitychange', handleVisibilityChange);
+    metricsRef.current = newMetrics;
+    classMetricsRef.current = newClassMetrics;
+    confusionMatrixRef.current = newConfusionMatrix;
+    epochHistoryRef.current = newEpochHistory;
+    currentTickRef.current = newTickData;
 
-    const intervalId = setInterval(() => {
-      if (isPausedRef.current) {
-        return;
-      }
-
-      const nextTick = tickRef.current + 1;
-      tickRef.current = nextTick;
-      setTick(nextTick);
-
-      const newPoint = getDemoTrafficTick(nextTick);
-      const formatted = {
-        tick: newPoint.tick,
-        time: newPoint.timeString,
-        date: newPoint.timeString,
-        detections: newPoint.detections,
-        unique_vehicles: newPoint.unique_vehicles,
-        fps: newPoint.fps,
-        latency_ms: newPoint.latency_ms,
-        occupancy_pct: newPoint.occupancy_pct,
-        class_counts: newPoint.class_counts,
-        car: newPoint.class_counts.car,
-        van: newPoint.class_counts.van,
-        bus: newPoint.class_counts.bus,
-        others: newPoint.class_counts.others,
-      };
-
-      setRollingHistory((prev) => {
-        const next = [...prev, formatted];
-        if (next.length > ROLLING_WINDOW_SIZE) {
-          return next.slice(next.length - ROLLING_WINDOW_SIZE);
-        }
-        return next;
-      });
-    }, TICK_INTERVAL_MS);
-
-    return () => {
-      clearInterval(intervalId);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, [isDemoMode]);
-
-  // Derived live demo data structures
-  const currentTickData = getDemoTrafficTick(tick);
-  const demoMetrics = getDemoMetrics(42, tick);
-  const demoClassMetrics = getDemoClassMetrics(42, tick);
-  const demoConfusionMatrix = getDemoConfusionMatrix(42, tick);
-  const demoConditionMap = null;
-  const demoEpochHistory = getDemoEpochHistory(42, tick);
+    setTick(nextTick);
+    setDemoMetricsState(newMetrics);
+    setDemoClassMetricsState(newClassMetrics);
+    setDemoConfusionMatrixState(newConfusionMatrix);
+    setDemoEpochHistoryState(newEpochHistory);
+    setCurrentTickDataState(newTickData);
+    setRollingHistory((prev) => {
+      const next = [...prev, formattedPoint];
+      return next.length > ROLLING_WINDOW_SIZE ? next.slice(next.length - ROLLING_WINDOW_SIZE) : next;
+    });
+    setRefreshKey((k) => k + 1);
+  }, []);
 
   const fullDemoMetricsPayload = {
     models: demoMetrics,
     per_class: demoClassMetrics,
     confusion_matrix: demoConfusionMatrix,
-    per_condition: demoConditionMap,
+    per_condition: null,
     history: demoEpochHistory,
     error: null,
   };
@@ -178,13 +182,14 @@ export function useDemoData(overrideEnabled = undefined) {
   return {
     isDemoMode,
     setDemoMode: toggleDemoMode,
+    refreshKey,
+    refresh,
     tick,
     currentTickData,
     rollingHistory,
     metrics: fullDemoMetricsPayload,
     classMetrics: demoClassMetrics,
     confusionMatrix: demoConfusionMatrix,
-    conditionMap: demoConditionMap,
     epochHistory: demoEpochHistory,
   };
 }
