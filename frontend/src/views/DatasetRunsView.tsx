@@ -227,6 +227,9 @@ export const DatasetRunsView: React.FC<DatasetRunsViewProps> = ({
                       </td>
                       <td style={{ maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         <div>{run.filename}</div>
+                        <div style={{ fontSize: '0.62rem', color: 'var(--warm-ivory-dim)', marginTop: '1px' }}>
+                          {run.model_name || 'Improved CenterNet'}
+                        </div>
                         {(run.creator || run.license) && (
                           <div style={{ fontSize: '0.62rem', color: 'var(--burnt-orange)', marginTop: '2px' }}>
                             {run.license || 'Open License'} {run.creator ? `// ${run.creator}` : ''}
@@ -397,7 +400,7 @@ export const DatasetRunsView: React.FC<DatasetRunsViewProps> = ({
                   RECORD AUDIT METADATA
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.4rem', color: 'var(--warm-ivory-dim)' }}>
-                  <div>Model Checkpoint: <span style={{ color: 'var(--warm-ivory)' }}>{selectedRun.model_name || 'improved_v2_best.pth'}</span></div>
+                  <div>Detector Model: <span style={{ color: 'var(--warm-ivory)' }}>{selectedRun.model_name || 'Improved CenterNet (ResNet-18 + CBAM + BiFPN)'}</span></div>
                   <div>Execution Timestamp: <span style={{ color: 'var(--warm-ivory)' }}>{new Date(selectedRun.timestamp).toISOString()}</span></div>
                   <div>Weights Status: <span style={{ color: 'var(--warm-ivory)' }}>{selectedRun.weights_status}</span></div>
                   <div>Media Type: <span style={{ color: 'var(--warm-ivory)' }}>{selectedRun.media_type}</span></div>

@@ -17,8 +17,8 @@ import {
   Upload, 
   Zap 
 } from 'lucide-react';
-import { detectImage, detectSample, detectVideo } from '../api';
-import { DetectionItem, FunnelBatchItemResult, ModelStatus, RunRecord } from '../types';
+import { detectImage, detectSample, detectVideo, fetchDetectors } from '../api';
+import { DetectionItem, DetectorOption, FunnelBatchItemResult, ModelStatus, RunRecord } from '../types';
 import { ImageFunnelPanel } from '../components/ImageFunnelPanel';
 
 interface DetectionStudioViewProps {
@@ -38,6 +38,21 @@ export const DetectionStudioView: React.FC<DetectionStudioViewProps> = ({
 }) => {
   const [activeMode, setActiveMode] = useState<'image' | 'video'>('image');
   const [showFunnel, setShowFunnel] = useState<boolean>(false);
+  const [detectors, setDetectors] = useState<DetectorOption[]>([
+    { id: 'centernet', name: 'Improved CenterNet (ResNet-18 + CBAM + BiFPN)', available: true, active: true },
+    { id: 'pretrained', name: 'Pretrained Faster R-CNN (COCO)', available: true, active: false },
+  ]);
+  const [selectedDetector, setSelectedDetector] = useState<string>('centernet');
+
+  useEffect(() => {
+    fetchDetectors()
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setDetectors(data);
+        }
+      })
+      .catch((err) => console.warn('Failed to load detectors:', err));
+  }, []);
 
   const handleInspectFunnelResult = (itemResult: FunnelBatchItemResult) => {
     if (!itemResult) return;
@@ -57,6 +72,7 @@ export const DetectionStudioView: React.FC<DetectionStudioViewProps> = ({
       checkpoint: modelStatus?.checkpoint_name || 'improved_v2_best.pth',
       device_display: modelStatus?.device_display || (modelStatus?.is_cuda_available ? 'CUDA GPU' : 'CPU'),
       model_status: 'CONFIGURED_ACTIVE',
+      model_name: itemResult.saved_run?.model_name || (selectedDetector === 'pretrained' ? 'Pretrained Faster R-CNN (COCO)' : 'Improved CenterNet (ResNet-18 + CBAM + BiFPN)'),
     });
     setViewMode('annotated');
   };
@@ -218,9 +234,9 @@ export const DetectionStudioView: React.FC<DetectionStudioViewProps> = ({
     try {
       let result;
       if (modeToUse === 'image') {
-        result = await detectImage(fileToRun, confThresh);
+        result = await detectImage(fileToRun, confThresh, selectedDetector);
       } else {
-        result = await detectVideo(fileToRun, confThresh, maxFrames, frameStride);
+        result = await detectVideo(fileToRun, confThresh, maxFrames, frameStride, selectedDetector);
       }
       setCurrentResult(result);
       setViewMode('annotated');
@@ -244,7 +260,7 @@ export const DetectionStudioView: React.FC<DetectionStudioViewProps> = ({
     setProcessingError(null);
 
     try {
-      const result = await detectSample(type, confThresh);
+      const result = await detectSample(type, confThresh, selectedDetector);
       setCurrentResult(result);
       updatePreviewUrl(result.input_url);
       setViewMode('annotated');
@@ -331,6 +347,7 @@ export const DetectionStudioView: React.FC<DetectionStudioViewProps> = ({
       {showFunnel && (
         <ImageFunnelPanel
           confThresh={confThresh}
+          detector={selectedDetector}
           onRunCompleted={onRunCompleted}
           onInspectResult={handleInspectFunnelResult}
         />
@@ -407,6 +424,37 @@ export const DetectionStudioView: React.FC<DetectionStudioViewProps> = ({
                 <Sliders size={14} style={{ color: 'var(--muted-olive)' }} />
                 2. Parameters & Execution
               </span>
+            </div>
+
+            {/* Detector Selection Dropdown */}
+            <div className="form-group" style={{ marginBottom: '1rem' }}>
+              <label style={{ display: 'block', marginBottom: '0.35rem', fontFamily: 'var(--font-mono)', fontSize: '0.72rem', color: 'var(--warm-ivory-dim)', fontWeight: 600 }}>
+                DETECTION MODEL
+              </label>
+              <select
+                className="input-select"
+                value={selectedDetector}
+                onChange={(e) => setSelectedDetector(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '0.45rem 0.6rem',
+                  backgroundColor: 'var(--charcoal-900)',
+                  border: '1px solid var(--charcoal-600)',
+                  color: 'var(--warm-ivory)',
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '0.76rem',
+                  borderRadius: '2px',
+                }}
+              >
+                {detectors.map((d) => (
+                  <option key={d.id} value={d.id} disabled={!d.available}>
+                    {d.name} {!d.available ? '(Unavailable)' : ''}
+                  </option>
+                ))}
+              </select>
+              <div style={{ fontSize: '0.68rem', color: 'var(--warm-ivory-dim)', marginTop: '0.25rem' }}>
+                {selectedDetector === 'pretrained' ? 'Torchvision Faster R-CNN (ResNet-50 FPN) with COCO weights' : 'Custom CenterNet (ResNet-18 + CBAM + BiFPN) on UA-DETRAC'}
+              </div>
             </div>
 
             {/* Confidence Threshold */}
@@ -650,8 +698,14 @@ export const DetectionStudioView: React.FC<DetectionStudioViewProps> = ({
                   <span className="strip-val">{currentResult.run_id}</span>
                 </div>
                 <div>
-                  <span className="strip-label">CHECKPOINT:</span>
+                  <span className="strip-label">MODEL:</span>
                   <span className="strip-val" style={{ color: 'var(--status-green)' }}>
+                    {currentResult.model_name || (selectedDetector === 'pretrained' ? 'Pretrained Faster R-CNN (COCO)' : 'Improved CenterNet (ResNet-18 + CBAM + BiFPN)')}
+                  </span>
+                </div>
+                <div>
+                  <span className="strip-label">CHECKPOINT:</span>
+                  <span className="strip-val" style={{ color: 'var(--warm-ivory-dim)' }}>
                     {currentResult.checkpoint || modelStatus?.checkpoint_name || 'improved_v2_best.pth'}
                   </span>
                 </div>

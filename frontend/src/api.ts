@@ -5,6 +5,7 @@ import {
   LossPoint,
   MetricsData,
   ModelStatus,
+  DetectorOption,
   RunRecord,
   FunnelSearchResult,
   FunnelBatchResponse,
@@ -47,10 +48,11 @@ export async function uploadCheckpoint(file: File) {
   return res.json();
 }
 
-export async function detectImage(file: File, confThresh: number = 0.35) {
+export async function detectImage(file: File, confThresh: number = 0.35, detector: string = 'centernet') {
   const formData = new FormData();
   formData.append('file', file);
   formData.append('conf_thresh', confThresh.toString());
+  formData.append('detector', detector);
   const res = await fetch(`${API_BASE}/detect/image`, {
     method: 'POST',
     body: formData,
@@ -62,12 +64,13 @@ export async function detectImage(file: File, confThresh: number = 0.35) {
   return res.json();
 }
 
-export async function detectVideo(file: File, confThresh: number = 0.35, maxFrames: number = 120, frameStride: number = 1) {
+export async function detectVideo(file: File, confThresh: number = 0.35, maxFrames: number = 120, frameStride: number = 1, detector: string = 'centernet') {
   const formData = new FormData();
   formData.append('file', file);
   formData.append('conf_thresh', confThresh.toString());
   formData.append('max_frames', maxFrames.toString());
   formData.append('frame_stride', frameStride.toString());
+  formData.append('detector', detector);
   const res = await fetch(`${API_BASE}/detect/video`, {
     method: 'POST',
     body: formData,
@@ -79,11 +82,12 @@ export async function detectVideo(file: File, confThresh: number = 0.35, maxFram
   return res.json();
 }
 
-export async function detectSample(mediaType: 'image' | 'video' = 'image', confThresh: number = 0.35) {
+export async function detectSample(mediaType: 'image' | 'video' = 'image', confThresh: number = 0.35, detector: string = 'centernet') {
   const formData = new FormData();
   formData.append('media_type', mediaType);
   formData.append('conf_thresh', confThresh.toString());
-  const res = await fetch(`${API_BASE}/detect/sample?media_type=${mediaType}&conf_thresh=${confThresh}`, {
+  formData.append('detector', detector);
+  const res = await fetch(`${API_BASE}/detect/sample?media_type=${mediaType}&conf_thresh=${confThresh}&detector=${detector}`, {
     method: 'POST',
     body: formData,
   });
@@ -211,7 +215,8 @@ export async function detectFunnelBatch(
     license?: string;
     source_page_url?: string;
   }>,
-  confThresh: number = 0.35
+  confThresh: number = 0.35,
+  detector: string = 'centernet'
 ): Promise<FunnelBatchResponse> {
   const res = await fetch(`${API_BASE}/funnel/detect-batch`, {
     method: 'POST',
@@ -220,11 +225,34 @@ export async function detectFunnelBatch(
       items,
       image_urls: items.map((i) => i.image_url),
       conf_thresh: confThresh,
+      detector,
     }),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ detail: res.statusText }));
     throw new Error(err.detail || 'Batch detection failed');
+  }
+  return res.json();
+}
+
+export async function fetchDetectors(): Promise<DetectorOption[]> {
+  const res = await fetch(`${API_BASE}/detectors`);
+  if (!res.ok) throw new Error(`Fetch detectors failed: ${res.statusText}`);
+  return res.json();
+}
+
+export async function detectUrl(url: string, confThresh: number = 0.35, detector: string = 'centernet') {
+  const formData = new FormData();
+  formData.append('url', url);
+  formData.append('conf_thresh', confThresh.toString());
+  formData.append('detector', detector);
+  const res = await fetch(`${API_BASE}/detect/url`, {
+    method: 'POST',
+    body: formData,
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new Error(err.detail || 'URL detection failed');
   }
   return res.json();
 }
