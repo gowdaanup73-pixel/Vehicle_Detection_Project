@@ -105,6 +105,60 @@ class TestFunnelProvidersAndService:
             assert "commons" in res.errors
             assert "Malformed JSON" in res.errors["commons"]
 
+    @pytest.mark.anyio
+    async def test_provider_404_handling(self):
+        service = FunnelService(cache_ttl_seconds=10)
+        with patch.object(service.openverse_provider, "search", new_callable=AsyncMock) as mock_openverse:
+            mock_openverse.side_effect = Exception("Openverse endpoint not found (404)")
+            res = await service.search("traffic", source="openverse")
+            assert res.total == 0
+            assert len(res.results) == 0
+            assert res.error is not None
+            assert "404" in res.error or "not found" in res.error.lower()
+
+    @pytest.mark.anyio
+    async def test_provider_429_rate_limit_handling(self):
+        service = FunnelService(cache_ttl_seconds=10)
+        with patch.object(service.openverse_provider, "search", new_callable=AsyncMock) as mock_openverse:
+            mock_openverse.side_effect = Exception("Openverse is rate-limiting, try again or switch to Wikimedia Commons")
+            res = await service.search("traffic", source="openverse")
+            assert res.total == 0
+            assert len(res.results) == 0
+            assert res.error is not None
+            assert "rate-limiting" in res.error
+
+    @pytest.mark.anyio
+    async def test_provider_timeout_handling(self):
+        service = FunnelService(cache_ttl_seconds=10)
+        with patch.object(service.openverse_provider, "search", new_callable=AsyncMock) as mock_openverse:
+            mock_openverse.side_effect = asyncio.TimeoutError()
+            res = await service.search("traffic", source="openverse")
+            assert res.total == 0
+            assert len(res.results) == 0
+            assert res.error is not None
+            assert "timed out" in res.error.lower()
+
+    @pytest.mark.anyio
+    async def test_provider_success_handling(self):
+        service = FunnelService(cache_ttl_seconds=10)
+        sample_img = FunnelImage(
+            id="commons_101",
+            thumbnail_url="http://example.com/thumb.jpg",
+            image_url="http://example.com/img.jpg",
+            title="Highway Bus",
+            creator="Alice",
+            license="CC BY-SA 4.0",
+            source_page_url="http://commons.wikimedia.org/wiki/File:Bus.jpg",
+            provider="commons",
+        )
+        with patch.object(service.commons_provider, "search", new_callable=AsyncMock) as mock_commons:
+            mock_commons.return_value = [sample_img]
+            res = await service.search("highway bus", source="commons")
+            assert res.total == 1
+            assert len(res.results) == 1
+            assert res.error is None
+            assert res.results[0].title == "Highway Bus" 
+
 
 class TestSSRFValidation:
     def test_ssrf_blocked_schemes(self):
@@ -193,6 +247,34 @@ class TestFunnelBatchEndpoint:
 
             failed_item = next(r for r in data["results"] if r["status"] == "failed")
             assert "Remote image not found" in failed_item["error"]
+
+    def test_route_registered_funnel_search(self, client):
+        # 1. Verify routes are registered and appear in OpenAPI doc
+        openapi_resp = client.get("/openapi.json")
+        assert openapi_resp.status_code == 200
+        paths = openapi_resp.json().get("paths", {})
+        assert "/api/funnel/search" in paths
+        assert "/api/funnel/detect-batch" in paths
+
+        # 2. Hit /api/funnel/search through test client with mocked provider
+        sample_img = FunnelImage(
+            id="commons_999",
+            thumbnail_url="http://example.com/thumb.jpg",
+            image_url="http://example.com/img.jpg",
+            title="Test Roadway",
+            creator="Author",
+            license="CC0",
+            source_page_url="http://example.com/test",
+            provider="commons",
+        )
+        with patch("backend.funnel.service.funnel_service.commons_provider.search", new_callable=AsyncMock) as mock_commons:
+            mock_commons.return_value = [sample_img]
+            resp = client.get("/api/funnel/search?source=commons&q=test&limit=2")
+            assert resp.status_code == 200
+            data = resp.json()
+            assert "results" in data
+            assert len(data["results"]) == 1
+            assert data["results"][0]["title"] == "Test Roadway" 
 
 
 class TestDatabaseMigration:
