@@ -22,7 +22,8 @@ import {
   Truck, 
   Zap 
 } from 'lucide-react';
-import { DemoBadge, ChartWatermark } from '../components/DemoBadge';
+import { ChartWatermark, DemoChip, DemoSwitch } from '../components/DemoBadge';
+import { RefreshCw } from 'lucide-react';
 import { AnalyticsSummary, RunRecord } from '../types';
 
 interface TrafficAnalyticsViewProps {
@@ -269,7 +270,24 @@ export const TrafficAnalyticsView: React.FC<TrafficAnalyticsViewProps> = ({
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          {demoData?.isDemoMode && <DemoBadge />}
+          {demoData?.isDemoMode && <DemoChip />}
+          {demoData?.setDemoMode && (
+            <DemoSwitch
+              isDemoMode={Boolean(demoData?.isDemoMode)}
+              onToggle={demoData.setDemoMode}
+            />
+          )}
+          {demoData?.isDemoMode && (
+            <button
+              className="btn btn-secondary"
+              style={{ padding: '0.4rem 0.85rem', fontSize: '0.74rem' }}
+              onClick={demoData.refresh}
+              title="Refresh demo dataset (simulated drift)"
+              aria-label="Refresh demo data"
+            >
+              <RefreshCw size={12} /> Refresh
+            </button>
+          )}
           <button 
             className="btn btn-secondary" 
             style={{ padding: '0.4rem 0.85rem', fontSize: '0.74rem' }}

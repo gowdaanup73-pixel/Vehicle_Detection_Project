@@ -26,7 +26,7 @@ import {
   ZAxis,
 } from 'recharts';
 import { fetchMetrics } from '../api';
-import { ChartWatermark, DemoBadge } from './DemoBadge';
+import { ChartWatermark, DemoBadge, DemoChip, DemoSwitch } from './DemoBadge';
 
 const CHARCOAL = '#222320';
 const IVORY = '#E9E2D4';
@@ -331,7 +331,7 @@ export const MetricsCharts = ({
           <div className="label-tactical" style={{ color: BURNT_ORANGE }}>
             METRICS DASHBOARD // 5-PANEL COMPARATIVE EVALUATION
           </div>
-          {isDemoActive && <DemoBadge />}
+          {isDemoActive && <DemoChip />}
           {activeError && (
             <span
               style={{
@@ -360,12 +360,18 @@ export const MetricsCharts = ({
             <span>Download metrics CSV</span>
           </button>
           {downloadButton}
+          {demoData?.setDemoMode && (
+            <DemoSwitch
+              isDemoMode={isDemoActive}
+              onToggle={demoData.setDemoMode}
+            />
+          )}
           <button
             type="button"
             className="btn btn-secondary"
             style={{ padding: '0.35rem 0.65rem', fontSize: '0.72rem' }}
-            onClick={handleRetry}
-            title="Reload metrics data"
+            onClick={isDemoActive ? demoData?.refresh : handleRetry}
+            title={isDemoActive ? 'Refresh demo dataset (simulated drift)' : 'Reload metrics data'}
             aria-label="Refresh metrics"
           >
             <RefreshCw size={12} /> Refresh
