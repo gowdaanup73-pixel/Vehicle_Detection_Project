@@ -16,7 +16,7 @@ import {
   getDemoEpochHistory,
   getDemoMetrics,
   getDemoTrafficTick,
-} from './generator';
+} from './generator.js';
 
 const STORAGE_KEY = 'demo_mode';
 const ROLLING_WINDOW_SIZE = 30;

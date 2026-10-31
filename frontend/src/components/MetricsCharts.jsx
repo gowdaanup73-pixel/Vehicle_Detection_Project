@@ -26,7 +26,7 @@ import {
   ZAxis,
 } from 'recharts';
 import { fetchMetrics } from '../api';
-import { ChartWatermark, DemoBadge, DemoChip, DemoSwitch } from './DemoBadge';
+import { ChartWatermark, DemoChip, DemoSwitch } from './DemoBadge';
 
 const CHARCOAL = '#222320';
 const IVORY = '#E9E2D4';
