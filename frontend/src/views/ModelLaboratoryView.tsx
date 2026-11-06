@@ -126,7 +126,10 @@ export const ModelLaboratoryView: React.FC<ModelLaboratoryViewProps> = ({
         <div className="kpi-row-4">
           <div className="kpi-card" style={{ borderTop: '3px solid var(--burnt-orange)' }}>
             <span className="kpi-label">mAP @ [0.50 : 0.95]</span>
-            <div className="kpi-value">33.61%</div>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem', flexWrap: 'wrap' }}>
+              <div className="kpi-value">33.61%</div>
+              <span className="badge badge-green" style={{ fontSize: '0.65rem' }}>+2.74 pp (+8.9%)</span>
+            </div>
             <span className="kpi-unit">Primary COCO Detection Metric</span>
             <span className="kpi-desc">
               Mean Average Precision averaged over 10 IoU thresholds (0.50 to 0.95 in 0.05 increments) on 1,417 UA-DETRAC validation frames.
@@ -135,7 +138,10 @@ export const ModelLaboratoryView: React.FC<ModelLaboratoryViewProps> = ({
 
           <div className="kpi-card" style={{ borderTop: '3px solid var(--muted-olive)' }}>
             <span className="kpi-label">AP @ 0.50 (PASCAL VOC)</span>
-            <div className="kpi-value">58.89%</div>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem', flexWrap: 'wrap' }}>
+              <div className="kpi-value">58.89%</div>
+              <span className="badge badge-green" style={{ fontSize: '0.65rem' }}>+5.47 pp (+10.2%)</span>
+            </div>
             <span className="kpi-unit">IoU = 0.50 Acceptance Threshold</span>
             <span className="kpi-desc">
               Average Precision at standard 50% bounding-box intersection-over-union. +5.47% absolute gain (+10.2% relative) over baseline CenterNet (53.42%).
@@ -144,7 +150,10 @@ export const ModelLaboratoryView: React.FC<ModelLaboratoryViewProps> = ({
 
           <div className="kpi-card" style={{ borderTop: '3px solid var(--warm-ivory)' }}>
             <span className="kpi-label">AP @ 0.75 (STRICT IOU)</span>
-            <div className="kpi-value">34.09%</div>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem', flexWrap: 'wrap' }}>
+              <div className="kpi-value">34.09%</div>
+              <span className="badge badge-green" style={{ fontSize: '0.65rem' }}>+2.73 pp (+8.7%)</span>
+            </div>
             <span className="kpi-unit">IoU = 0.75 Localization Fidelity</span>
             <span className="kpi-desc">
               Precision at strict 75% boundary overlap, demonstrating refined spatial regression from BiFPN multi-scale feature aggregation.
@@ -153,11 +162,66 @@ export const ModelLaboratoryView: React.FC<ModelLaboratoryViewProps> = ({
 
           <div className="kpi-card" style={{ borderTop: '3px solid var(--burnt-orange)' }}>
             <span className="kpi-label">INFERENCE LATENCY</span>
-            <div className="kpi-value">12.8 ms</div>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem', flexWrap: 'wrap' }}>
+              <div className="kpi-value">12.8 ms</div>
+              <span className="badge badge-charcoal" style={{ fontSize: '0.65rem' }}>78.1 FPS</span>
+            </div>
             <span className="kpi-unit">78.1 FPS on Tesla T4 Benchmark</span>
             <span className="kpi-desc">
               Anchor-free keypoint estimation head ensures high real-time throughput on 512×288 resolution without NMS bottlenecking.
             </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Model Increment & Ablation Gain Summary Card */}
+      <div className="command-card" style={{ padding: '0.85rem 1rem', backgroundColor: 'var(--charcoal-900)', border: '1px solid var(--border-light)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <TrendingUp size={16} style={{ color: 'var(--status-green)' }} />
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.78rem', fontWeight: 700, color: 'var(--warm-ivory)', letterSpacing: '0.05em' }}>
+              TOTAL MODEL INCREMENT // IMPROVED CENTERNET V2 VS BASELINE
+            </span>
+          </div>
+          <span className="badge badge-green" style={{ fontSize: '0.68rem', fontFamily: 'var(--font-mono)' }}>
+            +10.24% RELATIVE VOC GAIN // +8.88% RELATIVE COCO GAIN
+          </span>
+        </div>
+
+        <div className="kpi-row-4" style={{ gap: '0.75rem' }}>
+          <div style={{ padding: '0.65rem', backgroundColor: 'var(--charcoal-800)', border: '1px solid var(--border-light)', fontFamily: 'var(--font-mono)' }}>
+            <div style={{ fontSize: '0.68rem', color: 'var(--warm-ivory-dim)', marginBottom: '0.2rem' }}>PRIMARY AP@0.5 GAIN</div>
+            <div style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--status-green)' }}>+5.47 pp</div>
+            <div style={{ fontSize: '0.65rem', color: 'var(--warm-ivory-dim)' }}>53.42% → 58.89% (+10.24% rel)</div>
+          </div>
+          <div style={{ padding: '0.65rem', backgroundColor: 'var(--charcoal-800)', border: '1px solid var(--border-light)', fontFamily: 'var(--font-mono)' }}>
+            <div style={{ fontSize: '0.68rem', color: 'var(--warm-ivory-dim)', marginBottom: '0.2rem' }}>COCO mAP@[0.5:0.95] GAIN</div>
+            <div style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--status-green)' }}>+2.74 pp</div>
+            <div style={{ fontSize: '0.65rem', color: 'var(--warm-ivory-dim)' }}>30.87% → 33.61% (+8.88% rel)</div>
+          </div>
+          <div style={{ padding: '0.65rem', backgroundColor: 'var(--charcoal-800)', border: '1px solid var(--border-light)', fontFamily: 'var(--font-mono)' }}>
+            <div style={{ fontSize: '0.68rem', color: 'var(--warm-ivory-dim)', marginBottom: '0.2rem' }}>HIGH-IOU AP@0.75 GAIN</div>
+            <div style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--status-green)' }}>+2.73 pp</div>
+            <div style={{ fontSize: '0.65rem', color: 'var(--warm-ivory-dim)' }}>31.36% → 34.09% (+8.71% rel)</div>
+          </div>
+          <div style={{ padding: '0.65rem', backgroundColor: 'var(--charcoal-800)', border: '1px solid var(--border-light)', fontFamily: 'var(--font-mono)' }}>
+            <div style={{ fontSize: '0.68rem', color: 'var(--warm-ivory-dim)', marginBottom: '0.2rem' }}>VEHICLE RECALL (AR@100)</div>
+            <div style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--status-green)' }}>+2.20 pp</div>
+            <div style={{ fontSize: '0.65rem', color: 'var(--warm-ivory-dim)' }}>53.25% → 55.45% (+4.13% rel)</div>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid var(--border-light)', flexWrap: 'wrap', gap: '0.5rem', fontFamily: 'var(--font-mono)', fontSize: '0.7rem' }}>
+          <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
+            <span style={{ color: 'var(--warm-ivory-dim)' }}>Class Increments:</span>
+            <span style={{ color: 'var(--warm-ivory)' }}>Car: <strong style={{ color: 'var(--status-green)' }}>+4.94 pp</strong> (47.83%)</span>
+            <span style={{ color: 'var(--warm-ivory)' }}>Van: <strong style={{ color: 'var(--status-green)' }}>+5.38 pp</strong> (37.81%)</span>
+            <span style={{ color: 'var(--warm-ivory)' }}>Others: <strong style={{ color: 'var(--status-green)' }}>+1.95 pp</strong> (5.55%)</span>
+            <span style={{ color: 'var(--warm-ivory)' }}>Bus: <strong style={{ color: 'var(--burnt-orange)' }}>-1.30 pp</strong> (43.25%)</span>
+          </div>
+          <div style={{ display: 'flex', gap: '0.75rem', color: 'var(--warm-ivory-dim)', alignItems: 'center' }}>
+            <span>Scales: AP<sub>S</sub> 5.96% · AP<sub>M</sub> 31.40% · AP<sub>L</sub> 45.54%</span>
+            <span>Compute: 16.9M params (+2.1M) · 36.6 GFLOPs</span>
           </div>
         </div>
       </div>
@@ -444,6 +508,18 @@ export const ModelLaboratoryView: React.FC<ModelLaboratoryViewProps> = ({
                     <span style={{ textTransform: 'uppercase', color: 'var(--warm-ivory)', fontWeight: 600 }}>{cls}</span>
                     <span style={{ color: ap !== null ? 'var(--burnt-orange)' : 'var(--warm-ivory-dim)', fontWeight: 700 }}>
                       {ap !== null ? `${pct}% AP` : 'Not evaluated'}
+                      {selectedExp.id === 'exp_improved_centernet_v2' && ap !== null && (() => {
+                        const baseMap: Record<string, number> = { car: 42.89, van: 32.43, bus: 44.55, others: 3.60 };
+                        const bVal = baseMap[cls.toLowerCase()];
+                        if (bVal === undefined) return null;
+                        const delta = (ap * 100) - bVal;
+                        const isPos = delta >= 0;
+                        return (
+                          <span className={`badge ${isPos ? 'badge-green' : 'badge-charcoal'}`} style={{ marginLeft: '0.4rem', fontSize: '0.62rem', padding: '0.1rem 0.3rem' }}>
+                            {isPos ? `+${delta.toFixed(1)} pp` : `${delta.toFixed(1)} pp`}
+                          </span>
+                        );
+                      })()}
                     </span>
                   </div>
                   <div style={{ height: '8px', backgroundColor: 'var(--charcoal-900)', border: '1px solid var(--border-light)' }}>
@@ -655,19 +731,39 @@ export const ModelLaboratoryView: React.FC<ModelLaboratoryViewProps> = ({
                       {exp.evaluation_split || 'Validation Split'}
                     </td>
                     <td style={{ fontWeight: 700, color: 'var(--warm-ivory)' }}>
-                      {exp.map_50 !== null && exp.map_50 !== undefined ? (exp.map_50 * 100).toFixed(2) + '%' : <span style={{ color: 'var(--warm-ivory-dim)' }}>Not evaluated</span>}
+                      {exp.map_50 !== null && exp.map_50 !== undefined ? (
+                        <span>
+                          {(exp.map_50 * 100).toFixed(2)}%
+                          {isProposed && <span className="badge badge-green" style={{ marginLeft: '0.35rem', fontSize: '0.6rem' }}>+5.47 pp</span>}
+                        </span>
+                      ) : <span style={{ color: 'var(--warm-ivory-dim)' }}>Not evaluated</span>}
                     </td>
                     <td>
-                      {exp.map_50_95 !== null && exp.map_50_95 !== undefined ? (exp.map_50_95 * 100).toFixed(2) + '%' : <span style={{ color: 'var(--warm-ivory-dim)' }}>Not evaluated</span>}
+                      {exp.map_50_95 !== null && exp.map_50_95 !== undefined ? (
+                        <span>
+                          {(exp.map_50_95 * 100).toFixed(2)}%
+                          {isProposed && <span className="badge badge-green" style={{ marginLeft: '0.35rem', fontSize: '0.6rem' }}>+2.74 pp</span>}
+                        </span>
+                      ) : <span style={{ color: 'var(--warm-ivory-dim)' }}>Not evaluated</span>}
                     </td>
                     <td>
-                      {exp.ap_75 !== null && exp.ap_75 !== undefined ? (exp.ap_75 * 100).toFixed(2) + '%' : <span style={{ color: 'var(--warm-ivory-dim)' }}>Not evaluated</span>}
+                      {exp.ap_75 !== null && exp.ap_75 !== undefined ? (
+                        <span>
+                          {(exp.ap_75 * 100).toFixed(2)}%
+                          {isProposed && <span className="badge badge-green" style={{ marginLeft: '0.35rem', fontSize: '0.6rem' }}>+2.73 pp</span>}
+                        </span>
+                      ) : <span style={{ color: 'var(--warm-ivory-dim)' }}>Not evaluated</span>}
                     </td>
                     <td>
                       {exp.precision !== null && exp.precision !== undefined ? (exp.precision * 100).toFixed(1) + '%' : <span style={{ color: 'var(--warm-ivory-dim)' }}>Not evaluated</span>}
                     </td>
                     <td>
-                      {exp.recall !== null && exp.recall !== undefined ? (exp.recall * 100).toFixed(1) + '%' : <span style={{ color: 'var(--warm-ivory-dim)' }}>Not evaluated</span>}
+                      {exp.recall !== null && exp.recall !== undefined ? (
+                        <span>
+                          {(exp.recall * 100).toFixed(1)}%
+                          {isProposed && <span className="badge badge-green" style={{ marginLeft: '0.35rem', fontSize: '0.6rem' }}>+2.20 pp</span>}
+                        </span>
+                      ) : <span style={{ color: 'var(--warm-ivory-dim)' }}>Not evaluated</span>}
                     </td>
                     <td>
                       {exp.f1_score !== null && exp.f1_score !== undefined ? (exp.f1_score * 100).toFixed(1) + '%' : <span style={{ color: 'var(--warm-ivory-dim)' }}>Not evaluated</span>}
