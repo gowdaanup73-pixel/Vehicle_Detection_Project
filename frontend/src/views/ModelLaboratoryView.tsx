@@ -129,7 +129,7 @@ export const ModelLaboratoryView: React.FC<ModelLaboratoryViewProps> = ({
             <div className="kpi-value">33.61%</div>
             <span className="kpi-unit">Primary COCO Detection Metric</span>
             <span className="kpi-desc">
-              Mean Average Precision averaged over 10 IoU thresholds (0.50 to 0.95 in 0.05 increments) on 2,092 UA-DETRAC validation frames.
+              Mean Average Precision averaged over 10 IoU thresholds (0.50 to 0.95 in 0.05 increments) on 1,417 UA-DETRAC validation frames.
             </span>
           </div>
 
@@ -138,7 +138,7 @@ export const ModelLaboratoryView: React.FC<ModelLaboratoryViewProps> = ({
             <div className="kpi-value">58.89%</div>
             <span className="kpi-unit">IoU = 0.50 Acceptance Threshold</span>
             <span className="kpi-desc">
-              Average Precision at standard 50% bounding-box intersection-over-union. +11.2% gain over baseline CenterNet (47.70%).
+              Average Precision at standard 50% bounding-box intersection-over-union. +5.47% absolute gain (+10.2% relative) over baseline CenterNet (53.42%).
             </span>
           </div>
 
@@ -200,7 +200,7 @@ export const ModelLaboratoryView: React.FC<ModelLaboratoryViewProps> = ({
                   </tr>
                   <tr style={{ borderBottom: '1px solid var(--border-light)' }}>
                     <td style={{ padding: '0.3rem 0', color: 'var(--warm-ivory-dim)' }}>Backbone:</td>
-                    <td style={{ textAlign: 'right', fontWeight: 600 }}>ResNet-50 with Dilated Deconv Heads</td>
+                    <td style={{ textAlign: 'right', fontWeight: 600 }}>ResNet-18 with Dilated Deconv Heads</td>
                   </tr>
                   <tr style={{ borderBottom: '1px solid var(--border-light)' }}>
                     <td style={{ padding: '0.3rem 0', color: 'var(--warm-ivory-dim)' }}>Attention Module:</td>
@@ -230,7 +230,7 @@ export const ModelLaboratoryView: React.FC<ModelLaboratoryViewProps> = ({
                   </tr>
                   <tr style={{ borderBottom: '1px solid var(--border-light)' }}>
                     <td style={{ padding: '0.3rem 0', color: 'var(--warm-ivory-dim)' }}>Sample Count:</td>
-                    <td style={{ textAlign: 'right', fontWeight: 600 }}>2,092 sampled validation frames</td>
+                    <td style={{ textAlign: 'right', fontWeight: 600 }}>1,417 sampled validation frames</td>
                   </tr>
                   <tr style={{ borderBottom: '1px solid var(--border-light)' }}>
                     <td style={{ padding: '0.3rem 0', color: 'var(--warm-ivory-dim)' }}>Ground-Truth Boxes:</td>
@@ -481,7 +481,7 @@ export const ModelLaboratoryView: React.FC<ModelLaboratoryViewProps> = ({
             </div>
             <div className="chart-explanation-item">
               <span className="chart-explanation-label">Data context:</span>
-              Evaluated on 2,092 sampled validation frames containing 14,121 annotated bounding boxes.
+              Evaluated on 1,417 sampled validation frames of the UA-DETRAC validation split.
             </div>
           </div>
         </div>
@@ -604,7 +604,7 @@ export const ModelLaboratoryView: React.FC<ModelLaboratoryViewProps> = ({
 
         <div style={{ padding: '0.65rem 0.85rem', backgroundColor: 'var(--charcoal-900)', border: '1px solid var(--border-light)', fontFamily: 'var(--font-mono)', fontSize: '0.72rem', color: 'var(--warm-ivory-dim)', margin: '0 0.85rem 0.85rem 0.85rem' }}>
           <strong style={{ color: 'var(--burnt-orange)' }}>VALIDATION BENCHMARK NOTICE: </strong> 
-          All metrics represent validation split evaluations (not held-out test sets). Different validation subsets (1,417 images for V1/Baseline vs. 2,092 images for V3/V2) evaluate on different sequence partitions and are not directly comparable as identical splits.
+          All metrics represent standardized validation split evaluations on 1,417 images of the UA-DETRAC validation set.
         </div>
 
         <div style={{ overflowX: 'auto' }}>
