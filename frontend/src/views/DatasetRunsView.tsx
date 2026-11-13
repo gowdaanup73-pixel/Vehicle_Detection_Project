@@ -89,7 +89,7 @@ export const DatasetRunsView: React.FC<DatasetRunsViewProps> = ({
         <div>
           <div className="label-tactical">EXECUTION AUDIT TRAIL // PERSISTENT RECORDS</div>
           <h1 className="section-title">
-            <FileText size={22} style={{ color: 'var(--burnt-orange)' }} />
+            <FileText size={22} style={{ color: 'var(--text-primary)' }} />
             Execution History & Inspection
           </h1>
           <p className="section-subtitle">
@@ -120,7 +120,7 @@ export const DatasetRunsView: React.FC<DatasetRunsViewProps> = ({
           <div style={{ display: 'flex', gap: '0.65rem', alignItems: 'center', flexWrap: 'wrap' }}>
             {/* Search */}
             <div style={{ position: 'relative', width: '220px' }}>
-              <Search size={12} style={{ position: 'absolute', left: '8px', top: '9px', color: 'var(--warm-ivory-dim)' }} />
+              <Search size={12} style={{ position: 'absolute', left: '8px', top: '9px', color: 'var(--text-muted)' }} />
               <input
                 type="text"
                 className="form-input"
@@ -182,9 +182,9 @@ export const DatasetRunsView: React.FC<DatasetRunsViewProps> = ({
         </div>
 
         {runs.length === 0 ? (
-          <div style={{ padding: '3.5rem 2rem', textAlign: 'center', color: 'var(--warm-ivory-dim)', fontFamily: 'var(--font-mono)' }}>
-            <Database size={32} style={{ color: 'var(--muted-olive)', margin: '0 auto 0.75rem auto' }} />
-            <div style={{ color: 'var(--warm-ivory)', fontWeight: 700, fontSize: '0.9rem', marginBottom: '0.4rem' }}>
+          <div style={{ padding: '3.5rem 2rem', textAlign: 'center', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
+            <Database size={32} style={{ color: 'var(--text-secondary)', margin: '0 auto 0.75rem auto' }} />
+            <div style={{ color: 'var(--text-primary)', fontWeight: 700, fontSize: '0.9rem', marginBottom: '0.4rem' }}>
               NO PERSISTED OPERATIONAL RUNS FOUND
             </div>
             <div style={{ fontSize: '0.74rem', maxWidth: '480px', margin: '0 auto', lineHeight: 1.6 }}>
@@ -192,7 +192,7 @@ export const DatasetRunsView: React.FC<DatasetRunsViewProps> = ({
             </div>
           </div>
         ) : processedRuns.length === 0 ? (
-          <div style={{ padding: '2.5rem', textAlign: 'center', color: 'var(--warm-ivory-dim)', fontFamily: 'var(--font-mono)' }}>
+          <div style={{ padding: '2.5rem', textAlign: 'center', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
             NO AUDIT RECORDS MATCH THE CURRENT FILTER OR SEARCH QUERY.
           </div>
         ) : (
@@ -216,8 +216,8 @@ export const DatasetRunsView: React.FC<DatasetRunsViewProps> = ({
                 <tbody>
                   {paginatedRuns.map((run) => (
                     <tr key={run.id}>
-                      <td style={{ color: 'var(--burnt-orange)', fontWeight: 600 }}>{run.id}</td>
-                      <td style={{ color: 'var(--warm-ivory-dim)', fontSize: '0.72rem' }}>
+                      <td style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{run.id}</td>
+                      <td style={{ color: 'var(--text-muted)', fontSize: '0.72rem' }}>
                         {new Date(run.timestamp).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
                       </td>
                       <td>
@@ -227,22 +227,22 @@ export const DatasetRunsView: React.FC<DatasetRunsViewProps> = ({
                       </td>
                       <td style={{ maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         <div>{run.filename}</div>
-                        <div style={{ fontSize: '0.62rem', color: 'var(--warm-ivory-dim)', marginTop: '1px' }}>
+                        <div style={{ fontSize: '0.62rem', color: 'var(--text-muted)', marginTop: '1px' }}>
                           {run.model_name || 'Improved CenterNet'}
                         </div>
                         {(run.creator || run.license) && (
-                          <div style={{ fontSize: '0.62rem', color: 'var(--burnt-orange)', marginTop: '2px' }}>
+                          <div style={{ fontSize: '0.62rem', color: 'var(--text-primary)', marginTop: '2px' }}>
                             {run.license || 'Open License'} {run.creator ? `// ${run.creator}` : ''}
                           </div>
                         )}
                       </td>
-                      <td style={{ fontWeight: 700, color: 'var(--warm-ivory)' }}>
+                      <td style={{ fontWeight: 700, color: 'var(--text-primary)' }}>
                         {run.total_detections}
                       </td>
-                      <td style={{ color: run.unique_vehicles > 0 ? 'var(--burnt-orange)' : 'var(--warm-ivory-dim)' }}>
+                      <td style={{ color: run.unique_vehicles > 0 ? 'var(--text-primary)' : 'var(--text-muted)' }}>
                         {run.unique_vehicles}
                       </td>
-                      <td style={{ color: run.line_crossings > 0 ? 'var(--status-green)' : 'var(--warm-ivory-dim)' }}>
+                      <td style={{ color: run.line_crossings > 0 ? 'var(--status-green)' : 'var(--text-muted)' }}>
                         {run.line_crossings}
                       </td>
                       <td>{run.latency_ms} ms</td>
@@ -281,7 +281,7 @@ export const DatasetRunsView: React.FC<DatasetRunsViewProps> = ({
             {/* Pagination Controls */}
             {totalPages > 1 && (
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem 1rem', borderTop: '1px solid var(--border-light)', fontFamily: 'var(--font-mono)', fontSize: '0.74rem' }}>
-                <span style={{ color: 'var(--warm-ivory-dim)' }}>
+                <span style={{ color: 'var(--text-muted)' }}>
                   Page {currentPage} of {totalPages} ({processedRuns.length} total runs)
                 </span>
                 <div style={{ display: 'flex', gap: '0.4rem' }}>
@@ -364,7 +364,7 @@ export const DatasetRunsView: React.FC<DatasetRunsViewProps> = ({
               </div>
 
               <div>
-                <div className="label-tactical" style={{ marginBottom: '0.3rem', color: 'var(--burnt-orange)' }}>ANNOTATED OUTPUT (BOUNDING BOXES)</div>
+                <div className="label-tactical" style={{ marginBottom: '0.3rem', color: 'var(--text-primary)' }}>ANNOTATED OUTPUT (BOUNDING BOXES)</div>
                 <div style={{ height: '280px', backgroundColor: 'var(--charcoal-900)', border: '1px solid var(--border-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
                   {selectedRun.media_type === 'video' ? (
                     <video controls src={selectedRun.annotated_url} style={{ maxWidth: '100%', maxHeight: '100%' }} />
@@ -379,11 +379,11 @@ export const DatasetRunsView: React.FC<DatasetRunsViewProps> = ({
             <div className="kpi-row-4" style={{ marginBottom: '1rem', padding: '0 0.85rem' }}>
               <div style={{ padding: '0.65rem', backgroundColor: 'var(--charcoal-900)', border: '1px solid var(--border-light)', fontFamily: 'var(--font-mono)' }}>
                 <div className="label-tactical" style={{ fontSize: '0.62rem' }}>TOTAL DETECTIONS</div>
-                <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--warm-ivory)' }}>{selectedRun.total_detections}</div>
+                <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)' }}>{selectedRun.total_detections}</div>
               </div>
               <div style={{ padding: '0.65rem', backgroundColor: 'var(--charcoal-900)', border: '1px solid var(--border-light)', fontFamily: 'var(--font-mono)' }}>
                 <div className="label-tactical" style={{ fontSize: '0.62rem' }}>UNIQUE VEHICLES</div>
-                <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--burnt-orange)' }}>{selectedRun.unique_vehicles}</div>
+                <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)' }}>{selectedRun.unique_vehicles}</div>
               </div>
               <div style={{ padding: '0.65rem', backgroundColor: 'var(--charcoal-900)', border: '1px solid var(--border-light)', fontFamily: 'var(--font-mono)' }}>
                 <div className="label-tactical" style={{ fontSize: '0.62rem' }}>TRIPWIRE CROSSINGS</div>
@@ -391,30 +391,30 @@ export const DatasetRunsView: React.FC<DatasetRunsViewProps> = ({
               </div>
               <div style={{ padding: '0.65rem', backgroundColor: 'var(--charcoal-900)', border: '1px solid var(--border-light)', fontFamily: 'var(--font-mono)' }}>
                 <div className="label-tactical" style={{ fontSize: '0.62rem' }}>INFERENCE LATENCY</div>
-                <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--warm-ivory)' }}>{selectedRun.latency_ms} ms</div>
+                <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)' }}>{selectedRun.latency_ms} ms</div>
               </div>
             </div>
 
             {/* Run Metadata Details */}
             <div style={{ padding: '0 0.85rem 1rem 0.85rem' }}>
               <div style={{ padding: '0.75rem', backgroundColor: 'var(--charcoal-900)', border: '1px solid var(--border-light)', fontFamily: 'var(--font-mono)', fontSize: '0.72rem' }}>
-                <div style={{ color: 'var(--muted-olive)', fontWeight: 700, marginBottom: '0.4rem' }}>
+                <div style={{ color: 'var(--text-secondary)', fontWeight: 700, marginBottom: '0.4rem' }}>
                   RECORD AUDIT METADATA
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.4rem', color: 'var(--warm-ivory-dim)' }}>
-                  <div>Detector Model: <span style={{ color: 'var(--warm-ivory)' }}>{selectedRun.model_name || 'Improved CenterNet (ResNet-18 + CBAM + BiFPN)'}</span></div>
-                  <div>Execution Timestamp: <span style={{ color: 'var(--warm-ivory)' }}>{new Date(selectedRun.timestamp).toISOString()}</span></div>
-                  <div>Weights Status: <span style={{ color: 'var(--warm-ivory)' }}>{selectedRun.weights_status}</span></div>
-                  <div>Media Type: <span style={{ color: 'var(--warm-ivory)' }}>{selectedRun.media_type}</span></div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.4rem', color: 'var(--text-muted)' }}>
+                  <div>Detector Model: <span style={{ color: 'var(--text-primary)' }}>{selectedRun.model_name || 'Improved CenterNet (ResNet-18 + CBAM + BiFPN)'}</span></div>
+                  <div>Execution Timestamp: <span style={{ color: 'var(--text-primary)' }}>{new Date(selectedRun.timestamp).toISOString()}</span></div>
+                  <div>Weights Status: <span style={{ color: 'var(--text-primary)' }}>{selectedRun.weights_status}</span></div>
+                  <div>Media Type: <span style={{ color: 'var(--text-primary)' }}>{selectedRun.media_type}</span></div>
                 </div>
                 {(selectedRun.creator || selectedRun.license || selectedRun.source_page_url) && (
                   <div style={{ marginTop: '0.6rem', paddingTop: '0.6rem', borderTop: '1px solid rgba(233, 226, 212, 0.1)' }}>
-                    <div style={{ color: 'var(--burnt-orange)', fontWeight: 700, marginBottom: '0.3rem' }}>
+                    <div style={{ color: 'var(--text-primary)', fontWeight: 700, marginBottom: '0.3rem' }}>
                       IMAGE ATTRIBUTION (OPEN LICENSE)
                     </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.4rem', color: 'var(--warm-ivory-dim)' }}>
-                      {selectedRun.creator && <div>Creator: <span style={{ color: 'var(--warm-ivory)' }}>{selectedRun.creator}</span></div>}
-                      {selectedRun.license && <div>License: <span style={{ color: 'var(--warm-ivory)' }}>{selectedRun.license}</span></div>}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.4rem', color: 'var(--text-muted)' }}>
+                      {selectedRun.creator && <div>Creator: <span style={{ color: 'var(--text-primary)' }}>{selectedRun.creator}</span></div>}
+                      {selectedRun.license && <div>License: <span style={{ color: 'var(--text-primary)' }}>{selectedRun.license}</span></div>}
                       {selectedRun.source_page_url && (
                         <div style={{ gridColumn: 'span 2' }}>
                           Source Page:{' '}
@@ -422,7 +422,7 @@ export const DatasetRunsView: React.FC<DatasetRunsViewProps> = ({
                             href={selectedRun.source_page_url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            style={{ color: 'var(--burnt-orange)', textDecoration: 'underline' }}
+                            style={{ color: 'var(--text-primary)', textDecoration: 'underline' }}
                           >
                             {selectedRun.source_page_url}
                           </a>

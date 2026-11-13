@@ -307,7 +307,7 @@ export const DetectionStudioView: React.FC<DetectionStudioViewProps> = ({
         <div>
           <div className="label-tactical">INSPECTION WORKFLOW // STEP-BY-STEP VEHICLE DETECTION</div>
           <h1 className="section-title">
-            <Zap size={22} style={{ color: 'var(--burnt-orange)' }} />
+            <Zap size={22} style={{ color: 'var(--text-primary)' }} />
             Vehicle Detection Studio
           </h1>
           <p className="section-subtitle">
@@ -366,7 +366,7 @@ export const DetectionStudioView: React.FC<DetectionStudioViewProps> = ({
           <div className="command-card">
             <div className="command-card-header">
               <span className="card-title">
-                <Upload size={14} style={{ color: 'var(--burnt-orange)' }} />
+                <Upload size={14} style={{ color: 'var(--text-primary)' }} />
                 1. Upload {activeMode === 'image' ? 'Road Image' : 'Traffic Video'}
               </span>
               {selectedFile && (
@@ -396,11 +396,11 @@ export const DetectionStudioView: React.FC<DetectionStudioViewProps> = ({
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
             >
-              <Upload size={24} style={{ color: 'var(--muted-olive)', margin: '0 auto 0.5rem auto' }} />
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.78rem', color: 'var(--warm-ivory)' }}>
+              <Upload size={24} style={{ color: 'var(--text-secondary)', margin: '0 auto 0.5rem auto' }} />
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.78rem', color: 'var(--text-primary)' }}>
                 {selectedFile ? selectedFile.name : `Select ${activeMode === 'image' ? 'Image File' : 'Video File'}`}
               </div>
-              <div style={{ fontSize: '0.7rem', color: 'var(--warm-ivory-dim)', marginTop: '0.25rem' }}>
+              <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
                 {selectedFile ? `${(selectedFile.size / 1024 / 1024).toFixed(2)} MB (Ready for detection)` : 'Click or drop file to preview & run detection'}
               </div>
             </div>
@@ -416,7 +416,7 @@ export const DetectionStudioView: React.FC<DetectionStudioViewProps> = ({
                 onClick={() => handleLoadSample(activeMode)}
                 disabled={isProcessing}
               >
-                <Play size={12} style={{ color: 'var(--burnt-orange)' }} />
+                <Play size={12} style={{ color: 'var(--text-primary)' }} />
                 {isProcessing ? 'Running Benchmark...' : `Run Reference Benchmark (${activeMode === 'image' ? 'Highway Frame' : 'Traffic Stream'})`}
               </button>
             </div>
@@ -426,14 +426,14 @@ export const DetectionStudioView: React.FC<DetectionStudioViewProps> = ({
           <div className="command-card">
             <div className="command-card-header">
               <span className="card-title">
-                <Sliders size={14} style={{ color: 'var(--muted-olive)' }} />
+                <Sliders size={14} style={{ color: 'var(--text-secondary)' }} />
                 2. Parameters & Execution
               </span>
             </div>
 
             {/* Detector Selection Dropdown */}
             <div className="form-group" style={{ marginBottom: '1rem' }}>
-              <label style={{ display: 'block', marginBottom: '0.35rem', fontFamily: 'var(--font-mono)', fontSize: '0.72rem', color: 'var(--warm-ivory-dim)', fontWeight: 600 }}>
+              <label style={{ display: 'block', marginBottom: '0.35rem', fontFamily: 'var(--font-mono)', fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 600 }}>
                 DETECTION MODEL
               </label>
               <select
@@ -445,7 +445,7 @@ export const DetectionStudioView: React.FC<DetectionStudioViewProps> = ({
                   padding: '0.45rem 0.6rem',
                   backgroundColor: 'var(--charcoal-900)',
                   border: '1px solid var(--charcoal-600)',
-                  color: 'var(--warm-ivory)',
+                  color: 'var(--text-primary)',
                   fontFamily: 'var(--font-mono)',
                   fontSize: '0.76rem',
                   borderRadius: '2px',
@@ -457,7 +457,7 @@ export const DetectionStudioView: React.FC<DetectionStudioViewProps> = ({
                   </option>
                 ))}
               </select>
-              <div style={{ fontSize: '0.68rem', color: 'var(--warm-ivory-dim)', marginTop: '0.25rem' }}>
+              <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
                 {selectedDetector === 'uvh26'
                   ? 'Hugging Face UVH-26 YOLOv11-S (Pretrained for Indian & Dense Traffic)'
                   : selectedDetector === 'pretrained'
@@ -469,8 +469,8 @@ export const DetectionStudioView: React.FC<DetectionStudioViewProps> = ({
             {/* Confidence Threshold */}
             <div className="form-group">
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.3rem', fontFamily: 'var(--font-mono)', fontSize: '0.72rem' }}>
-                <span style={{ color: 'var(--warm-ivory-dim)' }}>CONFIDENCE FILTER</span>
-                <span style={{ color: 'var(--burnt-orange)', fontWeight: 700 }}>{confThresh.toFixed(2)}</span>
+                <span style={{ color: 'var(--text-muted)' }}>CONFIDENCE FILTER</span>
+                <span style={{ color: 'var(--text-primary)', fontWeight: 700 }}>{confThresh.toFixed(2)}</span>
               </div>
               <input
                 type="range"
@@ -480,7 +480,7 @@ export const DetectionStudioView: React.FC<DetectionStudioViewProps> = ({
                 value={confThresh}
                 onChange={(e) => setConfThresh(parseFloat(e.target.value))}
               />
-              <div style={{ fontSize: '0.68rem', color: 'var(--warm-ivory-dim)', marginTop: '0.2rem' }}>
+              <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
                 Keypoint center probability threshold
               </div>
             </div>
@@ -489,8 +489,8 @@ export const DetectionStudioView: React.FC<DetectionStudioViewProps> = ({
               <>
                 <div className="form-group">
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.3rem', fontFamily: 'var(--font-mono)', fontSize: '0.72rem' }}>
-                    <span style={{ color: 'var(--warm-ivory-dim)' }}>FRAME LIMIT</span>
-                    <span style={{ color: 'var(--warm-ivory)', fontWeight: 700 }}>{maxFrames} frames</span>
+                    <span style={{ color: 'var(--text-muted)' }}>FRAME LIMIT</span>
+                    <span style={{ color: 'var(--text-primary)', fontWeight: 700 }}>{maxFrames} frames</span>
                   </div>
                   <input
                     type="range"
@@ -504,8 +504,8 @@ export const DetectionStudioView: React.FC<DetectionStudioViewProps> = ({
 
                 <div className="form-group">
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.3rem', fontFamily: 'var(--font-mono)', fontSize: '0.72rem' }}>
-                    <span style={{ color: 'var(--warm-ivory-dim)' }}>FRAME STRIDE</span>
-                    <span style={{ color: 'var(--warm-ivory)', fontWeight: 700 }}>{frameStride}x</span>
+                    <span style={{ color: 'var(--text-muted)' }}>FRAME STRIDE</span>
+                    <span style={{ color: 'var(--text-primary)', fontWeight: 700 }}>{frameStride}x</span>
                   </div>
                   <input
                     type="range"
@@ -541,7 +541,7 @@ export const DetectionStudioView: React.FC<DetectionStudioViewProps> = ({
 
           {/* Error Feedback */}
           {processingError && (
-            <div style={{ padding: '0.75rem', backgroundColor: 'var(--charcoal-800)', border: '1px solid var(--status-red)', color: 'var(--warm-ivory)', fontFamily: 'var(--font-mono)', fontSize: '0.74rem', display: 'flex', gap: '0.5rem' }}>
+            <div style={{ padding: '0.75rem', backgroundColor: 'var(--charcoal-800)', border: '1px solid var(--status-red)', color: 'var(--text-primary)', fontFamily: 'var(--font-mono)', fontSize: '0.74rem', display: 'flex', gap: '0.5rem' }}>
               <AlertCircle size={16} style={{ color: 'var(--status-red)', flexShrink: 0 }} />
               <div>{processingError}</div>
             </div>
@@ -640,11 +640,11 @@ export const DetectionStudioView: React.FC<DetectionStudioViewProps> = ({
                     padding: '1.5rem',
                   }}
                 >
-                  <RefreshCw size={36} className="spin" style={{ color: 'var(--burnt-orange)', margin: '0 auto 1rem auto' }} />
-                  <div style={{ color: 'var(--warm-ivory)', fontWeight: 700, fontSize: '1rem', letterSpacing: '0.05em' }}>
+                  <RefreshCw size={36} className="spin" style={{ color: 'var(--text-primary)', margin: '0 auto 1rem auto' }} />
+                  <div style={{ color: 'var(--text-primary)', fontWeight: 700, fontSize: '1rem', letterSpacing: '0.05em' }}>
                     PROCESSING VEHICLE DETECTIONS...
                   </div>
-                  <div style={{ color: 'var(--warm-ivory-dim)', fontSize: '0.78rem', marginTop: '0.35rem' }}>
+                  <div style={{ color: 'var(--text-muted)', fontSize: '0.78rem', marginTop: '0.35rem' }}>
                     Passing frames through ResNet-18 + CBAM + BiFPN anchor-free heads
                   </div>
                 </div>
@@ -689,8 +689,8 @@ export const DetectionStudioView: React.FC<DetectionStudioViewProps> = ({
                   />
                 )
               ) : !isProcessing ? (
-                <div style={{ textAlign: 'center', color: 'var(--warm-ivory-dim)', fontFamily: 'var(--font-mono)' }}>
-                  <Eye size={36} style={{ color: 'var(--muted-olive)', margin: '0 auto 0.75rem auto' }} />
+                <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
+                  <Eye size={36} style={{ color: 'var(--text-secondary)', margin: '0 auto 0.75rem auto' }} />
                   <div style={{ fontWeight: 600 }}>Inspection Canvas Standby</div>
                   <div style={{ fontSize: '0.75rem', marginTop: '0.25rem' }}>
                     Select an image or video file on the left to preview and run vehicle detection
@@ -714,7 +714,7 @@ export const DetectionStudioView: React.FC<DetectionStudioViewProps> = ({
                 </div>
                 <div>
                   <span className="strip-label">CHECKPOINT:</span>
-                  <span className="strip-val" style={{ color: 'var(--warm-ivory-dim)' }}>
+                  <span className="strip-val" style={{ color: 'var(--text-muted)' }}>
                     {currentResult.checkpoint || modelStatus?.checkpoint_name || 'improved_v2_best.pth'}
                   </span>
                 </div>
@@ -728,7 +728,7 @@ export const DetectionStudioView: React.FC<DetectionStudioViewProps> = ({
                 </div>
                 <div>
                   <span className="strip-label">SPEED:</span>
-                  <span className="strip-val" style={{ color: 'var(--burnt-orange)' }}>{currentResult.fps} FPS</span>
+                  <span className="strip-val" style={{ color: 'var(--text-primary)' }}>{currentResult.fps} FPS</span>
                 </div>
               </div>
             )}
@@ -744,11 +744,11 @@ export const DetectionStudioView: React.FC<DetectionStudioViewProps> = ({
                   background: 'rgba(200, 107, 60, 0.08)',
                   borderTop: '1px solid rgba(200, 107, 60, 0.2)',
                   fontSize: '0.72rem',
-                  color: 'var(--warm-ivory)',
+                  color: 'var(--text-primary)',
                   flexWrap: 'wrap',
                 }}
               >
-                <span style={{ color: 'var(--burnt-orange)', fontWeight: 600 }}>IMAGE ATTRIBUTION:</span>
+                <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>IMAGE ATTRIBUTION:</span>
                 {currentResult.creator && <span>Creator: <strong>{currentResult.creator}</strong></span>}
                 {currentResult.license && <span className="status-pill" style={{ fontSize: '0.65rem' }}>{currentResult.license}</span>}
                 {currentResult.source_page_url && (
@@ -756,7 +756,7 @@ export const DetectionStudioView: React.FC<DetectionStudioViewProps> = ({
                     href={currentResult.source_page_url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    style={{ color: 'var(--burnt-orange)', textDecoration: 'underline', marginLeft: 'auto' }}
+                    style={{ color: 'var(--text-primary)', textDecoration: 'underline', marginLeft: 'auto' }}
                   >
                     View Source Page &rarr;
                   </a>
@@ -779,7 +779,7 @@ export const DetectionStudioView: React.FC<DetectionStudioViewProps> = ({
 
               {/* Class Count Badges */}
               <div className="grid-4" style={{ marginBottom: '1rem' }}>
-                <div className="class-count-chip" style={{ borderLeftColor: 'var(--burnt-orange)' }}>
+                <div className="class-count-chip" style={{ borderLeftColor: 'var(--text-primary)' }}>
                   <span className="chip-name">Car</span>
                   <span className="chip-count">{classCounts.car || 0}</span>
                 </div>
@@ -787,7 +787,7 @@ export const DetectionStudioView: React.FC<DetectionStudioViewProps> = ({
                   <span className="chip-name">Van</span>
                   <span className="chip-count">{classCounts.van || 0}</span>
                 </div>
-                <div className="class-count-chip" style={{ borderLeftColor: 'var(--muted-olive)' }}>
+                <div className="class-count-chip" style={{ borderLeftColor: 'var(--text-secondary)' }}>
                   <span className="chip-name">Bus</span>
                   <span className="chip-count">{classCounts.bus || 0}</span>
                 </div>
@@ -822,14 +822,14 @@ export const DetectionStudioView: React.FC<DetectionStudioViewProps> = ({
                             style={{ backgroundColor: isSelected ? 'var(--charcoal-700)' : 'transparent', cursor: 'pointer' }}
                             onClick={() => setSelectedBoxIndex(isSelected ? null : idx)}
                           >
-                            <td style={{ color: 'var(--burnt-orange)' }}>#{idx + 1}</td>
+                            <td style={{ color: 'var(--text-primary)' }}>#{idx + 1}</td>
                             <td>
                               <span className="badge badge-charcoal" style={{ textTransform: 'uppercase' }}>
                                 {det.class_name}
                               </span>
                             </td>
                             <td style={{ fontWeight: 700 }}>{Math.round(det.score * 100)}%</td>
-                            <td style={{ color: 'var(--warm-ivory-dim)' }}>
+                            <td style={{ color: 'var(--text-muted)' }}>
                               [{det.bbox[0]}, {det.bbox[1]}, {det.bbox[2]}, {det.bbox[3]}]
                             </td>
                             <td>{bw} × {bh} px</td>

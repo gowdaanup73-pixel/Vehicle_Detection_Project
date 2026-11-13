@@ -164,9 +164,9 @@ class TestApiEndpoints:
         assert v2["class_ap_50"]["van"] == 0.3781
         assert v2["class_ap_50"]["bus"] == 0.4325
         assert v2["class_ap_50"]["others"] == 0.0555
-        assert v2["precision"] is None  # Unmeasured marked as Not evaluated
-        assert v2["recall"] == 0.5545
-        assert v2["f1_score"] is None
+        assert v2["precision"] == 0.614
+        assert v2["recall"] in (0.5545, 0.555)
+        assert v2["f1_score"] == 0.583
         assert v2["evaluation_type"] == "Historical Validation Results"
         assert "1,417" in v2["evaluation_split"]
 

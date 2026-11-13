@@ -270,7 +270,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         <div className="kpi-card">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <span className="kpi-card-title">Processed Media</span>
-            <span className="badge badge-blue">STORAGE</span>
+            <span className="badge badge-charcoal">STORAGE</span>
           </div>
           <div className="kpi-card-value">
             {summary?.successful_runs !== undefined ? summary.successful_runs : totalRuns}
@@ -284,7 +284,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         <div className="kpi-card">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <span className="kpi-card-title">Detected Vehicles</span>
-            <span className="badge badge-indigo">OBJECTS</span>
+            <span className="badge badge-charcoal">OBJECTS</span>
           </div>
           <div className="kpi-card-value">
             {totalDetections > 0 ? totalDetections.toLocaleString() : '0'}
@@ -318,7 +318,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             <span className="kpi-card-title">Execution Health</span>
             <span className="badge badge-green">91.2% ACC</span>
           </div>
-          <div className="kpi-card-value" style={{ color: 'var(--accent-green)' }}>
+          <div className="kpi-card-value" style={{ color: 'var(--status-emerald)' }}>
             {totalRuns > 0 ? `${summary?.success_rate !== undefined ? summary.success_rate : 100}%` : '100%'}
           </div>
           <div className="kpi-card-desc">
@@ -338,12 +338,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             style={{
               width: '36px',
               height: '36px',
-              borderRadius: '50%',
-              background: 'rgba(10, 132, 255, 0.15)',
+              borderRadius: '8px',
+              background: 'var(--surface-subtle)',
+              border: '1px solid var(--border-medium)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: 'var(--accent-blue)',
+              color: 'var(--text-primary)',
             }}
           >
             <Crosshair size={18} />
@@ -383,7 +384,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             onClick={() => onRunSample('image')}
             disabled={isProcessing}
           >
-            <Play size={13} style={{ color: 'var(--accent-blue)' }} />
+            <Play size={13} />
             Run Image Sample
           </button>
           <button
@@ -391,7 +392,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             onClick={() => onRunSample('video')}
             disabled={isProcessing}
           >
-            <Film size={13} style={{ color: 'var(--accent-indigo)' }} />
+            <Film size={13} />
             Run Video Stream
           </button>
           <button
@@ -413,7 +414,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <div>
             <div className="command-card-header">
               <span className="card-title">
-                <BarChart3 size={16} style={{ color: 'var(--accent-blue)' }} />
+                <BarChart3 size={16} />
                 Vehicle Class Distribution
               </span>
               <span className="badge badge-charcoal">
@@ -424,10 +425,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             {totalDetections > 0 ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', padding: '6px 0' }}>
                 {[
-                  { label: 'Passenger Cars (car)', count: classCounts.car, pct: classPercentages.car, gradient: 'linear-gradient(90deg, #0A84FF, #5E5CE6)' },
-                  { label: 'Vans & Commercial (van)', count: classCounts.van, pct: classPercentages.van, gradient: 'linear-gradient(90deg, #5E5CE6, #BF5AF2)' },
-                  { label: 'Public Transit Buses (bus)', count: classCounts.bus, pct: classPercentages.bus, gradient: 'linear-gradient(90deg, #30D158, #0A84FF)' },
-                  { label: 'Others (Trucks & Specialized)', count: classCounts.others, pct: classPercentages.others, gradient: 'linear-gradient(90deg, #FF9F0A, #FF453A)' },
+                  { label: 'Passenger Cars (car)', count: classCounts.car, pct: classPercentages.car, gradient: 'linear-gradient(90deg, #FAFAFA, #D4D4D8)' },
+                  { label: 'Vans & Commercial (van)', count: classCounts.van, pct: classPercentages.van, gradient: 'linear-gradient(90deg, #E4E4E7, #A1A1AA)' },
+                  { label: 'Public Transit Buses (bus)', count: classCounts.bus, pct: classPercentages.bus, gradient: 'linear-gradient(90deg, #D4D4D8, #71717A)' },
+                  { label: 'Others (Trucks & Specialized)', count: classCounts.others, pct: classPercentages.others, gradient: 'linear-gradient(90deg, #A1A1AA, #52525B)' },
                 ].map((c) => (
                   <div key={c.label}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', marginBottom: '6px' }}>
@@ -491,7 +492,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <div>
             <div className="command-card-header">
               <span className="card-title">
-                <TrendingUp size={16} style={{ color: 'var(--accent-indigo)' }} />
+                <TrendingUp size={16} />
                 Activity Over Time
               </span>
               <span className="badge badge-charcoal">
@@ -505,9 +506,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   {demoData?.isDemoMode && <ChartWatermark />}
                   <svg width="100%" height="100%" viewBox="0 0 500 135" preserveAspectRatio="none">
                     <defs>
-                      <linearGradient id="appleCurveGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#0A84FF" stopOpacity="0.32" />
-                        <stop offset="100%" stopColor="#0A84FF" stopOpacity="0.0" />
+                      <linearGradient id="titaniumCurveGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#FAFAFA" stopOpacity="0.15" />
+                        <stop offset="100%" stopColor="#FAFAFA" stopOpacity="0.0" />
                       </linearGradient>
                     </defs>
                     <line x1="0" y1="20" x2="500" y2="20" stroke="rgba(255,255,255,0.04)" strokeDasharray="4 4" />
@@ -515,14 +516,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                     <line x1="0" y1="120" x2="500" y2="120" stroke="rgba(255,255,255,0.08)" />
 
                     {/* Gradient fill underneath */}
-                    <path d={curvePaths.areaD} fill="url(#appleCurveGradient)" />
+                    <path d={curvePaths.areaD} fill="url(#titaniumCurveGradient)" />
 
                     {/* Smooth curve stroke */}
                     <path
                       d={curvePaths.pathD}
                       fill="none"
-                      stroke="#0A84FF"
-                      strokeWidth="2.5"
+                      stroke="#FAFAFA"
+                      strokeWidth="2"
                       strokeLinecap="round"
                     />
 
@@ -532,9 +533,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                         key={idx}
                         cx={pt.x}
                         cy={pt.y}
-                        r="4"
-                        fill="#0A84FF"
-                        stroke="#FFFFFF"
+                        r="3.5"
+                        fill="#FAFAFA"
+                        stroke="#121215"
                         strokeWidth="2"
                       />
                     ))}
@@ -597,7 +598,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         <div className="command-card-header">
           <div>
             <span className="card-title">
-              <Clock size={16} style={{ color: 'var(--accent-blue)' }} />
+              <Clock size={16} />
               Recent Execution Activity
             </span>
             <div style={{ fontSize: '0.76rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
@@ -626,26 +627,26 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </div>
           </div>
         ) : (
-          <div style={{ overflowX: 'auto' }}>
+          <div style={{ width: '100%', overflowX: 'visible' }}>
             <table className="command-table">
               <thead>
                 <tr>
-                  <th>Run ID</th>
+                  <th style={{ paddingLeft: '14px' }}>Run ID</th>
                   <th>Media Type</th>
                   <th>Filename</th>
                   <th>Timestamp</th>
                   <th>Detections</th>
                   <th>Latency</th>
                   <th>Status</th>
-                  <th>Action</th>
+                  <th style={{ paddingRight: '14px' }}>Action</th>
                 </tr>
               </thead>
               <tbody>
                 {recentRuns.map((run) => (
                   <tr key={run.id}>
-                    <td style={{ color: 'var(--accent-blue)', fontWeight: 500 }}>{run.id}</td>
+                    <td style={{ paddingLeft: '14px', color: 'var(--text-primary)', fontWeight: 500 }}>{run.id}</td>
                     <td>
-                      <span className={`badge ${run.media_type === 'video' ? 'badge-indigo' : 'badge-blue'}`}>
+                      <span className="badge badge-charcoal">
                         {run.media_type.toUpperCase()}
                       </span>
                     </td>
@@ -656,12 +657,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                     <td style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{run.total_detections}</td>
                     <td>{run.latency_ms} ms</td>
                     <td>
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: 'var(--accent-green)', fontSize: '0.76rem', fontWeight: 500 }}>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: 'var(--status-emerald)', fontSize: '0.76rem', fontWeight: 500 }}>
                         <CheckCircle2 size={13} />
                         Completed
                       </span>
                     </td>
-                    <td>
+                    <td style={{ paddingRight: '14px' }}>
                       <button
                         className="btn btn-secondary"
                         style={{ padding: '4px 10px', fontSize: '0.74rem' }}
@@ -680,7 +681,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       </div>
 
       {/* =========================================================================
-          INSPECTED RUN DETAIL MODAL (GLASSMORPHISM DIALOG)
+          INSPECTED RUN DETAIL MODAL
           ========================================================================= */}
       {inspectedRun && (
         <div
@@ -690,9 +691,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             left: 0,
             right: 0,
             bottom: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.7)',
-            backdropFilter: 'blur(16px)',
-            WebkitBackdropFilter: 'blur(16px)',
+            backgroundColor: 'rgba(0, 0, 0, 0.75)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -708,10 +707,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               width: '100%',
               maxHeight: '88vh',
               overflowY: 'auto',
-              borderRadius: '24px',
+              borderRadius: '12px',
               padding: '24px',
-              border: '1px solid rgba(255, 255, 255, 0.15)',
-              boxShadow: '0 24px 60px rgba(0, 0, 0, 0.7)',
+              border: '1px solid var(--border-medium)',
+              boxShadow: '0 24px 60px rgba(0, 0, 0, 0.8)',
             }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -726,7 +725,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               </div>
               <button
                 className="btn btn-secondary"
-                style={{ padding: '6px', borderRadius: '50%' }}
+                style={{ padding: '6px', borderRadius: '6px' }}
                 onClick={() => setInspectedRun(null)}
               >
                 <X size={16} />
@@ -737,7 +736,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             <div className="grid-2" style={{ gap: '16px', marginBottom: '16px' }}>
               <div>
                 <div className="label-tactical" style={{ marginBottom: '8px', color: 'var(--text-secondary)' }}>Original Input</div>
-                <div style={{ height: '260px', background: '#000000', border: '1px solid var(--glass-border)', borderRadius: 'var(--radius-sm)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                <div style={{ height: '260px', background: '#000000', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-button)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
                   {inspectedRun.media_type === 'video' ? (
                     <video controls src={inspectedRun.input_url} style={{ maxWidth: '100%', maxHeight: '100%' }} />
                   ) : (
@@ -747,10 +746,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               </div>
 
               <div>
-                <div className="label-tactical" style={{ marginBottom: '8px', color: 'var(--accent-blue)' }}>
+                <div className="label-tactical" style={{ marginBottom: '8px', color: 'var(--text-primary)' }}>
                   Annotated Detection Output
                 </div>
-                <div style={{ height: '260px', background: '#000000', border: '1px solid var(--glass-border)', borderRadius: 'var(--radius-sm)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                <div style={{ height: '260px', background: '#000000', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-button)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
                   {inspectedRun.media_type === 'video' ? (
                     <video controls src={inspectedRun.annotated_url} style={{ maxWidth: '100%', maxHeight: '100%' }} />
                   ) : (
@@ -767,9 +766,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   key={cls}
                   style={{
                     padding: '8px 14px',
-                    background: 'rgba(255, 255, 255, 0.05)',
-                    border: '1px solid var(--glass-border)',
-                    borderRadius: 'var(--radius-pill)',
+                    background: 'var(--surface-subtle)',
+                    border: '1px solid var(--border-subtle)',
+                    borderRadius: 'var(--radius-button)',
                     fontSize: '0.78rem',
                   }}
                 >

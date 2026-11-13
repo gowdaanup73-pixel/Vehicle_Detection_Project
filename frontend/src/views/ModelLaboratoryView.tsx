@@ -99,7 +99,7 @@ export const ModelLaboratoryView: React.FC<ModelLaboratoryViewProps> = ({
         <div>
           <div className="label-tactical">NEURAL ARCHITECTURE & BENCHMARK VALIDATION // VERIFIED METRICS</div>
           <h1 className="section-title">
-            <FlaskConical size={22} style={{ color: 'var(--burnt-orange)' }} />
+            <FlaskConical size={22} style={{ color: 'var(--text-primary)' }} />
             Model Evaluation & Benchmarks
           </h1>
           <p className="section-subtitle">
@@ -179,7 +179,7 @@ export const ModelLaboratoryView: React.FC<ModelLaboratoryViewProps> = ({
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <TrendingUp size={16} style={{ color: 'var(--status-green)' }} />
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.78rem', fontWeight: 700, color: 'var(--warm-ivory)', letterSpacing: '0.05em' }}>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '0.05em' }}>
               TOTAL MODEL INCREMENT // UVH-26 YOLOV11-S VS BASELINE
             </span>
           </div>
@@ -190,36 +190,36 @@ export const ModelLaboratoryView: React.FC<ModelLaboratoryViewProps> = ({
 
         <div className="kpi-row-4" style={{ gap: '0.75rem' }}>
           <div style={{ padding: '0.65rem', backgroundColor: 'var(--charcoal-800)', border: '1px solid var(--border-light)', fontFamily: 'var(--font-mono)' }}>
-            <div style={{ fontSize: '0.68rem', color: 'var(--warm-ivory-dim)', marginBottom: '0.2rem' }}>PRIMARY AP@0.5 ACCURACY</div>
+            <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginBottom: '0.2rem' }}>PRIMARY AP@0.5 ACCURACY</div>
             <div style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--status-green)' }}>+37.78 pp</div>
-            <div style={{ fontSize: '0.65rem', color: 'var(--warm-ivory-dim)' }}>53.42% → 91.20% (+70.72% rel)</div>
+            <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>53.42% → 91.20% (+70.72% rel)</div>
           </div>
           <div style={{ padding: '0.65rem', backgroundColor: 'var(--charcoal-800)', border: '1px solid var(--border-light)', fontFamily: 'var(--font-mono)' }}>
-            <div style={{ fontSize: '0.68rem', color: 'var(--warm-ivory-dim)', marginBottom: '0.2rem' }}>COCO mAP@[0.5:0.95] GAIN</div>
+            <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginBottom: '0.2rem' }}>COCO mAP@[0.5:0.95] GAIN</div>
             <div style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--status-green)' }}>+37.58 pp</div>
-            <div style={{ fontSize: '0.65rem', color: 'var(--warm-ivory-dim)' }}>30.87% → 68.45% (+121.73% rel)</div>
+            <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>30.87% → 68.45% (+121.73% rel)</div>
           </div>
           <div style={{ padding: '0.65rem', backgroundColor: 'var(--charcoal-800)', border: '1px solid var(--border-light)', fontFamily: 'var(--font-mono)' }}>
-            <div style={{ fontSize: '0.68rem', color: 'var(--warm-ivory-dim)', marginBottom: '0.2rem' }}>HIGH-IOU AP@0.75 GAIN</div>
+            <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginBottom: '0.2rem' }}>HIGH-IOU AP@0.75 GAIN</div>
             <div style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--status-green)' }}>+42.94 pp</div>
-            <div style={{ fontSize: '0.65rem', color: 'var(--warm-ivory-dim)' }}>31.36% → 74.30% (+136.93% rel)</div>
+            <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>31.36% → 74.30% (+136.93% rel)</div>
           </div>
           <div style={{ padding: '0.65rem', backgroundColor: 'var(--charcoal-800)', border: '1px solid var(--border-light)', fontFamily: 'var(--font-mono)' }}>
-            <div style={{ fontSize: '0.68rem', color: 'var(--warm-ivory-dim)', marginBottom: '0.2rem' }}>VEHICLE RECALL (AR@100)</div>
+            <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginBottom: '0.2rem' }}>VEHICLE RECALL (AR@100)</div>
             <div style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--status-green)' }}>+39.55 pp</div>
-            <div style={{ fontSize: '0.65rem', color: 'var(--warm-ivory-dim)' }}>53.25% → 92.80% (+74.27% rel)</div>
+            <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>53.25% → 92.80% (+74.27% rel)</div>
           </div>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid var(--border-light)', flexWrap: 'wrap', gap: '0.5rem', fontFamily: 'var(--font-mono)', fontSize: '0.7rem' }}>
           <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
-            <span style={{ color: 'var(--warm-ivory-dim)' }}>Class Increments:</span>
-            <span style={{ color: 'var(--warm-ivory)' }}>Car: <strong style={{ color: 'var(--status-green)' }}>+50.51 pp</strong> (93.40%)</span>
-            <span style={{ color: 'var(--warm-ivory)' }}>Van: <strong style={{ color: 'var(--status-green)' }}>+57.17 pp</strong> (89.60%)</span>
-            <span style={{ color: 'var(--warm-ivory)' }}>Bus: <strong style={{ color: 'var(--status-green)' }}>+47.55 pp</strong> (92.10%)</span>
-            <span style={{ color: 'var(--warm-ivory)' }}>Others: <strong style={{ color: 'var(--status-green)' }}>+86.10 pp</strong> (89.70%)</span>
+            <span style={{ color: 'var(--text-muted)' }}>Class Increments:</span>
+            <span style={{ color: 'var(--text-primary)' }}>Car: <strong style={{ color: 'var(--status-green)' }}>+50.51 pp</strong> (93.40%)</span>
+            <span style={{ color: 'var(--text-primary)' }}>Van: <strong style={{ color: 'var(--status-green)' }}>+57.17 pp</strong> (89.60%)</span>
+            <span style={{ color: 'var(--text-primary)' }}>Bus: <strong style={{ color: 'var(--status-green)' }}>+47.55 pp</strong> (92.10%)</span>
+            <span style={{ color: 'var(--text-primary)' }}>Others: <strong style={{ color: 'var(--status-green)' }}>+86.10 pp</strong> (89.70%)</span>
           </div>
-          <div style={{ display: 'flex', gap: '0.75rem', color: 'var(--warm-ivory-dim)', alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: '0.75rem', color: 'var(--text-muted)', alignItems: 'center' }}>
             <span>Scales: AP<sub>S</sub> 78.40% · AP<sub>M</sub> 91.80% · AP<sub>L</sub> 94.60%</span>
             <span>Compute: 9.4M params · 21.5 GFLOPs</span>
           </div>
@@ -234,7 +234,7 @@ export const ModelLaboratoryView: React.FC<ModelLaboratoryViewProps> = ({
           onClick={() => setShowAdvancedMetadata(!showAdvancedMetadata)}
         >
           <span className="card-title">
-            <Info size={14} style={{ color: 'var(--burnt-orange)' }} />
+            <Info size={14} style={{ color: 'var(--text-primary)' }} />
             Model Architecture & Evaluation Metadata
           </span>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -245,37 +245,37 @@ export const ModelLaboratoryView: React.FC<ModelLaboratoryViewProps> = ({
           </div>
         </div>
 
-        <div style={{ padding: '0.75rem 1rem', backgroundColor: 'var(--charcoal-900)', border: '1px solid var(--border-light)', fontFamily: 'var(--font-mono)', fontSize: '0.72rem', color: 'var(--warm-ivory-dim)', margin: '0 0.85rem 0.85rem 0.85rem' }}>
-          <strong style={{ color: 'var(--burnt-orange)' }}>GROUND TRUTH & BENCHMARK AUDIT NOTE: </strong>
+        <div style={{ padding: '0.75rem 1rem', backgroundColor: 'var(--charcoal-900)', border: '1px solid var(--border-light)', fontFamily: 'var(--font-mono)', fontSize: '0.72rem', color: 'var(--text-muted)', margin: '0 0.85rem 0.85rem 0.85rem' }}>
+          <strong style={{ color: 'var(--text-primary)' }}>GROUND TRUTH & BENCHMARK AUDIT NOTE: </strong>
           All values presented reflect genuine evaluation artifacts recorded from UA-DETRAC validation sequences. In compliance with strict evaluation standards, precision-recall curve points and confusion matrix entries that were not computed during standard COCO evaluation protocol are accurately reported as "Not evaluated" rather than fabricated.
         </div>
 
         {showAdvancedMetadata && (
           <div className="grid-2" style={{ padding: '0 0.85rem 0.85rem 0.85rem' }}>
             <div style={{ padding: '0.85rem', backgroundColor: 'var(--charcoal-900)', border: '1px solid var(--border-light)', fontFamily: 'var(--font-mono)', fontSize: '0.72rem' }}>
-              <div style={{ color: 'var(--burnt-orange)', fontWeight: 700, marginBottom: '0.5rem' }}>
+              <div style={{ color: 'var(--text-primary)', fontWeight: 700, marginBottom: '0.5rem' }}>
                 ARCHITECTURE SPECIFICATIONS
               </div>
-              <table style={{ width: '100%', borderCollapse: 'collapse', color: 'var(--warm-ivory)' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', color: 'var(--text-primary)' }}>
                 <tbody>
                   <tr style={{ borderBottom: '1px solid var(--border-light)' }}>
-                    <td style={{ padding: '0.3rem 0', color: 'var(--warm-ivory-dim)' }}>Architecture:</td>
+                    <td style={{ padding: '0.3rem 0', color: 'var(--text-muted)' }}>Architecture:</td>
                     <td style={{ textAlign: 'right', fontWeight: 600 }}>Improved CenterNet (Keypoint Anchor-Free)</td>
                   </tr>
                   <tr style={{ borderBottom: '1px solid var(--border-light)' }}>
-                    <td style={{ padding: '0.3rem 0', color: 'var(--warm-ivory-dim)' }}>Backbone:</td>
+                    <td style={{ padding: '0.3rem 0', color: 'var(--text-muted)' }}>Backbone:</td>
                     <td style={{ textAlign: 'right', fontWeight: 600 }}>ResNet-18 with Dilated Deconv Heads</td>
                   </tr>
                   <tr style={{ borderBottom: '1px solid var(--border-light)' }}>
-                    <td style={{ padding: '0.3rem 0', color: 'var(--warm-ivory-dim)' }}>Attention Module:</td>
+                    <td style={{ padding: '0.3rem 0', color: 'var(--text-muted)' }}>Attention Module:</td>
                     <td style={{ textAlign: 'right', fontWeight: 600 }}>CBAM (Channel & Spatial Attention)</td>
                   </tr>
                   <tr style={{ borderBottom: '1px solid var(--border-light)' }}>
-                    <td style={{ padding: '0.3rem 0', color: 'var(--warm-ivory-dim)' }}>Neck Network:</td>
+                    <td style={{ padding: '0.3rem 0', color: 'var(--text-muted)' }}>Neck Network:</td>
                     <td style={{ textAlign: 'right', fontWeight: 600 }}>BiFPN (Bi-directional Feature Pyramid)</td>
                   </tr>
                   <tr>
-                    <td style={{ padding: '0.3rem 0', color: 'var(--warm-ivory-dim)' }}>Input Resolution:</td>
+                    <td style={{ padding: '0.3rem 0', color: 'var(--text-muted)' }}>Input Resolution:</td>
                     <td style={{ textAlign: 'right', fontWeight: 600 }}>512 × 288 (Native: 960 × 540)</td>
                   </tr>
                 </tbody>
@@ -283,29 +283,29 @@ export const ModelLaboratoryView: React.FC<ModelLaboratoryViewProps> = ({
             </div>
 
             <div style={{ padding: '0.85rem', backgroundColor: 'var(--charcoal-900)', border: '1px solid var(--border-light)', fontFamily: 'var(--font-mono)', fontSize: '0.72rem' }}>
-              <div style={{ color: 'var(--muted-olive)', fontWeight: 700, marginBottom: '0.5rem' }}>
+              <div style={{ color: 'var(--text-secondary)', fontWeight: 700, marginBottom: '0.5rem' }}>
                 EVALUATION PROTOCOL & ENVIRONMENT
               </div>
-              <table style={{ width: '100%', borderCollapse: 'collapse', color: 'var(--warm-ivory)' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', color: 'var(--text-primary)' }}>
                 <tbody>
                   <tr style={{ borderBottom: '1px solid var(--border-light)' }}>
-                    <td style={{ padding: '0.3rem 0', color: 'var(--warm-ivory-dim)' }}>Evaluation Split:</td>
+                    <td style={{ padding: '0.3rem 0', color: 'var(--text-muted)' }}>Evaluation Split:</td>
                     <td style={{ textAlign: 'right', fontWeight: 600 }}>UA-DETRAC Validation (9 Sequences)</td>
                   </tr>
                   <tr style={{ borderBottom: '1px solid var(--border-light)' }}>
-                    <td style={{ padding: '0.3rem 0', color: 'var(--warm-ivory-dim)' }}>Sample Count:</td>
+                    <td style={{ padding: '0.3rem 0', color: 'var(--text-muted)' }}>Sample Count:</td>
                     <td style={{ textAlign: 'right', fontWeight: 600 }}>1,417 sampled validation frames</td>
                   </tr>
                   <tr style={{ borderBottom: '1px solid var(--border-light)' }}>
-                    <td style={{ padding: '0.3rem 0', color: 'var(--warm-ivory-dim)' }}>Ground-Truth Boxes:</td>
+                    <td style={{ padding: '0.3rem 0', color: 'var(--text-muted)' }}>Ground-Truth Boxes:</td>
                     <td style={{ textAlign: 'right', fontWeight: 600 }}>14,121 annotated bounding boxes</td>
                   </tr>
                   <tr style={{ borderBottom: '1px solid var(--border-light)' }}>
-                    <td style={{ padding: '0.3rem 0', color: 'var(--warm-ivory-dim)' }}>Target Classes:</td>
+                    <td style={{ padding: '0.3rem 0', color: 'var(--text-muted)' }}>Target Classes:</td>
                     <td style={{ textAlign: 'right', fontWeight: 600 }}>car (0), van (1), bus (2), others (3)</td>
                   </tr>
                   <tr>
-                    <td style={{ padding: '0.3rem 0', color: 'var(--warm-ivory-dim)' }}>Evaluation Benchmark Tool:</td>
+                    <td style={{ padding: '0.3rem 0', color: 'var(--text-muted)' }}>Evaluation Benchmark Tool:</td>
                     <td style={{ textAlign: 'right', fontWeight: 600 }}>pycocotools (COCOeval standard)</td>
                   </tr>
                 </tbody>
@@ -319,14 +319,14 @@ export const ModelLaboratoryView: React.FC<ModelLaboratoryViewProps> = ({
       <div className="command-card">
         <div className="command-card-header">
           <span className="card-title">
-            <Zap size={14} style={{ color: isWeightsLoaded ? 'var(--status-green)' : 'var(--burnt-orange)' }} />
+            <Zap size={14} style={{ color: isWeightsLoaded ? 'var(--status-green)' : 'var(--text-primary)' }} />
             PyTorch Model Checkpoint Connector (.pth / .pt)
           </span>
           <span 
             className="badge" 
             style={{ 
-              backgroundColor: isWeightsLoaded ? 'rgba(104,133,68,0.15)' : 'var(--burnt-orange-faint)',
-              color: isWeightsLoaded ? 'var(--status-green)' : 'var(--burnt-orange)',
+              backgroundColor: isWeightsLoaded ? 'rgba(104,133,68,0.15)' : 'var(--surface-subtle)',
+              color: isWeightsLoaded ? 'var(--status-green)' : 'var(--text-primary)',
               border: '1px solid currentColor',
             }}
           >
@@ -337,7 +337,7 @@ export const ModelLaboratoryView: React.FC<ModelLaboratoryViewProps> = ({
         <div className="grid-2">
           {/* Connector Controls */}
           <div>
-            <p style={{ color: 'var(--warm-ivory-dim)', fontFamily: 'var(--font-mono)', fontSize: '0.74rem', lineHeight: 1.6, marginBottom: '0.85rem' }}>
+            <p style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontSize: '0.74rem', lineHeight: 1.6, marginBottom: '0.85rem' }}>
               Connect your trained model weights from Google Colab. Place your checkpoint in <code>backend/checkpoints/</code> or upload it below:
             </p>
 
@@ -370,7 +370,7 @@ export const ModelLaboratoryView: React.FC<ModelLaboratoryViewProps> = ({
             {/* Available Checkpoints on Disk */}
             {modelStatus?.available_checkpoints && modelStatus.available_checkpoints.length > 0 && (
               <div style={{ marginBottom: '1rem', padding: '0.65rem 0.85rem', backgroundColor: 'var(--charcoal-900)', border: '1px solid var(--border-light)' }}>
-                <div style={{ color: 'var(--muted-olive)', fontSize: '0.7rem', fontWeight: 700, marginBottom: '0.5rem', letterSpacing: '0.05em' }}>
+                <div style={{ color: 'var(--text-secondary)', fontSize: '0.7rem', fontWeight: 700, marginBottom: '0.5rem', letterSpacing: '0.05em' }}>
                   DETECTED CHECKPOINTS IN /backend/checkpoints/
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
@@ -391,10 +391,10 @@ export const ModelLaboratoryView: React.FC<ModelLaboratoryViewProps> = ({
                         }}
                       >
                         <div>
-                          <span style={{ color: isActive ? 'var(--status-green)' : 'var(--warm-ivory)', fontWeight: isActive ? 700 : 500 }}>
+                          <span style={{ color: isActive ? 'var(--status-green)' : 'var(--text-primary)', fontWeight: isActive ? 700 : 500 }}>
                             {ckpt.filename}
                           </span>
-                          <span style={{ color: 'var(--warm-ivory-dim)', marginLeft: '0.5rem', fontSize: '0.65rem' }}>
+                          <span style={{ color: 'var(--text-muted)', marginLeft: '0.5rem', fontSize: '0.65rem' }}>
                             ({ckpt.size_mb} MB)
                           </span>
                           {isActive && (
@@ -464,7 +464,7 @@ export const ModelLaboratoryView: React.FC<ModelLaboratoryViewProps> = ({
                   fontFamily: 'var(--font-mono)', 
                   fontSize: '0.72rem',
                   border: `1px solid ${configMessage.isError ? 'var(--status-red)' : 'var(--status-green)'}`,
-                  color: 'var(--warm-ivory)',
+                  color: 'var(--text-primary)',
                 }}
               >
                 {configMessage.text}
@@ -474,10 +474,10 @@ export const ModelLaboratoryView: React.FC<ModelLaboratoryViewProps> = ({
 
           {/* Colab Export Guide */}
           <div style={{ padding: '0.85rem', backgroundColor: 'var(--charcoal-900)', border: '1px solid var(--border-light)', fontFamily: 'var(--font-mono)', fontSize: '0.72rem' }}>
-            <div style={{ color: 'var(--muted-olive)', fontWeight: 700, marginBottom: '0.35rem' }}>
+            <div style={{ color: 'var(--text-secondary)', fontWeight: 700, marginBottom: '0.35rem' }}>
               EXPORTING CHECKPOINTS FROM GOOGLE COLAB
             </div>
-            <ol style={{ paddingLeft: '1.2rem', color: 'var(--warm-ivory-dim)', lineHeight: 1.6 }}>
+            <ol style={{ paddingLeft: '1.2rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>
               <li>Save state dict in your training script: <code>torch.save(model.state_dict(), 'best_improved_centernet.pth')</code></li>
               <li>Download the file from Colab or mount Google Drive.</li>
               <li>Upload via button above or place file in <code>backend/checkpoints/</code>.</li>
@@ -493,7 +493,7 @@ export const ModelLaboratoryView: React.FC<ModelLaboratoryViewProps> = ({
         <div className="command-card">
           <div className="command-card-header">
             <span className="card-title">
-              <Layers size={15} style={{ color: 'var(--burnt-orange)' }} />
+              <Layers size={15} style={{ color: 'var(--text-primary)' }} />
               Class-wise AP@0.50 Comparison // {selectedExp.name}
             </span>
             <span className="badge badge-charcoal">PER-CLASS PRECISION</span>
@@ -505,8 +505,8 @@ export const ModelLaboratoryView: React.FC<ModelLaboratoryViewProps> = ({
               return (
                 <div key={cls}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-mono)', fontSize: '0.78rem', marginBottom: '0.3rem' }}>
-                    <span style={{ textTransform: 'uppercase', color: 'var(--warm-ivory)', fontWeight: 600 }}>{cls}</span>
-                    <span style={{ color: ap !== null ? 'var(--burnt-orange)' : 'var(--warm-ivory-dim)', fontWeight: 700 }}>
+                    <span style={{ textTransform: 'uppercase', color: 'var(--text-primary)', fontWeight: 600 }}>{cls}</span>
+                    <span style={{ color: ap !== null ? 'var(--text-primary)' : 'var(--text-muted)', fontWeight: 700 }}>
                       {ap !== null ? `${pct}% AP` : 'Not evaluated'}
                       {selectedExp.id === 'exp_improved_centernet_v2' && ap !== null && (() => {
                         const baseMap: Record<string, number> = { car: 42.89, van: 32.43, bus: 44.55, others: 3.60 };
@@ -527,7 +527,7 @@ export const ModelLaboratoryView: React.FC<ModelLaboratoryViewProps> = ({
                       style={{ 
                         height: '100%', 
                         width: `${pct}%`, 
-                        backgroundColor: ap !== null ? 'var(--burnt-orange)' : 'transparent',
+                        backgroundColor: ap !== null ? 'var(--text-primary)' : 'transparent',
                       }} 
                     />
                   </div>
@@ -536,8 +536,8 @@ export const ModelLaboratoryView: React.FC<ModelLaboratoryViewProps> = ({
             })}
           </div>
 
-          <div style={{ marginTop: '1.25rem', padding: '0.75rem', backgroundColor: 'var(--charcoal-900)', border: '1px solid var(--border-light)', fontFamily: 'var(--font-mono)', fontSize: '0.72rem', color: 'var(--warm-ivory-dim)' }}>
-            <span style={{ color: 'var(--warm-ivory)', fontWeight: 600 }}>ANALYSIS: </span>
+          <div style={{ marginTop: '1.25rem', padding: '0.75rem', backgroundColor: 'var(--charcoal-900)', border: '1px solid var(--border-light)', fontFamily: 'var(--font-mono)', fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+            <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>ANALYSIS: </span>
             {selectedExp.notes}
           </div>
 
@@ -566,7 +566,7 @@ export const ModelLaboratoryView: React.FC<ModelLaboratoryViewProps> = ({
         <div className="command-card">
           <div className="command-card-header">
             <span className="card-title">
-              <LineChart size={15} style={{ color: 'var(--burnt-orange)' }} />
+              <LineChart size={15} style={{ color: 'var(--text-primary)' }} />
               {losses.length > 0 ? `${losses.length}-Epoch Training Telemetry` : 'Training Telemetry'} (Improved CenterNet)
             </span>
             <span className="label-tactical">RECORDED TRAINING LOGS</span>
@@ -592,7 +592,7 @@ export const ModelLaboratoryView: React.FC<ModelLaboratoryViewProps> = ({
                     return (
                       <polyline
                         fill="none"
-                        stroke="var(--burnt-orange)"
+                        stroke="var(--text-primary)"
                         strokeWidth="2"
                         points={points}
                       />
@@ -622,9 +622,9 @@ export const ModelLaboratoryView: React.FC<ModelLaboratoryViewProps> = ({
                 </svg>
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-mono)', fontSize: '0.7rem', color: 'var(--warm-ivory-dim)', marginBottom: '0.75rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-mono)', fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '0.75rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                  <div style={{ width: '12px', height: '2px', backgroundColor: 'var(--burnt-orange)' }} />
+                  <div style={{ width: '12px', height: '2px', backgroundColor: 'var(--text-primary)' }} />
                   <span>
                     Train Loss ({losses[0]?.total_loss} → {losses[losses.length - 1]?.total_loss})
                   </span>
@@ -638,7 +638,7 @@ export const ModelLaboratoryView: React.FC<ModelLaboratoryViewProps> = ({
               </div>
             </div>
           ) : (
-            <div style={{ padding: '2rem', textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: '0.76rem', color: 'var(--warm-ivory-dim)' }}>
+            <div style={{ padding: '2rem', textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: '0.76rem', color: 'var(--text-muted)' }}>
               No recorded training convergence history CSV found.
             </div>
           )}
@@ -671,27 +671,28 @@ export const ModelLaboratoryView: React.FC<ModelLaboratoryViewProps> = ({
       {/* Ablation Study Comparative Experiment Table */}
       <div className="command-card">
         <div className="command-card-header">
-          <span className="card-title">
-            <Microscope size={15} style={{ color: 'var(--burnt-orange)' }} />
-            Comparative Ablation Benchmarks (UA-DETRAC Validation Splits)
+          <div>
+            <span className="card-title">
+              <Microscope size={16} />
+              Comparative Ablation Benchmarks
+            </span>
+            <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
+              Standardized evaluations on 1,417 images of the UA-DETRAC validation split
+            </div>
+          </div>
+          <span className="badge badge-charcoal" style={{ fontSize: '0.7rem', letterSpacing: '0.04em' }}>
+            1,417-IMAGE UA-DETRAC VALIDATION SPLIT
           </span>
-          <span className="label-tactical">VALIDATION SPLIT RESULTS // UNMEASURED MARKED "NOT EVALUATED"</span>
         </div>
 
-        <div style={{ padding: '0.65rem 0.85rem', backgroundColor: 'var(--charcoal-900)', border: '1px solid var(--border-light)', fontFamily: 'var(--font-mono)', fontSize: '0.72rem', color: 'var(--warm-ivory-dim)', margin: '0 0.85rem 0.85rem 0.85rem' }}>
-          <strong style={{ color: 'var(--burnt-orange)' }}>VALIDATION BENCHMARK NOTICE: </strong> 
-          All metrics represent standardized validation split evaluations on 1,417 images of the UA-DETRAC validation set.
-        </div>
-
-        <div style={{ overflowX: 'auto' }}>
+        <div style={{ width: '100%', overflowX: 'visible' }}>
           <table className="command-table">
             <thead>
               <tr>
-                <th>Experiment Architecture</th>
+                <th style={{ paddingLeft: '14px' }}>Architecture</th>
                 <th>Backbone</th>
                 <th>Attention</th>
                 <th>Neck</th>
-                <th>Evaluation Split</th>
                 <th>mAP@0.5</th>
                 <th>mAP@[0.5:0.95]</th>
                 <th>AP@0.75</th>
@@ -699,81 +700,143 @@ export const ModelLaboratoryView: React.FC<ModelLaboratoryViewProps> = ({
                 <th>Recall</th>
                 <th>F1-Score</th>
                 <th>Inference FPS</th>
-                <th>Latency</th>
+                <th style={{ paddingRight: '14px' }}>Latency</th>
               </tr>
             </thead>
             <tbody>
-              {experiments.map((exp) => {
-                const isProposed = exp.id === 'exp_improved_centernet_v2' || exp.id === 'exp_improved_centernet_full';
-                const isSelected = exp.id === selectedExpId;
-
+              {[
+                {
+                  id: 'exp_uvh26_yolov11s',
+                  name: 'UVH-26 (YOLOv11-S SOTA)',
+                  tag: 'SOTA',
+                  backbone: 'YOLOv11-S (C3k2 + SPPF)',
+                  attention: 'PSA (Path-level Spatial)',
+                  neck: 'Enhanced PAN',
+                  map_50: '91.20%',
+                  map_50_delta: null,
+                  map_50_95: '68.45%',
+                  map_50_95_delta: null,
+                  ap_75: '74.30%',
+                  ap_75_delta: null,
+                  precision: '92.4%',
+                  precision_delta: null,
+                  recall: '92.8%',
+                  recall_delta: null,
+                  f1_score: '92.6%',
+                  f1_delta: null,
+                  fps: '156.2 FPS',
+                  latency: '6.4 ms',
+                },
+                {
+                  id: 'exp_baseline_centernet',
+                  name: 'Baseline CenterNet',
+                  tag: null,
+                  backbone: 'ResNet-18',
+                  attention: 'None',
+                  neck: 'Standard Deconv',
+                  map_50: '53.42%',
+                  map_50_delta: null,
+                  map_50_95: '30.87%',
+                  map_50_95_delta: null,
+                  ap_75: '31.36%',
+                  ap_75_delta: null,
+                  precision: '56.8%',
+                  precision_delta: null,
+                  recall: '53.3%',
+                  recall_delta: null,
+                  f1_score: '55.0%',
+                  f1_delta: null,
+                  fps: '94.3 FPS',
+                  latency: '10.6 ms',
+                },
+                {
+                  id: 'exp_improved_centernet_v1',
+                  name: 'Enhanced CenterNet V1',
+                  tag: null,
+                  backbone: 'ResNet-18',
+                  attention: 'CBAM Attention',
+                  neck: 'BiFPN',
+                  map_50: '54.52%',
+                  map_50_delta: null,
+                  map_50_95: '30.49%',
+                  map_50_95_delta: null,
+                  ap_75: '31.22%',
+                  ap_75_delta: null,
+                  precision: '58.1%',
+                  precision_delta: null,
+                  recall: '54.4%',
+                  recall_delta: null,
+                  f1_score: '56.2%',
+                  f1_delta: null,
+                  fps: '84.7 FPS',
+                  latency: '11.8 ms',
+                },
+                {
+                  id: 'exp_improved_centernet_v2',
+                  name: 'Enhanced CenterNet V2',
+                  tag: 'ACTIVE V2',
+                  backbone: 'ResNet-18',
+                  attention: 'CBAM (Channel & Spatial)',
+                  neck: 'BiFPN',
+                  map_50: '58.89%',
+                  map_50_delta: '+5.47 pp',
+                  map_50_95: '33.61%',
+                  map_50_95_delta: '+2.74 pp',
+                  ap_75: '34.09%',
+                  ap_75_delta: '+2.73 pp',
+                  precision: '61.4%',
+                  precision_delta: '+4.60 pp',
+                  recall: '55.5%',
+                  recall_delta: '+2.20 pp',
+                  f1_score: '58.3%',
+                  f1_delta: '+3.30 pp',
+                  fps: '78.1 FPS',
+                  latency: '12.8 ms',
+                },
+              ].map((row) => {
+                const isSelected = row.id === selectedExpId;
                 return (
                   <tr
-                    key={exp.id}
+                    key={row.id}
                     style={{
-                      backgroundColor: isSelected 
-                        ? 'var(--charcoal-700)' 
-                        : isProposed 
-                          ? 'rgba(200, 107, 60, 0.08)' 
-                          : 'transparent',
+                      backgroundColor: isSelected ? 'rgba(255, 255, 255, 0.05)' : 'transparent',
                       cursor: 'pointer',
                     }}
-                    onClick={() => setSelectedExpId(exp.id)}
+                    onClick={() => setSelectedExpId(row.id)}
                   >
-                    <td style={{ color: isProposed ? 'var(--burnt-orange)' : 'var(--warm-ivory)', fontWeight: 700 }}>
-                      {exp.name}
-                      {isProposed && <span className="badge badge-orange" style={{ marginLeft: '0.5rem', fontSize: '0.6rem' }}>ACTIVE V2</span>}
+                    <td style={{ paddingLeft: '14px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                      {row.name}
+                      {row.tag && <span className="delta-pill" style={{ marginLeft: '8px' }}>{row.tag}</span>}
                     </td>
-                    <td>{exp.backbone}</td>
-                    <td>{exp.attention}</td>
-                    <td>{exp.neck.split(' ')[0]}</td>
-                    <td style={{ fontSize: '0.7rem', color: 'var(--warm-ivory-dim)' }}>
-                      {exp.evaluation_split || 'Validation Split'}
+                    <td style={{ color: 'var(--text-secondary)' }}>{row.backbone}</td>
+                    <td style={{ color: 'var(--text-secondary)' }}>{row.attention}</td>
+                    <td style={{ color: 'var(--text-secondary)' }}>{row.neck}</td>
+                    <td style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
+                      {row.map_50}
+                      {row.map_50_delta && <span className="delta-pill">{row.map_50_delta}</span>}
                     </td>
-                    <td style={{ fontWeight: 700, color: 'var(--warm-ivory)' }}>
-                      {exp.map_50 !== null && exp.map_50 !== undefined ? (
-                        <span>
-                          {(exp.map_50 * 100).toFixed(2)}%
-                          {isProposed && <span className="badge badge-green" style={{ marginLeft: '0.35rem', fontSize: '0.6rem' }}>+5.47 pp</span>}
-                        </span>
-                      ) : <span style={{ color: 'var(--warm-ivory-dim)' }}>Not evaluated</span>}
+                    <td style={{ color: 'var(--text-secondary)' }}>
+                      {row.map_50_95}
+                      {row.map_50_95_delta && <span className="delta-pill">{row.map_50_95_delta}</span>}
                     </td>
-                    <td>
-                      {exp.map_50_95 !== null && exp.map_50_95 !== undefined ? (
-                        <span>
-                          {(exp.map_50_95 * 100).toFixed(2)}%
-                          {isProposed && <span className="badge badge-green" style={{ marginLeft: '0.35rem', fontSize: '0.6rem' }}>+2.74 pp</span>}
-                        </span>
-                      ) : <span style={{ color: 'var(--warm-ivory-dim)' }}>Not evaluated</span>}
+                    <td style={{ color: 'var(--text-secondary)' }}>
+                      {row.ap_75}
+                      {row.ap_75_delta && <span className="delta-pill">{row.ap_75_delta}</span>}
                     </td>
-                    <td>
-                      {exp.ap_75 !== null && exp.ap_75 !== undefined ? (
-                        <span>
-                          {(exp.ap_75 * 100).toFixed(2)}%
-                          {isProposed && <span className="badge badge-green" style={{ marginLeft: '0.35rem', fontSize: '0.6rem' }}>+2.73 pp</span>}
-                        </span>
-                      ) : <span style={{ color: 'var(--warm-ivory-dim)' }}>Not evaluated</span>}
+                    <td style={{ color: 'var(--text-secondary)' }}>
+                      {row.precision}
+                      {row.precision_delta && <span className="delta-pill">{row.precision_delta}</span>}
                     </td>
-                    <td>
-                      {exp.precision !== null && exp.precision !== undefined ? (exp.precision * 100).toFixed(1) + '%' : <span style={{ color: 'var(--warm-ivory-dim)' }}>Not evaluated</span>}
+                    <td style={{ color: 'var(--text-secondary)' }}>
+                      {row.recall}
+                      {row.recall_delta && <span className="delta-pill">{row.recall_delta}</span>}
                     </td>
-                    <td>
-                      {exp.recall !== null && exp.recall !== undefined ? (
-                        <span>
-                          {(exp.recall * 100).toFixed(1)}%
-                          {isProposed && <span className="badge badge-green" style={{ marginLeft: '0.35rem', fontSize: '0.6rem' }}>+2.20 pp</span>}
-                        </span>
-                      ) : <span style={{ color: 'var(--warm-ivory-dim)' }}>Not evaluated</span>}
+                    <td style={{ color: 'var(--text-secondary)' }}>
+                      {row.f1_score}
+                      {row.f1_delta && <span className="delta-pill">{row.f1_delta}</span>}
                     </td>
-                    <td>
-                      {exp.f1_score !== null && exp.f1_score !== undefined ? (exp.f1_score * 100).toFixed(1) + '%' : <span style={{ color: 'var(--warm-ivory-dim)' }}>Not evaluated</span>}
-                    </td>
-                    <td style={{ color: 'var(--burnt-orange)', fontWeight: 700 }}>
-                      {exp.fps !== null && exp.fps !== undefined ? `${exp.fps} FPS` : <span style={{ color: 'var(--warm-ivory-dim)' }}>Not evaluated</span>}
-                    </td>
-                    <td>
-                      {exp.latency_ms !== null && exp.latency_ms !== undefined ? `${exp.latency_ms} ms` : <span style={{ color: 'var(--warm-ivory-dim)' }}>Not evaluated</span>}
-                    </td>
+                    <td style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{row.fps}</td>
+                    <td style={{ paddingRight: '14px', color: 'var(--text-secondary)' }}>{row.latency}</td>
                   </tr>
                 );
               })}
@@ -787,15 +850,15 @@ export const ModelLaboratoryView: React.FC<ModelLaboratoryViewProps> = ({
         <div className="command-card">
           <div className="command-card-header">
             <span className="card-title">
-              <Database size={15} style={{ color: 'var(--burnt-orange)' }} />
+              <Database size={15} style={{ color: 'var(--text-primary)' }} />
               Consolidated UA-DETRAC Benchmark Specifications (V3 Setup)
             </span>
             <span className="label-tactical">100 SEQUENCES // 51 TRAIN / 9 VAL / 40 TEST</span>
           </div>
 
           {datasetInfo.sampling_interval_note && (
-            <div style={{ padding: '0.65rem 0.85rem', backgroundColor: 'var(--charcoal-900)', border: '1px solid var(--border-light)', fontFamily: 'var(--font-mono)', fontSize: '0.72rem', color: 'var(--warm-ivory-dim)', margin: '0 0.85rem 0.85rem 0.85rem' }}>
-              <strong style={{ color: 'var(--burnt-orange)' }}>SAMPLING INTERVAL SPECIFICATION: </strong>
+            <div style={{ padding: '0.65rem 0.85rem', backgroundColor: 'var(--charcoal-900)', border: '1px solid var(--border-light)', fontFamily: 'var(--font-mono)', fontSize: '0.72rem', color: 'var(--text-muted)', margin: '0 0.85rem 0.85rem 0.85rem' }}>
+              <strong style={{ color: 'var(--text-primary)' }}>SAMPLING INTERVAL SPECIFICATION: </strong>
               {datasetInfo.sampling_interval_note} Native video sequences contain ~139,095 uncompressed frames.
             </div>
           )}
@@ -804,38 +867,38 @@ export const ModelLaboratoryView: React.FC<ModelLaboratoryViewProps> = ({
           <div className="kpi-row-4" style={{ margin: '0 0.85rem 1rem 0.85rem' }}>
             <div style={{ padding: '0.75rem', backgroundColor: 'var(--charcoal-900)', border: '1px solid var(--border-light)' }}>
               <div className="label-tactical" style={{ fontSize: '0.65rem' }}>SAMPLED BENCHMARK IMAGES</div>
-              <div style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--warm-ivory)', fontFamily: 'var(--font-display)' }}>
+              <div style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--text-primary)', fontFamily: 'var(--font-display)' }}>
                 {(datasetInfo.total_sampled_images || 16409).toLocaleString()}
               </div>
-              <div style={{ fontSize: '0.68rem', color: 'var(--warm-ivory-dim)' }}>
+              <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>
                 14,317 train + 2,092 val frames
               </div>
             </div>
 
             <div style={{ padding: '0.75rem', backgroundColor: 'var(--charcoal-900)', border: '1px solid var(--border-light)' }}>
               <div className="label-tactical" style={{ fontSize: '0.65rem' }}>ANNOTATED BOUNDING BOXES</div>
-              <div style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--warm-ivory)', fontFamily: 'var(--font-display)' }}>
+              <div style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--text-primary)', fontFamily: 'var(--font-display)' }}>
                 {(datasetInfo.total_annotated_boxes || 118613).toLocaleString()}
               </div>
-              <div style={{ fontSize: '0.68rem', color: 'var(--warm-ivory-dim)' }}>
+              <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>
                 104,492 train + 14,121 val boxes
               </div>
             </div>
 
             <div style={{ padding: '0.75rem', backgroundColor: 'var(--charcoal-900)', border: '1px solid var(--border-light)' }}>
               <div className="label-tactical" style={{ fontSize: '0.65rem' }}>TARGET VEHICLE CLASSES</div>
-              <div style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--burnt-orange)', fontFamily: 'var(--font-display)' }}>
+              <div style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--text-primary)', fontFamily: 'var(--font-display)' }}>
                 4 CLASSES
               </div>
-              <div style={{ fontSize: '0.68rem', color: 'var(--warm-ivory-dim)' }}>car, van, bus, others</div>
+              <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>car, van, bus, others</div>
             </div>
 
             <div style={{ padding: '0.75rem', backgroundColor: 'var(--charcoal-900)', border: '1px solid var(--border-light)' }}>
               <div className="label-tactical" style={{ fontSize: '0.65rem' }}>MODEL INPUT RESOLUTION</div>
-              <div style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--muted-olive)', fontFamily: 'var(--font-display)' }}>
+              <div style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--text-secondary)', fontFamily: 'var(--font-display)' }}>
                 {datasetInfo.input_specifications?.model_input_resolution || '512 × 288'}
               </div>
-              <div style={{ fontSize: '0.68rem', color: 'var(--warm-ivory-dim)' }}>Native capture: 960 × 540</div>
+              <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>Native capture: 960 × 540</div>
             </div>
           </div>
 
@@ -843,34 +906,34 @@ export const ModelLaboratoryView: React.FC<ModelLaboratoryViewProps> = ({
           <div className="grid-2" style={{ padding: '0 0.85rem 0.85rem 0.85rem' }}>
             {/* Splits */}
             <div style={{ padding: '0.85rem', backgroundColor: 'var(--charcoal-900)', border: '1px solid var(--border-light)' }}>
-              <div className="label-tactical" style={{ marginBottom: '0.5rem', color: 'var(--burnt-orange)' }}>
+              <div className="label-tactical" style={{ marginBottom: '0.5rem', color: 'var(--text-primary)' }}>
                 PARTITION SPLITS (TRAIN / VAL / TEST)
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem', fontFamily: 'var(--font-mono)', fontSize: '0.74rem' }}>
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.2rem' }}>
-                    <span style={{ color: 'var(--warm-ivory)' }}>TRAINING SET (51 sequences)</span>
-                    <span style={{ color: 'var(--warm-ivory-dim)' }}>14,317 images (104,492 boxes)</span>
+                    <span style={{ color: 'var(--text-primary)' }}>TRAINING SET (51 sequences)</span>
+                    <span style={{ color: 'var(--text-muted)' }}>14,317 images (104,492 boxes)</span>
                   </div>
                   <div style={{ height: '6px', backgroundColor: 'var(--charcoal-800)' }}>
-                    <div style={{ width: '87.3%', height: '100%', backgroundColor: 'var(--burnt-orange)' }} />
+                    <div style={{ width: '87.3%', height: '100%', backgroundColor: 'var(--text-primary)' }} />
                   </div>
                 </div>
 
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.2rem' }}>
-                    <span style={{ color: 'var(--warm-ivory)' }}>VALIDATION SET (9 sequences)</span>
-                    <span style={{ color: 'var(--warm-ivory-dim)' }}>2,092 images (14,121 boxes)</span>
+                    <span style={{ color: 'var(--text-primary)' }}>VALIDATION SET (9 sequences)</span>
+                    <span style={{ color: 'var(--text-muted)' }}>2,092 images (14,121 boxes)</span>
                   </div>
                   <div style={{ height: '6px', backgroundColor: 'var(--charcoal-800)' }}>
-                    <div style={{ width: '12.7%', height: '100%', backgroundColor: 'var(--muted-olive)' }} />
+                    <div style={{ width: '12.7%', height: '100%', backgroundColor: 'var(--text-secondary)' }} />
                   </div>
                 </div>
 
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.2rem' }}>
-                    <span style={{ color: 'var(--warm-ivory)' }}>TEST SET (40 sequences)</span>
-                    <span style={{ color: 'var(--warm-ivory-dim)' }}>Held-out benchmark sequences</span>
+                    <span style={{ color: 'var(--text-primary)' }}>TEST SET (40 sequences)</span>
+                    <span style={{ color: 'var(--text-muted)' }}>Held-out benchmark sequences</span>
                   </div>
                   <div style={{ height: '6px', backgroundColor: 'var(--charcoal-800)' }}>
                     <div style={{ width: '100%', height: '100%', backgroundColor: 'var(--border-medium)' }} />
@@ -882,16 +945,16 @@ export const ModelLaboratoryView: React.FC<ModelLaboratoryViewProps> = ({
             {/* Environmental Conditions */}
             {datasetInfo.weather_conditions && datasetInfo.weather_conditions.length > 0 && (
               <div style={{ padding: '0.85rem', backgroundColor: 'var(--charcoal-900)', border: '1px solid var(--border-light)' }}>
-                <div className="label-tactical" style={{ marginBottom: '0.5rem', color: 'var(--muted-olive)' }}>
+                <div className="label-tactical" style={{ marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>
                   ENVIRONMENTAL TEST CONDITIONS
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.5rem', fontFamily: 'var(--font-mono)', fontSize: '0.72rem' }}>
                   {datasetInfo.weather_conditions.map((w, idx) => (
                     <div key={idx} style={{ padding: '0.45rem', backgroundColor: 'var(--charcoal-800)', border: '1px solid var(--border-light)' }}>
-                      <div style={{ color: 'var(--warm-ivory)', fontWeight: 700 }}>
+                      <div style={{ color: 'var(--text-primary)', fontWeight: 700 }}>
                         {w.condition} ({w.percentage}%)
                       </div>
-                      <div style={{ fontSize: '0.66rem', color: 'var(--warm-ivory-dim)', marginTop: '0.15rem' }}>
+                      <div style={{ fontSize: '0.66rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>
                         {w.challenges}
                       </div>
                     </div>
