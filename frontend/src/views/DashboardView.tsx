@@ -435,7 +435,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <div className="chart-explanation-box">
             <div className="chart-explanation-item">
               <span className="chart-explanation-label">What it shows:</span>
-              Distribution of vehicle types classified by CenterNet keypoint classification heads across all executed runs.
+              Distribution of vehicle types classified by UVH-26 YOLOv11-S / keypoint classification heads across all executed runs.
             </div>
             <div className="chart-explanation-item">
               <span className="chart-explanation-label">How calculated:</span>

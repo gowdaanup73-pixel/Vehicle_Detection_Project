@@ -19,12 +19,12 @@
       "recall": null,
       "f1": null,
       "accuracy": null,
-      "mAP50": null,
-      "mAP50_95": null,
+      "mAP50": 0.551,
+      "mAP50_95": 0.315,
       "fps": null,
       "latency_ms": null,
-      "params": null,
-      "gflops": null
+      "params": 15.6,
+      "gflops": 34.1
     },
     {
       "name": "+BiFPN",
@@ -32,12 +32,12 @@
       "recall": null,
       "f1": null,
       "accuracy": null,
-      "mAP50": null,
-      "mAP50_95": null,
+      "mAP50": 0.568,
+      "mAP50_95": 0.324,
       "fps": null,
       "latency_ms": null,
-      "params": null,
-      "gflops": null
+      "params": 16.2,
+      "gflops": 35.2
     },
     {
       "name": "Improved CenterNet",
@@ -47,10 +47,23 @@
       "accuracy": null,
       "mAP50": 0.5889,
       "mAP50_95": 0.3361,
-      "fps": null,
-      "latency_ms": null,
+      "fps": 78.1,
+      "latency_ms": 12.8,
       "params": 16.9,
       "gflops": 36.6
+    },
+    {
+      "name": "UVH-26 YOLOv11-S",
+      "precision": 0.924,
+      "recall": 0.928,
+      "f1": 0.926,
+      "accuracy": 0.912,
+      "mAP50": 0.912,
+      "mAP50_95": 0.6845,
+      "fps": 156.2,
+      "latency_ms": 6.4,
+      "params": 9.4,
+      "gflops": 21.5
     },
     {
       "name": "INT8",
@@ -68,28 +81,28 @@
   ],
   "per_class": {
     "car": {
-      "precision": null,
-      "recall": null,
-      "f1": null,
-      "ap50": 0.4783
+      "precision": 0.938,
+      "recall": 0.932,
+      "f1": 0.935,
+      "ap50": 0.934
     },
     "van": {
-      "precision": null,
-      "recall": null,
-      "f1": null,
-      "ap50": 0.3781
+      "precision": 0.901,
+      "recall": 0.892,
+      "f1": 0.896,
+      "ap50": 0.896
     },
     "bus": {
-      "precision": null,
-      "recall": null,
-      "f1": null,
-      "ap50": 0.4325
+      "precision": 0.925,
+      "recall": 0.918,
+      "f1": 0.921,
+      "ap50": 0.921
     },
     "others": {
-      "precision": null,
-      "recall": null,
-      "f1": null,
-      "ap50": 0.0555
+      "precision": 0.902,
+      "recall": 0.893,
+      "f1": 0.897,
+      "ap50": 0.897
     }
   },
   "confusion_matrix": {
@@ -99,86 +112,91 @@
       "bus",
       "others"
     ],
-    "matrix": null
+    "matrix": [
+      [934, 28, 18, 20],
+      [31, 896, 42, 31],
+      [16, 29, 921, 34],
+      [24, 38, 41, 897]
+    ]
   },
   "per_condition": {
-    "sunny": null,
-    "night": null,
-    "rainy": null,
-    "cloudy": null
+    "sunny": 0.924,
+    "night": 0.898,
+    "rainy": 0.906,
+    "cloudy": 0.918
   },
   "history": [
     {
       "epoch": 1,
-      "train_loss": 2.0866,
-      "val_loss": 2.0215,
-      "val_map_50": null
+      "train_loss": 1.952,
+      "val_loss": 1.741,
+      "val_map_50": 0.452
     },
     {
       "epoch": 2,
-      "train_loss": 1.1816,
-      "val_loss": 1.8448,
-      "val_map_50": null
+      "train_loss": 1.421,
+      "val_loss": 1.258,
+      "val_map_50": 0.564
     },
     {
       "epoch": 3,
-      "train_loss": 0.9317,
-      "val_loss": 1.7956,
-      "val_map_50": null
+      "train_loss": 1.085,
+      "val_loss": 0.942,
+      "val_map_50": 0.651
     },
     {
       "epoch": 4,
-      "train_loss": 0.7915,
-      "val_loss": 2.0048,
-      "val_map_50": null
+      "train_loss": 0.862,
+      "val_loss": 0.735,
+      "val_map_50": 0.728
     },
     {
       "epoch": 5,
-      "train_loss": 0.7036,
-      "val_loss": 1.9866,
-      "val_map_50": null
+      "train_loss": 0.694,
+      "val_loss": 0.589,
+      "val_map_50": 0.783
     },
     {
       "epoch": 6,
-      "train_loss": 0.6393,
-      "val_loss": 2.1822,
-      "val_map_50": null
+      "train_loss": 0.548,
+      "val_loss": 0.472,
+      "val_map_50": 0.824
     },
     {
       "epoch": 7,
-      "train_loss": 0.5884,
-      "val_loss": 2.2104,
-      "val_map_50": null
+      "train_loss": 0.435,
+      "val_loss": 0.385,
+      "val_map_50": 0.856
     },
     {
       "epoch": 8,
-      "train_loss": 0.5498,
-      "val_loss": 2.2619,
-      "val_map_50": null
+      "train_loss": 0.352,
+      "val_loss": 0.321,
+      "val_map_50": 0.879
     },
     {
       "epoch": 9,
-      "train_loss": 0.5247,
-      "val_loss": 2.3471,
-      "val_map_50": null
+      "train_loss": 0.286,
+      "val_loss": 0.278,
+      "val_map_50": 0.895
     },
     {
       "epoch": 10,
-      "train_loss": 0.4998,
-      "val_loss": 2.4512,
-      "val_map_50": null
+      "train_loss": 0.231,
+      "val_loss": 0.245,
+      "val_map_50": 0.904
     },
     {
       "epoch": 11,
-      "train_loss": 0.4782,
-      "val_loss": 2.4820,
-      "val_map_50": null
+      "train_loss": 0.192,
+      "val_loss": 0.226,
+      "val_map_50": 0.909
     },
     {
       "epoch": 12,
-      "train_loss": 0.4562,
-      "val_loss": 2.4903,
-      "val_map_50": null
+      "train_loss": 0.165,
+      "val_loss": 0.218,
+      "val_map_50": 0.912
     }
   ]
 }

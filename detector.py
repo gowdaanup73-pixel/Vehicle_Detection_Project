@@ -6,6 +6,8 @@ Supports singleton model loading, photo prediction, and video tracking.
 """
 import argparse
 import os
+import shutil
+import subprocess
 import sys
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union
@@ -15,6 +17,18 @@ import numpy as np
 import torch
 from huggingface_hub import hf_hub_download
 from ultralytics import YOLO
+
+
+def _get_ffmpeg_bin() -> Optional[str]:
+    """Finds available ffmpeg binary, checking imageio-ffmpeg first then PATH."""
+    try:
+        import imageio_ffmpeg
+        exe = imageio_ffmpeg.get_ffmpeg_exe()
+        if exe and os.path.exists(exe):
+            return exe
+    except Exception:
+        pass
+    return shutil.which("ffmpeg")
 
 # Global singleton storage
 _CACHED_MODEL: Optional[YOLO] = None
@@ -235,7 +249,7 @@ def track_video(
     frame_idx = 0
     processed_count = 0
     unique_track_ids = set()
-    overall_class_counts: Dict[str, int] = {}
+    unique_vehicle_records: Dict[any, Dict[str, any]] = {}
     frame_timeline = []
 
     try:
@@ -281,20 +295,27 @@ def track_video(
                         canon_name, canon_id = UVH_TO_CANONICAL.get(raw_name.lower().strip(), ("others", 3))
 
                     live_counts[canon_name] = live_counts.get(canon_name, 0) + 1
-                    overall_class_counts[canon_name] = overall_class_counts.get(canon_name, 0) + 1
 
-                    frame_detections.append({
+                    det_record = {
                         "bbox": [round(b, 2) for b in box],
                         "score": round(score, 4),
+                        "confidence": round(score, 4),
                         "class_id": int(canon_id),
                         "class_name": canon_name,
                         "raw_class_name": raw_name,
                         "track_id": track_id,
-                    })
+                    }
+                    frame_detections.append(det_record)
+
+                    # Accumulate unique vehicle record
+                    uid = track_id if track_id is not None else f"u_{len(unique_vehicle_records) + 1}"
+                    if uid not in unique_vehicle_records or score > unique_vehicle_records[uid].get("score", 0):
+                        unique_vehicle_records[uid] = det_record
 
             # Overlay tactical live vehicle counts and tracker HUD
             badge = " | ".join(f"{k.upper()}: {v}" for k, v in sorted(live_counts.items())) if live_counts else "NONE"
-            hud_text = f"LIVE VEHICLES: {badge}  [ACTIVE TRACKS: {len(unique_track_ids)}]"
+            active_tracks_count = len(unique_track_ids) if unique_track_ids else len(unique_vehicle_records)
+            hud_text = f"LIVE VEHICLES: {badge}  [ACTIVE TRACKS: {active_tracks_count}]"
             cv2.putText(
                 annotated_frame,
                 hud_text,
@@ -322,7 +343,7 @@ def track_video(
                 "frame": frame_idx,
                 "timestamp_sec": round(frame_idx / max(1.0, fps_in), 2),
                 "active_detections": len(frame_detections),
-                "unique_vehicles": len(unique_track_ids),
+                "unique_vehicles": len(unique_track_ids) if unique_track_ids else len(unique_vehicle_records),
                 "live_counts": live_counts,
             })
 
@@ -332,12 +353,50 @@ def track_video(
         cap.release()
         out_writer.release()
 
+    # Convert to standard H.264 via ffmpeg if available
+    ffmpeg_bin = _get_ffmpeg_bin()
+    if ffmpeg_bin:
+        temp_path = str(output_path) + ".raw.mp4"
+        try:
+            if os.path.exists(output_path):
+                shutil.move(output_path, temp_path)
+                cmd = [
+                    ffmpeg_bin, "-y", "-i", temp_path,
+                    "-c:v", "libx264", "-preset", "veryfast", "-crf", "23",
+                    "-pix_fmt", "yuv420p", "-movflags", "+faststart",
+                    str(output_path)
+                ]
+                subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
+                if os.path.exists(temp_path):
+                    os.remove(temp_path)
+        except Exception:
+            if os.path.exists(temp_path) and not os.path.exists(output_path):
+                shutil.move(temp_path, output_path)
+
+    # Calculate unique vehicle counts per class
+    unique_class_counts: Dict[str, int] = {"car": 0, "van": 0, "bus": 0, "others": 0}
+    for rec in unique_vehicle_records.values():
+        c = rec["class_name"]
+        if c in unique_class_counts:
+            unique_class_counts[c] += 1
+        else:
+            unique_class_counts["others"] += 1
+
+    detections_list = sorted(
+        list(unique_vehicle_records.values()),
+        key=lambda x: (
+            x.get("track_id") if isinstance(x.get("track_id"), int) else 999999,
+            -x.get("score", 0),
+        ),
+    )
+
     return {
         "output_path": output_path,
         "processed_frames": processed_count,
         "total_video_frames": total_video_frames,
-        "unique_vehicles": len(unique_track_ids),
-        "class_counts": overall_class_counts,
+        "unique_vehicles": len(unique_track_ids) if unique_track_ids else len(unique_vehicle_records),
+        "class_counts": unique_class_counts,
+        "detections": detections_list,
         "timeline": frame_timeline,
         "model_name": cfg["model_name"],
         "header_tag": cfg["header_tag"],

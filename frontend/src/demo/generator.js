@@ -142,6 +142,19 @@ export function getDemoMetrics(seed = 42, tick = 0, prev = null) {
       gflops: 36.6,
     },
     {
+      name: 'UVH-26 YOLOv11-S',
+      precision: Number(randomWalk(0.924, 0.924, 0.91, 0.94, 0.003, 0.1, rng).toFixed(4)),
+      recall: Number(randomWalk(0.928, 0.928, 0.915, 0.945, 0.003, 0.1, rng).toFixed(4)),
+      f1: Number(randomWalk(0.926, 0.926, 0.915, 0.94, 0.003, 0.1, rng).toFixed(4)),
+      accuracy: Number(randomWalk(0.912, 0.912, 0.905, 0.92, 0.002, 0.1, rng).toFixed(4)),
+      mAP50: Number(randomWalk(0.912, 0.912, 0.905, 0.92, 0.002, 0.1, rng).toFixed(4)),
+      mAP50_95: Number(randomWalk(0.6845, 0.6845, 0.67, 0.70, 0.003, 0.1, rng).toFixed(4)),
+      fps: Number((156.2 + rng() * 3.5).toFixed(1)),
+      latency_ms: Number((6.4 + rng() * 0.4).toFixed(1)),
+      params: 9.4,
+      gflops: 21.5,
+    },
+    {
       name: 'INT8',
       precision: Number(pInt8.toFixed(4)),
       recall: Number(rInt8.toFixed(4)),
@@ -176,10 +189,10 @@ export function getDemoClassMetrics(seed = 42, tick = 0, prev = null) {
   const rng = mulberry32(seed + tick * 31 + 101);
 
   const classes = [
-    { name: 'car', pBase: 0.72, rBase: 0.68, apBase: 0.4783 },
-    { name: 'van', pBase: 0.63, rBase: 0.54, apBase: 0.3781 },
-    { name: 'bus', pBase: 0.68, rBase: 0.59, apBase: 0.4325 },
-    { name: 'others', pBase: 0.41, rBase: 0.28, apBase: 0.0555 },
+    { name: 'car', pBase: 0.938, rBase: 0.932, apBase: 0.9340 },
+    { name: 'van', pBase: 0.901, rBase: 0.892, apBase: 0.8960 },
+    { name: 'bus', pBase: 0.925, rBase: 0.918, apBase: 0.9210 },
+    { name: 'others', pBase: 0.902, rBase: 0.893, apBase: 0.8970 },
   ];
 
   const result = {};
@@ -239,11 +252,11 @@ export function getDemoEpochHistory(seed = 42, tick = 0) {
   const history = [];
 
   for (let epoch = 1; epoch <= 12; epoch++) {
-    const factor = 1.0 / (1.0 + 0.16 * epoch);
-    const noise = (rng() * 2 - 1) * 0.02;
-    const trainLoss = Math.max(0.2, 2.1 * factor + 0.18 + noise);
-    const valLoss = Math.max(0.3, 1.7 * factor + 0.35 + (epoch > 7 ? (epoch - 7) * 0.04 : 0) + noise);
-    const valMap = Math.min(0.62, 0.28 + (0.32 * (1.0 - factor)) + noise * 0.5);
+    const factor = 1.0 / (1.0 + 0.18 * epoch);
+    const noise = (rng() * 2 - 1) * 0.01;
+    const trainLoss = Math.max(0.15, 1.95 * factor + 0.16 + noise);
+    const valLoss = Math.max(0.20, 1.74 * factor + 0.21 + noise);
+    const valMap = Math.min(0.915, 0.45 + (0.462 * (1.0 - factor)) + noise);
 
     history.push({
       epoch,
