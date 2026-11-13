@@ -572,7 +572,7 @@ def get_experiments():
     return {
         "experiments": experiments_service.get_experiments(),
         "baseline_model": "Baseline CenterNet",
-        "proposed_model": "Improved CenterNet (Proposed)",
+        "proposed_model": "UVH-26 YOLOv11-S (Active SOTA)",
     }
 
 

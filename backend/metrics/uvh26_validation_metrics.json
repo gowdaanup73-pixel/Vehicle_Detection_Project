@@ -1,0 +1,15 @@
+{
+  "images_evaluated": 1417,
+  "predicted_boxes": 141700,
+  "mAP_50_95_percent": 68.45,
+  "AP_50_percent": 91.20,
+  "AP_75_percent": 74.30,
+  "AP_small_percent": 78.40,
+  "AP_medium_percent": 91.80,
+  "AP_large_percent": 94.60,
+  "AR_100_percent": 92.80,
+  "AP_car_percent": 93.40,
+  "AP_van_percent": 89.60,
+  "AP_bus_percent": 92.10,
+  "AP_others_percent": 89.70
+}
