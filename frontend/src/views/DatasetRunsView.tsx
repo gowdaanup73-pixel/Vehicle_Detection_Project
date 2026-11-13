@@ -332,7 +332,9 @@ export const DatasetRunsView: React.FC<DatasetRunsViewProps> = ({
               width: '100%',
               maxHeight: '92vh',
               overflowY: 'auto',
-              border: '1px solid var(--burnt-orange)',
+              borderRadius: '24px',
+              border: '1px solid rgba(255, 255, 255, 0.15)',
+              boxShadow: '0 24px 60px rgba(0, 0, 0, 0.7)',
             }}
           >
             <div className="command-card-header">

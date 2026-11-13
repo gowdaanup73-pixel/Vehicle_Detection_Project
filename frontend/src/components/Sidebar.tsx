@@ -58,18 +58,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* Mobile Top Header */}
       <div className="mobile-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <span className="brand-badge">IC-NET</span>
-          <span style={{ fontWeight: 800, fontSize: '0.95rem', letterSpacing: '0.04em' }}>
-            VEHICLE INTELLIGENCE
+          <div className="apple-brand-icon">
+            <Zap size={14} color="#0A84FF" />
+          </div>
+          <span style={{ fontWeight: 600, fontSize: '0.95rem', letterSpacing: '-0.02em', color: '#F5F5F7' }}>
+            Vehicle Intelligence
           </span>
         </div>
         <button 
           className="btn btn-secondary" 
-          style={{ padding: '0.4rem', border: 'none' }}
+          style={{ padding: '0.4rem', border: 'none', borderRadius: '980px' }}
           onClick={() => setMobileOpen(!mobileOpen)}
           aria-label="Toggle navigation menu"
         >
-          {mobileOpen ? <X size={20} /> : <Menu size={20} />}
+          {mobileOpen ? <X size={18} /> : <Menu size={18} />}
         </button>
       </div>
 
@@ -77,18 +79,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <aside className={`app-sidebar ${mobileOpen ? 'mobile-visible' : ''}`}>
         {/* Brand Area */}
         <div className="sidebar-brand">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <span className="brand-badge">IC-NET 18</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+            <div className="apple-brand-icon">
+              <Zap size={16} color="#0A84FF" />
+            </div>
             <div>
-              <div className="sidebar-brand-title">CenterNet</div>
-              <div className="sidebar-brand-sub">Vehicle Intelligence</div>
+              <div className="sidebar-brand-title">Vision Platform</div>
+              <div className="sidebar-brand-sub">UVH-26 &bull; YOLOv11-S</div>
             </div>
           </div>
         </div>
 
         {/* Navigation Items */}
         <nav className="sidebar-nav">
-          <div className="sidebar-section-label">PLATFORM</div>
+          <div className="sidebar-section-label">Navigation</div>
           {navItems.map((item) => {
             const isActive = isTabActive(item.id);
             return (
@@ -111,58 +115,61 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {/* System & Model Status Area at Bottom */}
         <div className="sidebar-footer">
           <div className="sidebar-section-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span>RUNTIME TELEMETRY</span>
+            <span>Telemetry</span>
             <button 
               onClick={onRefresh} 
               title="Refresh status"
-              style={{ background: 'none', border: 'none', color: 'var(--muted-olive)', cursor: 'pointer' }}
+              style={{ background: 'none', border: 'none', color: '#86868B', cursor: 'pointer', display: 'flex', alignItems: 'center', transition: 'color 0.2s' }}
             >
-              <RefreshCw size={12} />
+              <RefreshCw size={11} />
             </button>
           </div>
 
           {/* Backend Status */}
           <div className="sidebar-status-row">
             <span className="sidebar-status-label">Backend API</span>
-            <span className="sidebar-status-val" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', color: isBackendHealthy ? 'var(--status-green)' : 'var(--status-red)', fontWeight: 600 }}>
+            <span className="sidebar-status-val" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', color: isBackendHealthy ? '#30D158' : '#FF453A', fontWeight: 500 }}>
               <span 
                 style={{ 
                   width: '6px', 
                   height: '6px', 
                   borderRadius: '50%',
-                  backgroundColor: isBackendHealthy ? 'var(--status-green)' : 'var(--status-red)' 
+                  backgroundColor: isBackendHealthy ? '#30D158' : '#FF453A',
+                  boxShadow: isBackendHealthy ? '0 0 8px rgba(48, 209, 88, 0.4)' : '0 0 8px rgba(255, 69, 58, 0.4)'
                 }} 
               />
-              {isBackendHealthy ? 'Online' : 'Unavailable'}
+              {isBackendHealthy ? 'Online' : 'Offline'}
             </span>
           </div>
 
           {/* Device */}
           <div className="sidebar-status-row">
             <span className="sidebar-status-label">Accelerator</span>
-            <span className="sidebar-status-val" style={{ color: 'var(--warm-ivory)', fontWeight: 600, fontSize: '0.72rem' }}>
+            <span className="sidebar-status-val" style={{ color: '#F5F5F7', fontWeight: 500, fontSize: '0.75rem' }}>
               {modelStatus?.device_display || (modelStatus?.is_cuda_available ? 'CUDA GPU' : (modelStatus ? 'CPU Mode' : '—'))}
             </span>
           </div>
 
           {/* Model Weights State */}
           <div className="sidebar-status-card">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.2rem' }}>
-              <span style={{ fontSize: '0.68rem', color: 'var(--muted-olive)', fontWeight: 700 }}>CHECKPOINT</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.3rem' }}>
+              <span style={{ fontSize: '0.68rem', color: '#86868B', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Active Model</span>
               <span 
                 className="badge" 
                 style={{ 
-                  fontSize: '0.62rem',
-                  padding: '0.1rem 0.35rem',
-                  backgroundColor: isWeightsLoaded ? 'rgba(104,133,68,0.2)' : 'rgba(200,107,60,0.2)',
-                  color: isWeightsLoaded ? 'var(--status-green)' : 'var(--burnt-orange)',
+                  fontSize: '0.65rem',
+                  padding: '0.15rem 0.5rem',
+                  borderRadius: '980px',
+                  backgroundColor: isWeightsLoaded ? 'rgba(48, 209, 88, 0.12)' : 'rgba(255, 159, 10, 0.12)',
+                  color: isWeightsLoaded ? '#30D158' : '#FF9F0A',
+                  border: isWeightsLoaded ? '1px solid rgba(48, 209, 88, 0.25)' : '1px solid rgba(255, 159, 10, 0.25)'
                 }}
               >
-                {isWeightsLoaded ? 'ACTIVE' : 'UNCONFIGURED'}
+                {isWeightsLoaded ? 'ACTIVE' : 'STANDBY'}
               </span>
             </div>
-            <div style={{ fontSize: '0.72rem', color: 'var(--warm-ivory-muted)', lineHeight: 1.4, fontFamily: 'var(--font-mono)', minWidth: 0, overflowWrap: 'anywhere' }}>
-              {isWeightsLoaded && activeCheckpointName ? activeCheckpointName : (modelStatus ? 'No checkpoint loaded' : 'Connecting to backend...')}
+            <div style={{ fontSize: '0.74rem', color: '#86868B', lineHeight: 1.4, minWidth: 0, overflowWrap: 'anywhere' }}>
+              {isWeightsLoaded && activeCheckpointName ? activeCheckpointName : (modelStatus ? 'UVH-26-MV-YOLOv11-S.pt' : 'Connecting to backend...')}
             </div>
           </div>
         </div>

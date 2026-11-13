@@ -380,7 +380,7 @@ export const TrafficAnalyticsView: React.FC<TrafficAnalyticsViewProps> = ({
           KPI SUMMARY ROW
           ========================================================================= */}
       <div className="kpi-row-4">
-        <div className="kpi-card" style={{ borderLeftColor: 'var(--burnt-orange)' }}>
+        <div className="kpi-card">
           <div>
             <div className="kpi-card-title">Total Localized Vehicles</div>
             <div className="kpi-card-value">{totalDetections.toLocaleString()}</div>
@@ -390,7 +390,7 @@ export const TrafficAnalyticsView: React.FC<TrafficAnalyticsViewProps> = ({
           </div>
         </div>
 
-        <div className="kpi-card" style={{ borderLeftColor: 'var(--warm-ivory)' }}>
+        <div className="kpi-card">
           <div>
             <div className="kpi-card-title">Processed Workload</div>
             <div className="kpi-card-value">{totalRuns} <span style={{ fontSize: '0.9rem', color: 'var(--warm-ivory-dim)', fontWeight: 500 }}>runs</span></div>
@@ -400,7 +400,7 @@ export const TrafficAnalyticsView: React.FC<TrafficAnalyticsViewProps> = ({
           </div>
         </div>
 
-        <div className="kpi-card" style={{ borderLeftColor: 'var(--muted-olive)' }}>
+        <div className="kpi-card">
           <div>
             <div className="kpi-card-title">Median Forward Latency</div>
             <div className="kpi-card-value">
@@ -412,7 +412,7 @@ export const TrafficAnalyticsView: React.FC<TrafficAnalyticsViewProps> = ({
           </div>
         </div>
 
-        <div className="kpi-card" style={{ borderLeftColor: 'var(--status-green)' }}>
+        <div className="kpi-card">
           <div>
             <div className="kpi-card-title">Execution Reliability</div>
             <div className="kpi-card-value" style={{ color: 'var(--status-green)' }}>

@@ -124,7 +124,7 @@ export const ModelLaboratoryView: React.FC<ModelLaboratoryViewProps> = ({
           PRIMARY ACTIVE MODEL VERIFIED VALIDATION BENCHMARKS (UVH-26 YOLOV11-S / IISC-AIM)
         </div>
         <div className="kpi-row-4">
-          <div className="kpi-card" style={{ borderTop: '3px solid var(--burnt-orange)' }}>
+          <div className="kpi-card">
             <span className="kpi-label">mAP @ [0.50 : 0.95]</span>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem', flexWrap: 'wrap' }}>
               <div className="kpi-value">68.45%</div>
@@ -136,7 +136,7 @@ export const ModelLaboratoryView: React.FC<ModelLaboratoryViewProps> = ({
             </span>
           </div>
 
-          <div className="kpi-card" style={{ borderTop: '3px solid var(--muted-olive)' }}>
+          <div className="kpi-card">
             <span className="kpi-label">AP @ 0.50 (DETECTION ACCURACY)</span>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem', flexWrap: 'wrap' }}>
               <div className="kpi-value">91.20%</div>
@@ -148,7 +148,7 @@ export const ModelLaboratoryView: React.FC<ModelLaboratoryViewProps> = ({
             </span>
           </div>
 
-          <div className="kpi-card" style={{ borderTop: '3px solid var(--warm-ivory)' }}>
+          <div className="kpi-card">
             <span className="kpi-label">AP @ 0.75 (STRICT IOU)</span>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem', flexWrap: 'wrap' }}>
               <div className="kpi-value">74.30%</div>
@@ -160,7 +160,7 @@ export const ModelLaboratoryView: React.FC<ModelLaboratoryViewProps> = ({
             </span>
           </div>
 
-          <div className="kpi-card" style={{ borderTop: '3px solid var(--burnt-orange)' }}>
+          <div className="kpi-card">
             <span className="kpi-label">INFERENCE LATENCY</span>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem', flexWrap: 'wrap' }}>
               <div className="kpi-value">6.4 ms</div>
@@ -316,7 +316,7 @@ export const ModelLaboratoryView: React.FC<ModelLaboratoryViewProps> = ({
       </div>
 
       {/* Model Weights Connector Card */}
-      <div className="command-card" style={{ borderLeft: `4px solid ${isWeightsLoaded ? 'var(--status-green)' : 'var(--burnt-orange)'}` }}>
+      <div className="command-card">
         <div className="command-card-header">
           <span className="card-title">
             <Zap size={14} style={{ color: isWeightsLoaded ? 'var(--status-green)' : 'var(--burnt-orange)' }} />
