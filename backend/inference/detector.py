@@ -34,7 +34,7 @@ class UVH26VehicleDetector:
     with singleton model caching and automatic fallback to yolo11s.pt.
     Supports both photo inference and video multi-object tracking.
     """
-    def __init__(self, default_conf_thresh: float = 0.40):
+    def __init__(self, default_conf_thresh: float = 0.25):
         self.conf_thresh = default_conf_thresh
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self.weights_loaded = True

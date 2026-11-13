@@ -418,7 +418,13 @@ class MediaProcessor:
         sample_img_path = os.path.join(self.uploads_dir, "sample_highway_traffic.jpg")
         sample_vid_path = os.path.join(self.uploads_dir, "sample_traffic_stream.mp4")
 
-        # Generate Sample Image
+        # Seed with high-fidelity real traffic photo if available
+        real_photo_seed = os.path.join(self.uploads_dir, "Traffic_in_Kolkata_75493c3c.jpg")
+        if os.path.exists(real_photo_seed):
+            if not os.path.exists(sample_img_path) or os.path.getsize(sample_img_path) < 100000:
+                shutil.copyfile(real_photo_seed, sample_img_path)
+
+        # Generate Sample Image fallback if not seeded
         if not os.path.exists(sample_img_path):
             img = np.zeros((720, 1280, 3), dtype=np.uint8)
             # Sky
@@ -456,7 +462,26 @@ class MediaProcessor:
 
             cv2.imwrite(sample_img_path, img)
 
-        # Generate Sample Video Clip (60 frames)
+        # Seed with high-fidelity real traffic video if available
+        real_vid_seed = os.path.join(self.uploads_dir, "vecteezy_slow-motion-heavy-traffic-in-the-center-of-bangkok-arou_950ed72a.mov")
+        if os.path.exists(real_vid_seed):
+            if not os.path.exists(sample_vid_path) or os.path.getsize(sample_vid_path) < 100000:
+                try:
+                    cap = cv2.VideoCapture(real_vid_seed)
+                    vw = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+                    vh = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+                    fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+                    out = cv2.VideoWriter(sample_vid_path, fourcc, 20.0, (vw, vh))
+                    for _ in range(60):
+                        ret, f = cap.read()
+                        if not ret: break
+                        out.write(f)
+                    cap.release()
+                    out.release()
+                except Exception:
+                    pass
+
+        # Generate Sample Video Clip (60 frames) fallback
         if not os.path.exists(sample_vid_path):
             fourcc = cv2.VideoWriter_fourcc(*"mp4v")
             vid_writer = cv2.VideoWriter(sample_vid_path, fourcc, 20.0, (1280, 720))

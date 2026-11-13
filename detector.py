@@ -67,20 +67,36 @@ def get_model() -> Tuple[YOLO, Dict[str, any]]:
     source_tag = ""
     is_coco_fallback = False
 
-    # Try Hugging Face paths
-    candidate_filenames = [
-        PRIMARY_HF_FILENAME,
-        FALLBACK_HF_FILENAME,
-        "weights/YOLOv11-S/UVH-26-MV-YOLOv11-S.pt",
+    # 0. Check local repository checkpoints first (instant zero-latency load)
+    local_candidates = [
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), "backend", "checkpoints", "UVH-26-MV-YOLOv11-S.pt"),
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), "checkpoints", "UVH-26-MV-YOLOv11-S.pt"),
     ]
-    for fn in candidate_filenames:
-        try:
-            weights_path = hf_hub_download(repo_id=UVH_REPO_ID, filename=fn)
-            model = YOLO(weights_path)
-            source_tag = f"HF_UVH26 ({fn})"
-            break
-        except Exception:
-            continue
+    for loc in local_candidates:
+        if os.path.exists(loc) and os.path.getsize(loc) > 1024 * 1024:
+            try:
+                model = YOLO(loc)
+                weights_path = loc
+                source_tag = "LOCAL_HF_UVH26_CHECKPOINT"
+                break
+            except Exception:
+                continue
+
+    # 1. Try Hugging Face paths if not found locally
+    if model is None:
+        candidate_filenames = [
+            "weights/YOLOv11-S/UVH-26-MV-YOLOv11-S.pt",
+            PRIMARY_HF_FILENAME,
+            FALLBACK_HF_FILENAME,
+        ]
+        for fn in candidate_filenames:
+            try:
+                weights_path = hf_hub_download(repo_id=UVH_REPO_ID, filename=fn)
+                model = YOLO(weights_path)
+                source_tag = f"HF_UVH26 ({fn})"
+                break
+            except Exception:
+                continue
 
     if model is None:
         # 3. Fallback to standard yolo11s.pt with COCO classes [2, 3, 5, 7]
@@ -103,7 +119,7 @@ def get_model() -> Tuple[YOLO, Dict[str, any]]:
 
 def predict_photo(
     source: Union[str, np.ndarray],
-    conf: float = 0.40,
+    conf: float = 0.25,
     output_path: Optional[str] = None,
     device: Optional[Union[int, str]] = None,
 ) -> Dict[str, any]:
@@ -172,7 +188,7 @@ def predict_photo(
 
 def track_video(
     source: Union[str, int],
-    conf: float = 0.40,
+    conf: float = 0.25,
     output_path: Optional[str] = None,
     tracker: str = "bytetrack.yaml",
     device: Optional[Union[int, str]] = None,
