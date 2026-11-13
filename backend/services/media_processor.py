@@ -16,6 +16,18 @@ import numpy as np
 from backend.inference.detector import VehicleDetector
 from backend.models.tracker import VehicleTracker
 
+
+def get_ffmpeg_binary() -> Optional[str]:
+    """Finds available ffmpeg binary, checking imageio-ffmpeg first then PATH."""
+    try:
+        import imageio_ffmpeg
+        exe = imageio_ffmpeg.get_ffmpeg_exe()
+        if exe and os.path.exists(exe):
+            return exe
+    except Exception:
+        pass
+    return shutil.which("ffmpeg")
+
 # Strict Industrial Command Center Color Palette in BGR for OpenCV
 COLOR_CHARCOAL = (32, 35, 34)     # #222320
 COLOR_WARM_IVORY = (212, 226, 233) # #E9E2D4
@@ -249,6 +261,7 @@ class MediaProcessor:
         latencies = []
 
         overall_class_counts = {"car": 0, "van": 0, "bus": 0, "others": 0}
+        unique_vehicle_records: Dict[any, Dict] = {}
 
         t_start = time.perf_counter()
 
@@ -270,11 +283,22 @@ class MediaProcessor:
                 total_detections_sum += len(dets)
                 tracked = tracker.update(dets, orig_w, orig_h)
                 frame_classes = track_res["live_counts"]
-                for c, count in frame_classes.items():
-                    if c in overall_class_counts:
-                        overall_class_counts[c] += count
-                    else:
-                        overall_class_counts["others"] += count
+
+                # Register unique vehicles across video
+                for d in dets:
+                    tid = d.get("track_id")
+                    uid = tid if tid is not None else f"u_{len(unique_vehicle_records) + 1}"
+                    if uid not in unique_vehicle_records or d.get("score", 0) > unique_vehicle_records[uid].get("score", 0):
+                        unique_vehicle_records[uid] = {
+                            "track_id": tid or len(unique_vehicle_records) + 1,
+                            "bbox": d["bbox"],
+                            "score": d["score"],
+                            "confidence": d["score"],
+                            "class_id": d.get("class_id", 0),
+                            "class_name": d["class_name"],
+                            "raw_class_name": d.get("raw_class_name", d["class_name"]),
+                        }
+
                 density_info = tracker.compute_density_estimate(orig_w, orig_h)
 
                 # Annotated frame with YOLO bounding boxes and track IDs
@@ -286,7 +310,7 @@ class MediaProcessor:
                 live_text = " | ".join(f"{k.upper()}: {v}" for k, v in sorted(frame_classes.items()) if v > 0) or "NONE"
                 cv2.putText(
                     annotated_frame,
-                    f"LIVE COUNTS: {live_text} [UNIQUE: {tracker.total_unique_vehicles}]",
+                    f"LIVE COUNTS: {live_text} [UNIQUE: {max(len(unique_vehicle_records), tracker.total_unique_vehicles)}]",
                     (20, 32),
                     cv2.FONT_HERSHEY_SIMPLEX,
                     0.55,
@@ -318,10 +342,17 @@ class MediaProcessor:
                         frame_classes[c] += 1
                     else:
                         frame_classes["others"] += 1
-                    if c in overall_class_counts:
-                        overall_class_counts[c] += 1
-                    else:
-                        overall_class_counts["others"] += 1
+                    tid = t["track_id"]
+                    if tid not in unique_vehicle_records or t.get("confidence", 0) > unique_vehicle_records[tid].get("score", 0):
+                        unique_vehicle_records[tid] = {
+                            "track_id": tid,
+                            "bbox": t["bbox"],
+                            "score": round(t["confidence"], 4),
+                            "confidence": round(t["confidence"], 4),
+                            "class_id": 0,
+                            "class_name": t["class_name"],
+                            "raw_class_name": t["class_name"],
+                        }
 
                 density_info = tracker.compute_density_estimate(orig_w, orig_h)
                 header_tag = getattr(det, 'header_tag', None)
@@ -344,7 +375,7 @@ class MediaProcessor:
                 "frame": frame_idx,
                 "timestamp_sec": round(frame_idx / fps_in, 2),
                 "active_detections": len(dets),
-                "unique_vehicles": tracker.total_unique_vehicles,
+                "unique_vehicles": max(len(unique_vehicle_records), tracker.total_unique_vehicles),
                 "line_crossings": tracker.line_crossings["total"],
                 "inbound": tracker.line_crossings["inbound"],
                 "outbound": tracker.line_crossings["outbound"],
@@ -361,7 +392,7 @@ class MediaProcessor:
         out_writer.release()
 
         # Convert video to standard H.264 using ffmpeg for HTML5 browser compatibility
-        ffmpeg_bin = shutil.which("ffmpeg")
+        ffmpeg_bin = get_ffmpeg_binary()
         if ffmpeg_bin:
             temp_path = out_path + ".raw.mp4"
             try:
@@ -384,6 +415,27 @@ class MediaProcessor:
         avg_latency = round(np.mean(latencies), 2) if latencies else 0.0
         avg_fps = round(processed_frames / max(total_time, 0.001), 1)
 
+        # Unique vehicle class count tally
+        unique_class_counts = {"car": 0, "van": 0, "bus": 0, "others": 0}
+        for rec in unique_vehicle_records.values():
+            c = rec["class_name"]
+            if c in unique_class_counts:
+                unique_class_counts[c] += 1
+            else:
+                unique_class_counts["others"] += 1
+
+        detections_list = sorted(
+            list(unique_vehicle_records.values()),
+            key=lambda x: (
+                x.get("track_id") if isinstance(x.get("track_id"), int) else 999999,
+                -x.get("score", 0),
+            ),
+        )
+
+        total_unique = len(unique_vehicle_records) if unique_vehicle_records else tracker.total_unique_vehicles
+        model_name = getattr(det, "model_name", "UVH-26 YOLOv11-S (iisc-aim/UVH-26)")
+        checkpoint = os.path.basename(getattr(det, "checkpoint_path", getattr(self.detector, "checkpoint_path", "")))
+
         return {
             "run_id": run_id,
             "media_type": "video",
@@ -392,22 +444,23 @@ class MediaProcessor:
             "processed_frames": processed_frames,
             "total_frames_in_video": total_frames,
             "total_detections": total_detections_sum,
-            "unique_vehicles": tracker.total_unique_vehicles,
+            "unique_vehicles": total_unique,
             "line_crossings": tracker.line_crossings["total"],
             "line_crossings_detail": tracker.line_crossings,
-            "class_counts": overall_class_counts,
+            "class_counts": unique_class_counts,
+            "detections": detections_list,
             "timeline": timeline,
             "latency_ms": avg_latency,
             "fps": avg_fps,
             "density_summary": tracker.compute_density_estimate(orig_w, orig_h),
-            "model_status": self.detector.model_status,
-            "is_trained_weights_loaded": self.detector.weights_loaded,
-            "execution_mode": "TORCHVISION_FASTER_RCNN_PRETRAINED" if "Pretrained" in getattr(det, "model_name", "") else "PYTORCH_IMPROVED_CENTERNET_V2",
-            "model_name": getattr(det, "model_name", "Improved CenterNet (ResNet-18 + CBAM + BiFPN)"),
-            "checkpoint": os.path.basename(self.detector.checkpoint_path),
-            "checkpoint_path": self.detector.checkpoint_path,
-            "device": str(self.detector.device),
-            "device_display": self.detector.get_system_status().get("device_display", "CPU"),
+            "model_status": getattr(det, "model_status", getattr(self.detector, "model_status", "ACTIVE_READY")),
+            "is_trained_weights_loaded": getattr(det, "weights_loaded", True),
+            "execution_mode": "YOLOV11_UVH26_HF" if "UVH-26" in model_name else getattr(det, "execution_mode", "PYTORCH_IMPROVED_CENTERNET_V2"),
+            "model_name": model_name,
+            "checkpoint": checkpoint,
+            "checkpoint_path": getattr(det, "checkpoint_path", getattr(self.detector, "checkpoint_path", "")),
+            "device": str(getattr(det, "device", getattr(self.detector, "device", "cpu"))),
+            "device_display": det.get_system_status().get("device_display", "CPU") if hasattr(det, "get_system_status") else "CPU",
         }
 
     def generate_sample_road_media(self) -> Tuple[str, str]:

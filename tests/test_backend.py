@@ -482,8 +482,8 @@ class TestApiEndpoints:
 
         ann1_img = cv2.imread(ann1_path)
         ann2_img = cv2.imread(ann2_path)
-        assert ann1_img.shape == (720, 1280, 3)
-        assert ann2_img.shape == (2880, 5120, 3)
+        assert ann1_img.shape == cv2.imread(road_path).shape
+        assert ann2_img.shape == cv2.imread(spider_path).shape
 
         # Verify DB persistence of both runs
         run1_db = db.get_run(d1["run_id"])

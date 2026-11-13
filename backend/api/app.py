@@ -448,7 +448,7 @@ async def detect_video(
         filename=file.filename,
         input_url=input_url,
         annotated_url=annotated_url,
-        model_name="Improved CenterNet (ResNet-18 + CBAM + BiFPN)",
+        model_name=result.get("model_name", getattr(active_det, "model_name", "UVH-26 YOLOv11-S (iisc-aim/UVH-26)")),
         weights_status=result["model_status"],
         latency_ms=result["latency_ms"],
         fps=result["fps"],
