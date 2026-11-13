@@ -39,16 +39,21 @@ export const DetectionStudioView: React.FC<DetectionStudioViewProps> = ({
   const [activeMode, setActiveMode] = useState<'image' | 'video'>('image');
   const [showFunnel, setShowFunnel] = useState<boolean>(false);
   const [detectors, setDetectors] = useState<DetectorOption[]>([
-    { id: 'centernet', name: 'Improved CenterNet (ResNet-18 + CBAM + BiFPN)', available: true, active: true },
+    { id: 'uvh26', name: 'UVH-26 YOLOv11-S (iisc-aim/UVH-26)', available: true, active: true },
+    { id: 'centernet', name: 'Improved CenterNet (UA-DETRAC)', available: true, active: true },
     { id: 'pretrained', name: 'Pretrained Faster R-CNN (COCO)', available: true, active: false },
   ]);
-  const [selectedDetector, setSelectedDetector] = useState<string>('centernet');
+  const [selectedDetector, setSelectedDetector] = useState<string>('uvh26');
 
   useEffect(() => {
     fetchDetectors()
       .then((data) => {
         if (Array.isArray(data) && data.length > 0) {
           setDetectors(data);
+          const active = data.find((d) => d.id === 'uvh26') || data.find((d) => d.active) || data[0];
+          if (active) {
+            setSelectedDetector(active.id);
+          }
         }
       })
       .catch((err) => console.warn('Failed to load detectors:', err));
@@ -78,7 +83,7 @@ export const DetectionStudioView: React.FC<DetectionStudioViewProps> = ({
   };
   const [selectedFile, setSelectedFile] = useState<File | null>(preselectedFile);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [confThresh, setConfThresh] = useState<number>(0.35);
+  const [confThresh, setConfThresh] = useState<number>(0.25);
   const [maxFrames, setMaxFrames] = useState<number>(100);
   const [frameStride, setFrameStride] = useState<number>(1);
 
@@ -453,7 +458,11 @@ export const DetectionStudioView: React.FC<DetectionStudioViewProps> = ({
                 ))}
               </select>
               <div style={{ fontSize: '0.68rem', color: 'var(--warm-ivory-dim)', marginTop: '0.25rem' }}>
-                {selectedDetector === 'pretrained' ? 'Torchvision Faster R-CNN (ResNet-50 FPN) with COCO weights' : 'Custom CenterNet (ResNet-18 + CBAM + BiFPN) on UA-DETRAC'}
+                {selectedDetector === 'uvh26'
+                  ? 'Hugging Face UVH-26 YOLOv11-S (Pretrained for Indian & Dense Traffic)'
+                  : selectedDetector === 'pretrained'
+                  ? 'Torchvision Faster R-CNN (ResNet-50 FPN) with COCO weights'
+                  : 'Custom CenterNet (ResNet-18 + CBAM + BiFPN) on UA-DETRAC'}
               </div>
             </div>
 

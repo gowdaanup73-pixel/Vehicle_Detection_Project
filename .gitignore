@@ -28,6 +28,8 @@ wheels/
 !backend/checkpoints/README.md
 checkpoints/
 datasets/
+runs/
+scratch/
 
 # Media uploads and output artifacts
 backend/media/uploads/*

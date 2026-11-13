@@ -174,7 +174,9 @@ class MediaProcessor:
                 class_counts["others"] += 1
 
         header_tag = getattr(det, "header_tag", det_result.get("header_tag"))
-        annotated_img = self.draw_industrial_annotation(img_bgr, detections, header_tag=header_tag)
+        annotated_img = det_result.get("annotated_plot")
+        if annotated_img is None:
+            annotated_img = self.draw_industrial_annotation(img_bgr, detections, header_tag=header_tag)
 
         # Save annotated image
         run_id = f"run_{uuid.uuid4().hex[:8]}"
@@ -261,40 +263,76 @@ class MediaProcessor:
 
             t_frame_start = time.perf_counter()
 
-            # Run detection
-            det_res = det.detect(frame, conf_thresh=conf_thresh)
-            dets = det_res["detections"]
-            total_detections_sum += len(dets)
+            # Run detection & tracking
+            if hasattr(det, "track_frame"):
+                track_res = det.track_frame(frame, conf_thresh=conf_thresh, tracker="bytetrack.yaml")
+                dets = track_res["detections"]
+                total_detections_sum += len(dets)
+                tracked = tracker.update(dets, orig_w, orig_h)
+                frame_classes = track_res["live_counts"]
+                for c, count in frame_classes.items():
+                    if c in overall_class_counts:
+                        overall_class_counts[c] += count
+                    else:
+                        overall_class_counts["others"] += count
+                density_info = tracker.compute_density_estimate(orig_w, orig_h)
 
-            # Update tracker
-            tracked = tracker.update(dets, orig_w, orig_h)
+                # Annotated frame with YOLO bounding boxes and track IDs
+                annotated_frame = track_res.get("annotated_frame")
+                if annotated_frame is None:
+                    annotated_frame = frame.copy()
 
-            # Record per-class counts in this frame
-            frame_classes = {"car": 0, "van": 0, "bus": 0, "others": 0}
-            for t in tracked:
-                c = t["class_name"]
-                if c in frame_classes:
-                    frame_classes[c] += 1
-                else:
-                    frame_classes["others"] += 1
-                if c in overall_class_counts:
-                    overall_class_counts[c] += 1
-                else:
-                    overall_class_counts["others"] += 1
+                # Overlay live vehicle counts per class and HUD
+                live_text = " | ".join(f"{k.upper()}: {v}" for k, v in sorted(frame_classes.items()) if v > 0) or "NONE"
+                cv2.putText(
+                    annotated_frame,
+                    f"LIVE COUNTS: {live_text} [UNIQUE: {tracker.total_unique_vehicles}]",
+                    (20, 32),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    0.55,
+                    (0, 255, 0),
+                    2,
+                    cv2.LINE_AA,
+                )
+                header_tag = getattr(det, 'header_tag', "YOLOV11-S // IISC-AIM UVH-26")
+                cv2.putText(
+                    annotated_frame,
+                    f"{header_tag} // FRAME #{frame_idx}",
+                    (20, orig_h - 20),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    0.45,
+                    (212, 226, 233),
+                    1,
+                    cv2.LINE_AA,
+                )
+            else:
+                det_res = det.detect(frame, conf_thresh=conf_thresh)
+                dets = det_res["detections"]
+                total_detections_sum += len(dets)
+                tracked = tracker.update(dets, orig_w, orig_h)
 
-            # Compute estimated density
-            density_info = tracker.compute_density_estimate(orig_w, orig_h)
+                frame_classes = {"car": 0, "van": 0, "bus": 0, "others": 0}
+                for t in tracked:
+                    c = t["class_name"]
+                    if c in frame_classes:
+                        frame_classes[c] += 1
+                    else:
+                        frame_classes["others"] += 1
+                    if c in overall_class_counts:
+                        overall_class_counts[c] += 1
+                    else:
+                        overall_class_counts["others"] += 1
 
-            # Draw tactical HUD annotations
-            header_tag = getattr(det, 'header_tag', None)
-            annotated_frame = self.draw_industrial_annotation(
-                frame,
-                dets,
-                tracked_vehicles=tracked,
-                tripwire_y=tripwire_y,
-                crossings_info=tracker.line_crossings,
-                header_tag=header_tag,
-            )
+                density_info = tracker.compute_density_estimate(orig_w, orig_h)
+                header_tag = getattr(det, 'header_tag', None)
+                annotated_frame = self.draw_industrial_annotation(
+                    frame,
+                    dets,
+                    tracked_vehicles=tracked,
+                    tripwire_y=tripwire_y,
+                    crossings_info=tracker.line_crossings,
+                    header_tag=header_tag,
+                )
 
             out_writer.write(annotated_frame)
 
@@ -380,7 +418,13 @@ class MediaProcessor:
         sample_img_path = os.path.join(self.uploads_dir, "sample_highway_traffic.jpg")
         sample_vid_path = os.path.join(self.uploads_dir, "sample_traffic_stream.mp4")
 
-        # Generate Sample Image
+        # Seed with high-fidelity real traffic photo if available
+        real_photo_seed = os.path.join(self.uploads_dir, "Traffic_in_Kolkata_75493c3c.jpg")
+        if os.path.exists(real_photo_seed):
+            if not os.path.exists(sample_img_path) or os.path.getsize(sample_img_path) < 100000:
+                shutil.copyfile(real_photo_seed, sample_img_path)
+
+        # Generate Sample Image fallback if not seeded
         if not os.path.exists(sample_img_path):
             img = np.zeros((720, 1280, 3), dtype=np.uint8)
             # Sky
@@ -418,7 +462,26 @@ class MediaProcessor:
 
             cv2.imwrite(sample_img_path, img)
 
-        # Generate Sample Video Clip (60 frames)
+        # Seed with high-fidelity real traffic video if available
+        real_vid_seed = os.path.join(self.uploads_dir, "vecteezy_slow-motion-heavy-traffic-in-the-center-of-bangkok-arou_950ed72a.mov")
+        if os.path.exists(real_vid_seed):
+            if not os.path.exists(sample_vid_path) or os.path.getsize(sample_vid_path) < 100000:
+                try:
+                    cap = cv2.VideoCapture(real_vid_seed)
+                    vw = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+                    vh = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+                    fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+                    out = cv2.VideoWriter(sample_vid_path, fourcc, 20.0, (vw, vh))
+                    for _ in range(60):
+                        ret, f = cap.read()
+                        if not ret: break
+                        out.write(f)
+                    cap.release()
+                    out.release()
+                except Exception:
+                    pass
+
+        # Generate Sample Video Clip (60 frames) fallback
         if not os.path.exists(sample_vid_path):
             fourcc = cv2.VideoWriter_fourcc(*"mp4v")
             vid_writer = cv2.VideoWriter(sample_vid_path, fourcc, 20.0, (1280, 720))

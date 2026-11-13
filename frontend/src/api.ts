@@ -48,7 +48,7 @@ export async function uploadCheckpoint(file: File) {
   return res.json();
 }
 
-export async function detectImage(file: File, confThresh: number = 0.35, detector: string = 'centernet') {
+export async function detectImage(file: File, confThresh: number = 0.25, detector: string = 'uvh26') {
   const formData = new FormData();
   formData.append('file', file);
   formData.append('conf_thresh', confThresh.toString());
@@ -64,7 +64,7 @@ export async function detectImage(file: File, confThresh: number = 0.35, detecto
   return res.json();
 }
 
-export async function detectVideo(file: File, confThresh: number = 0.35, maxFrames: number = 120, frameStride: number = 1, detector: string = 'centernet') {
+export async function detectVideo(file: File, confThresh: number = 0.25, maxFrames: number = 120, frameStride: number = 1, detector: string = 'uvh26') {
   const formData = new FormData();
   formData.append('file', file);
   formData.append('conf_thresh', confThresh.toString());
@@ -82,7 +82,7 @@ export async function detectVideo(file: File, confThresh: number = 0.35, maxFram
   return res.json();
 }
 
-export async function detectSample(mediaType: 'image' | 'video' = 'image', confThresh: number = 0.35, detector: string = 'centernet') {
+export async function detectSample(mediaType: 'image' | 'video' = 'image', confThresh: number = 0.25, detector: string = 'uvh26') {
   const formData = new FormData();
   formData.append('media_type', mediaType);
   formData.append('conf_thresh', confThresh.toString());
@@ -215,8 +215,8 @@ export async function detectFunnelBatch(
     license?: string;
     source_page_url?: string;
   }>,
-  confThresh: number = 0.35,
-  detector: string = 'centernet'
+  confThresh: number = 0.25,
+  detector: string = 'uvh26'
 ): Promise<FunnelBatchResponse> {
   const res = await fetch(`${API_BASE}/funnel/detect-batch`, {
     method: 'POST',
@@ -241,7 +241,7 @@ export async function fetchDetectors(): Promise<DetectorOption[]> {
   return res.json();
 }
 
-export async function detectUrl(url: string, confThresh: number = 0.35, detector: string = 'centernet') {
+export async function detectUrl(url: string, confThresh: number = 0.25, detector: string = 'uvh26') {
   const formData = new FormData();
   formData.append('url', url);
   formData.append('conf_thresh', confThresh.toString());
