@@ -9,15 +9,15 @@ export const DemoChip = ({ style = {} }) => (
       display: 'inline-flex',
       alignItems: 'center',
       gap: '0.25rem',
-      padding: '0.15rem 0.45rem',
-      backgroundColor: 'rgba(200, 107, 60, 0.18)',
-      border: '1px solid var(--burnt-orange, #C86B3C)',
-      borderRadius: '2px',
-      fontFamily: 'var(--font-mono, monospace)',
-      fontSize: '0.64rem',
-      fontWeight: 800,
-      color: 'var(--burnt-orange, #C86B3C)',
-      letterSpacing: '0.08em',
+      padding: '0.2rem 0.55rem',
+      backgroundColor: 'rgba(94, 92, 230, 0.15)',
+      border: '1px solid rgba(94, 92, 230, 0.3)',
+      borderRadius: '980px',
+      fontFamily: 'var(--font-apple, -apple-system, sans-serif)',
+      fontSize: '0.68rem',
+      fontWeight: 600,
+      color: '#5E5CE6',
+      letterSpacing: '0.04em',
       textTransform: 'uppercase',
       lineHeight: 1,
       ...style,
@@ -37,16 +37,16 @@ export const DemoBadge = ({ style = {} }) => (
     style={{
       display: 'inline-flex',
       alignItems: 'center',
-      gap: '0.45rem',
-      padding: '0.28rem 0.65rem',
-      backgroundColor: 'rgba(200, 107, 60, 0.16)',
-      border: '1px solid var(--burnt-orange, #C86B3C)',
-      borderRadius: '2px',
-      fontFamily: 'var(--font-mono, monospace)',
-      fontSize: '0.7rem',
-      fontWeight: 700,
-      color: 'var(--burnt-orange, #C86B3C)',
-      letterSpacing: '0.08em',
+      gap: '0.5rem',
+      padding: '0.35rem 0.75rem',
+      backgroundColor: 'rgba(94, 92, 230, 0.12)',
+      border: '1px solid rgba(94, 92, 230, 0.25)',
+      borderRadius: '980px',
+      fontFamily: 'var(--font-apple, -apple-system, sans-serif)',
+      fontSize: '0.72rem',
+      fontWeight: 600,
+      color: '#5E5CE6',
+      letterSpacing: '0.02em',
       textTransform: 'uppercase',
       ...style,
     }}
@@ -58,11 +58,11 @@ export const DemoBadge = ({ style = {} }) => (
         width: '6px',
         height: '6px',
         borderRadius: '50%',
-        backgroundColor: 'var(--burnt-orange, #C86B3C)',
-        boxShadow: '0 0 6px rgba(200, 107, 60, 0.8)',
+        backgroundColor: '#5E5CE6',
+        boxShadow: '0 0 8px rgba(94, 92, 230, 0.6)',
       }}
     />
-    DEMO DATA - SIMULATED
+    DEMO SIMULATED
   </div>
 );
 
@@ -73,13 +73,13 @@ export const ChartWatermark = () => (
   <div
     style={{
       position: 'absolute',
-      right: '12px',
-      bottom: '8px',
-      fontFamily: 'var(--font-mono, monospace)',
-      fontSize: '0.62rem',
-      fontWeight: 700,
-      letterSpacing: '0.12em',
-      color: 'rgba(200, 107, 60, 0.28)',
+      right: '16px',
+      bottom: '10px',
+      fontFamily: 'var(--font-apple, -apple-system, sans-serif)',
+      fontSize: '0.65rem',
+      fontWeight: 600,
+      letterSpacing: '0.08em',
+      color: 'rgba(94, 92, 230, 0.3)',
       textTransform: 'uppercase',
       pointerEvents: 'none',
       userSelect: 'none',
@@ -123,11 +123,11 @@ export const DemoSwitch = ({ isDemoMode = false, onToggle, style = {} }) => {
         }
       }}
       style={{
-        width: '28px',
-        height: '14px',
-        borderRadius: '7px',
-        backgroundColor: isDemoMode ? 'var(--burnt-orange, #C86B3C)' : 'var(--charcoal-600, #343630)',
-        border: '1px solid var(--border-medium, #383A34)',
+        width: '32px',
+        height: '18px',
+        borderRadius: '999px',
+        backgroundColor: isDemoMode ? '#30D158' : 'rgba(255, 255, 255, 0.16)',
+        border: '1px solid rgba(255, 255, 255, 0.12)',
         cursor: 'pointer',
         padding: 0,
         position: 'relative',
@@ -135,22 +135,22 @@ export const DemoSwitch = ({ isDemoMode = false, onToggle, style = {} }) => {
         alignItems: 'center',
         flexShrink: 0,
         outline: 'none',
-        transition: 'background-color 0.15s ease',
+        transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
         ...style,
       }}
     >
       <span
         style={{
           display: 'block',
-          width: '10px',
-          height: '10px',
+          width: '14px',
+          height: '14px',
           borderRadius: '50%',
           backgroundColor: '#FFFFFF',
           position: 'absolute',
           top: '1px',
           left: isDemoMode ? '15px' : '1px',
-          transition: 'left 0.15s ease',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.4)',
+          transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
+          boxShadow: '0 2px 5px rgba(0,0,0,0.3)',
         }}
       />
     </button>

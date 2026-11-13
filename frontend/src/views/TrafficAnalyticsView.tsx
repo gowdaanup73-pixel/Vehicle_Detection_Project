@@ -258,13 +258,13 @@ export const TrafficAnalyticsView: React.FC<TrafficAnalyticsViewProps> = ({
           ========================================================================= */}
       <div className="section-header" style={{ marginBottom: 0, paddingBottom: '0.75rem' }}>
         <div>
-          <div className="label-tactical" style={{ color: 'var(--burnt-orange)', marginBottom: '0.25rem' }}>
+          <div className="label-tactical" style={{ color: 'var(--text-primary)', marginBottom: '0.25rem' }}>
             STATISTICAL TELEMETRY & SPATIAL FLOW // 9 ANALYTICAL DIMENSIONS
           </div>
           <h1 className="section-title" style={{ fontSize: '1.5rem', margin: 0 }}>
             Analytics
           </h1>
-          <p className="section-subtitle" style={{ color: 'var(--warm-ivory-dim)', fontSize: '0.82rem', marginTop: '0.25rem' }}>
+          <p className="section-subtitle" style={{ color: 'var(--text-muted)', fontSize: '0.82rem', marginTop: '0.25rem' }}>
             Comprehensive computer vision operational telemetry, probability distributions, workload comparison, and traffic flow.
           </p>
         </div>
@@ -316,8 +316,8 @@ export const TrafficAnalyticsView: React.FC<TrafficAnalyticsViewProps> = ({
           backgroundColor: 'var(--charcoal-800)',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: 'var(--warm-ivory)' }}>
-          <Filter size={13} style={{ color: 'var(--burnt-orange)' }} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: 'var(--text-primary)' }}>
+          <Filter size={13} style={{ color: 'var(--text-primary)' }} />
           <span style={{ fontWeight: 700 }}>ANALYTICAL SCOPE:</span>
         </div>
 
@@ -380,7 +380,7 @@ export const TrafficAnalyticsView: React.FC<TrafficAnalyticsViewProps> = ({
           KPI SUMMARY ROW
           ========================================================================= */}
       <div className="kpi-row-4">
-        <div className="kpi-card" style={{ borderLeftColor: 'var(--burnt-orange)' }}>
+        <div className="kpi-card">
           <div>
             <div className="kpi-card-title">Total Localized Vehicles</div>
             <div className="kpi-card-value">{totalDetections.toLocaleString()}</div>
@@ -390,21 +390,21 @@ export const TrafficAnalyticsView: React.FC<TrafficAnalyticsViewProps> = ({
           </div>
         </div>
 
-        <div className="kpi-card" style={{ borderLeftColor: 'var(--warm-ivory)' }}>
+        <div className="kpi-card">
           <div>
             <div className="kpi-card-title">Processed Workload</div>
-            <div className="kpi-card-value">{totalRuns} <span style={{ fontSize: '0.9rem', color: 'var(--warm-ivory-dim)', fontWeight: 500 }}>runs</span></div>
+            <div className="kpi-card-value">{totalRuns} <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: 500 }}>runs</span></div>
           </div>
           <div className="kpi-card-desc">
             {imageRuns} Static Images ({totalRuns > 0 ? Math.round((imageRuns/totalRuns)*100) : 0}%) // {videoRuns} Video Streams ({totalRuns > 0 ? Math.round((videoRuns/totalRuns)*100) : 0}%)
           </div>
         </div>
 
-        <div className="kpi-card" style={{ borderLeftColor: 'var(--muted-olive)' }}>
+        <div className="kpi-card">
           <div>
             <div className="kpi-card-title">Median Forward Latency</div>
             <div className="kpi-card-value">
-              {medianLatency ? `${medianLatency}` : '—'} <span style={{ fontSize: '0.9rem', color: 'var(--warm-ivory-dim)', fontWeight: 500 }}>ms</span>
+              {medianLatency ? `${medianLatency}` : '—'} <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: 500 }}>ms</span>
             </div>
           </div>
           <div className="kpi-card-desc">
@@ -412,7 +412,7 @@ export const TrafficAnalyticsView: React.FC<TrafficAnalyticsViewProps> = ({
           </div>
         </div>
 
-        <div className="kpi-card" style={{ borderLeftColor: 'var(--status-green)' }}>
+        <div className="kpi-card">
           <div>
             <div className="kpi-card-title">Execution Reliability</div>
             <div className="kpi-card-value" style={{ color: 'var(--status-green)' }}>
@@ -434,7 +434,7 @@ export const TrafficAnalyticsView: React.FC<TrafficAnalyticsViewProps> = ({
           <div>
             <div className="command-card-header" style={{ marginBottom: '1rem', paddingBottom: '0.5rem' }}>
               <span className="card-title" style={{ fontSize: '0.82rem' }}>
-                <Truck size={15} style={{ color: 'var(--burnt-orange)' }} />
+                <Truck size={15} style={{ color: 'var(--text-primary)' }} />
                 A. Vehicle Class Distribution
               </span>
               <span className="badge badge-charcoal" style={{ fontSize: '0.62rem' }}>
@@ -444,15 +444,15 @@ export const TrafficAnalyticsView: React.FC<TrafficAnalyticsViewProps> = ({
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
               {[
-                { label: 'Passenger Cars (car)', count: classCounts.car, pct: classPercentages.car, color: 'var(--burnt-orange)' },
+                { label: 'Passenger Cars (car)', count: classCounts.car, pct: classPercentages.car, color: 'var(--text-primary)' },
                 { label: 'Vans & Commercial (van)', count: classCounts.van, pct: classPercentages.van, color: '#D9822B' },
-                { label: 'Public Transit Buses (bus)', count: classCounts.bus, pct: classPercentages.bus, color: 'var(--muted-olive)' },
+                { label: 'Public Transit Buses (bus)', count: classCounts.bus, pct: classPercentages.bus, color: 'var(--text-secondary)' },
                 { label: 'Others (Trucks & Specialized)', count: classCounts.others, pct: classPercentages.others, color: '#888982' },
               ].map((item) => (
                 <div key={item.label}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-mono)', fontSize: '0.74rem', marginBottom: '0.25rem' }}>
-                    <span style={{ color: 'var(--warm-ivory)', fontWeight: 600 }}>{item.label}</span>
-                    <span style={{ color: 'var(--warm-ivory-dim)' }}>
+                    <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{item.label}</span>
+                    <span style={{ color: 'var(--text-muted)' }}>
                       {item.count.toLocaleString()} ({item.pct}%)
                     </span>
                   </div>
@@ -500,7 +500,7 @@ export const TrafficAnalyticsView: React.FC<TrafficAnalyticsViewProps> = ({
           <div>
             <div className="command-card-header" style={{ marginBottom: '1rem', paddingBottom: '0.5rem' }}>
               <span className="card-title" style={{ fontSize: '0.82rem' }}>
-                <TrendingUp size={15} style={{ color: 'var(--muted-olive)' }} />
+                <TrendingUp size={15} style={{ color: 'var(--text-secondary)' }} />
                 B. Detection Activity Over Time
               </span>
               <span className="badge badge-charcoal" style={{ fontSize: '0.62rem' }}>
@@ -529,7 +529,7 @@ export const TrafficAnalyticsView: React.FC<TrafficAnalyticsViewProps> = ({
                         <>
                           <polyline
                             fill="none"
-                            stroke="var(--burnt-orange)"
+                            stroke="var(--text-primary)"
                             strokeWidth="2.5"
                             points={points}
                           />
@@ -542,7 +542,7 @@ export const TrafficAnalyticsView: React.FC<TrafficAnalyticsViewProps> = ({
                                 cx={x}
                                 cy={y}
                                 r="4"
-                                fill="var(--burnt-orange)"
+                                fill="var(--text-primary)"
                                 stroke="var(--charcoal-900)"
                                 strokeWidth="1.5"
                               />
@@ -554,7 +554,7 @@ export const TrafficAnalyticsView: React.FC<TrafficAnalyticsViewProps> = ({
                   </svg>
                 </div>
 
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-mono)', fontSize: '0.65rem', color: 'var(--warm-ivory-dim)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-mono)', fontSize: '0.65rem', color: 'var(--text-muted)' }}>
                   <span>{timeSeriesData[0]?.date || 'T0'}</span>
                   <span>{timeSeriesData[Math.floor(timeSeriesData.length / 2)]?.date || 'Mid'}</span>
                   <span>{timeSeriesData[timeSeriesData.length - 1]?.date || 'Latest'}</span>
@@ -562,9 +562,9 @@ export const TrafficAnalyticsView: React.FC<TrafficAnalyticsViewProps> = ({
               </div>
             ) : (
               <div style={{ height: '135px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backgroundColor: 'var(--charcoal-900)', border: '1px dashed var(--border-light)' }}>
-                <LineChart size={24} style={{ color: 'var(--muted-olive)', marginBottom: '0.35rem' }} />
-                <span style={{ color: 'var(--warm-ivory)', fontSize: '0.74rem', fontWeight: 600 }}>Insufficient Temporal Intervals</span>
-                <span style={{ fontSize: '0.68rem', color: 'var(--warm-ivory-dim)', marginTop: '0.2rem' }}>
+                <LineChart size={24} style={{ color: 'var(--text-secondary)', marginBottom: '0.35rem' }} />
+                <span style={{ color: 'var(--text-primary)', fontSize: '0.74rem', fontWeight: 600 }}>Insufficient Temporal Intervals</span>
+                <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
                   Plotting a time-series curve requires multiple timestamped runs.
                 </span>
               </div>
@@ -605,7 +605,7 @@ export const TrafficAnalyticsView: React.FC<TrafficAnalyticsViewProps> = ({
           <div>
             <div className="command-card-header" style={{ marginBottom: '1rem', paddingBottom: '0.5rem' }}>
               <span className="card-title" style={{ fontSize: '0.82rem' }}>
-                <BarChart3 size={15} style={{ color: 'var(--warm-ivory)' }} />
+                <BarChart3 size={15} style={{ color: 'var(--text-primary)' }} />
                 C. Confidence-Score Distribution
               </span>
               <span className="badge badge-charcoal" style={{ fontSize: '0.62rem' }}>
@@ -620,19 +620,19 @@ export const TrafficAnalyticsView: React.FC<TrafficAnalyticsViewProps> = ({
                   const heightPct = Math.max(5, Math.round((b.count / maxBinCount) * 100));
                   return (
                     <div key={b.bin} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', justifyContent: 'flex-end' }}>
-                      <span style={{ fontSize: '0.62rem', fontFamily: 'var(--font-mono)', color: 'var(--warm-ivory)', marginBottom: '0.2rem' }}>
+                      <span style={{ fontSize: '0.62rem', fontFamily: 'var(--font-mono)', color: 'var(--text-primary)', marginBottom: '0.2rem' }}>
                         {b.count}
                       </span>
                       <div 
                         style={{ 
                           width: '100%', 
                           height: `${heightPct}%`, 
-                          backgroundColor: b.count > 0 ? 'var(--burnt-orange)' : 'var(--charcoal-900)',
+                          backgroundColor: b.count > 0 ? 'var(--text-primary)' : 'var(--charcoal-900)',
                           border: '1px solid var(--border-light)',
                         }} 
                         title={`${b.bin}: ${b.count} detections`}
                       />
-                      <span style={{ fontSize: '0.62rem', fontFamily: 'var(--font-mono)', color: 'var(--warm-ivory-dim)', marginTop: '0.35rem', whiteSpace: 'nowrap' }}>
+                      <span style={{ fontSize: '0.62rem', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', marginTop: '0.35rem', whiteSpace: 'nowrap' }}>
                         {b.bin}
                       </span>
                     </div>
@@ -682,7 +682,7 @@ export const TrafficAnalyticsView: React.FC<TrafficAnalyticsViewProps> = ({
                   const heightPct = Math.max(5, Math.round((b.count / maxLatCount) * 100));
                   return (
                     <div key={b.range} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', justifyContent: 'flex-end' }}>
-                      <span style={{ fontSize: '0.62rem', fontFamily: 'var(--font-mono)', color: 'var(--warm-ivory)', marginBottom: '0.2rem' }}>
+                      <span style={{ fontSize: '0.62rem', fontFamily: 'var(--font-mono)', color: 'var(--text-primary)', marginBottom: '0.2rem' }}>
                         {b.count}
                       </span>
                       <div 
@@ -694,7 +694,7 @@ export const TrafficAnalyticsView: React.FC<TrafficAnalyticsViewProps> = ({
                         }} 
                         title={`${b.range}: ${b.count} runs`}
                       />
-                      <span style={{ fontSize: '0.62rem', fontFamily: 'var(--font-mono)', color: 'var(--warm-ivory-dim)', marginTop: '0.35rem', whiteSpace: 'nowrap' }}>
+                      <span style={{ fontSize: '0.62rem', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', marginTop: '0.35rem', whiteSpace: 'nowrap' }}>
                         {b.range}
                       </span>
                     </div>
@@ -734,7 +734,7 @@ export const TrafficAnalyticsView: React.FC<TrafficAnalyticsViewProps> = ({
           <div>
             <div className="command-card-header" style={{ marginBottom: '1rem', paddingBottom: '0.5rem' }}>
               <span className="card-title" style={{ fontSize: '0.82rem' }}>
-                <Layers size={15} style={{ color: 'var(--burnt-orange)' }} />
+                <Layers size={15} style={{ color: 'var(--text-primary)' }} />
                 E. Workload Comparison (Images vs. Videos)
               </span>
               <span className="badge badge-charcoal" style={{ fontSize: '0.62rem' }}>
@@ -745,8 +745,8 @@ export const TrafficAnalyticsView: React.FC<TrafficAnalyticsViewProps> = ({
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-mono)', fontSize: '0.74rem', marginBottom: '0.25rem' }}>
-                  <span style={{ color: 'var(--warm-ivory)', fontWeight: 600 }}>Static Roadway Images</span>
-                  <span style={{ color: 'var(--warm-ivory-dim)' }}>
+                  <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>Static Roadway Images</span>
+                  <span style={{ color: 'var(--text-muted)' }}>
                     {imageRuns} runs ({totalRuns > 0 ? Math.round((imageRuns / totalRuns) * 100) : 0}%)
                   </span>
                 </div>
@@ -755,7 +755,7 @@ export const TrafficAnalyticsView: React.FC<TrafficAnalyticsViewProps> = ({
                     style={{ 
                       height: '100%', 
                       width: `${totalRuns > 0 ? (imageRuns / totalRuns) * 100 : 0}%`, 
-                      backgroundColor: 'var(--muted-olive)',
+                      backgroundColor: 'var(--text-secondary)',
                     }} 
                   />
                 </div>
@@ -763,8 +763,8 @@ export const TrafficAnalyticsView: React.FC<TrafficAnalyticsViewProps> = ({
 
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-mono)', fontSize: '0.74rem', marginBottom: '0.25rem' }}>
-                  <span style={{ color: 'var(--warm-ivory)', fontWeight: 600 }}>Sequential Video Streams (Multi-frame)</span>
-                  <span style={{ color: 'var(--warm-ivory-dim)' }}>
+                  <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>Sequential Video Streams (Multi-frame)</span>
+                  <span style={{ color: 'var(--text-muted)' }}>
                     {videoRuns} runs ({totalRuns > 0 ? Math.round((videoRuns / totalRuns) * 100) : 0}%)
                   </span>
                 </div>
@@ -773,14 +773,14 @@ export const TrafficAnalyticsView: React.FC<TrafficAnalyticsViewProps> = ({
                     style={{ 
                       height: '100%', 
                       width: `${totalRuns > 0 ? (videoRuns / totalRuns) * 100 : 0}%`, 
-                      backgroundColor: 'var(--burnt-orange)',
+                      backgroundColor: 'var(--text-primary)',
                     }} 
                   />
                 </div>
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-mono)', fontSize: '0.72rem', color: 'var(--warm-ivory-dim)', marginTop: '0.25rem' }}>
-                <span>Average detections per run: <strong style={{ color: 'var(--warm-ivory)' }}>{totalRuns > 0 ? (totalDetections / totalRuns).toFixed(1) : '0.0'}</strong></span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-mono)', fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
+                <span>Average detections per run: <strong style={{ color: 'var(--text-primary)' }}>{totalRuns > 0 ? (totalDetections / totalRuns).toFixed(1) : '0.0'}</strong></span>
                 <span>Video tripwire crossings: <strong style={{ color: 'var(--status-green)' }}>{lineCrossings}</strong></span>
               </div>
             </div>
@@ -815,7 +815,7 @@ export const TrafficAnalyticsView: React.FC<TrafficAnalyticsViewProps> = ({
           <div>
             <div className="command-card-header" style={{ marginBottom: '1rem', paddingBottom: '0.5rem' }}>
               <span className="card-title" style={{ fontSize: '0.82rem' }}>
-                <BarChart3 size={15} style={{ color: 'var(--muted-olive)' }} />
+                <BarChart3 size={15} style={{ color: 'var(--text-secondary)' }} />
                 F. Detections per Processed File
               </span>
               <span className="badge badge-charcoal" style={{ fontSize: '0.62rem' }}>
@@ -836,7 +836,7 @@ export const TrafficAnalyticsView: React.FC<TrafficAnalyticsViewProps> = ({
                         justifyContent: 'space-between',
                         padding: '0.35rem 0.5rem',
                         backgroundColor: selectedRunId === f.id ? 'var(--charcoal-700)' : 'var(--charcoal-900)',
-                        border: `1px solid ${selectedRunId === f.id ? 'var(--burnt-orange)' : 'var(--border-light)'}`,
+                        border: `1px solid ${selectedRunId === f.id ? 'var(--text-primary)' : 'var(--border-light)'}`,
                         cursor: 'pointer',
                         fontFamily: 'var(--font-mono)',
                         fontSize: '0.72rem',
@@ -844,14 +844,14 @@ export const TrafficAnalyticsView: React.FC<TrafficAnalyticsViewProps> = ({
                       onClick={() => setSelectedRunId(selectedRunId === f.id ? 'all' : f.id)}
                       title="Click to filter scope to this run"
                     >
-                      <span style={{ maxWidth: '160px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--warm-ivory)' }}>
+                      <span style={{ maxWidth: '160px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--text-primary)' }}>
                         {f.filename}
                       </span>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
                         <div style={{ width: '60px', height: '6px', backgroundColor: 'var(--charcoal-800)' }}>
-                          <div style={{ width: `${Math.round((f.detections / maxDets) * 100)}%`, height: '100%', backgroundColor: 'var(--burnt-orange)' }} />
+                          <div style={{ width: `${Math.round((f.detections / maxDets) * 100)}%`, height: '100%', backgroundColor: 'var(--text-primary)' }} />
                         </div>
-                        <span style={{ fontWeight: 700, color: 'var(--burnt-orange)', minWidth: '24px', textAlign: 'right' }}>
+                        <span style={{ fontWeight: 700, color: 'var(--text-primary)', minWidth: '24px', textAlign: 'right' }}>
                           {f.detections}
                         </span>
                       </div>
@@ -860,7 +860,7 @@ export const TrafficAnalyticsView: React.FC<TrafficAnalyticsViewProps> = ({
                 })()}
               </div>
             ) : (
-              <div style={{ height: '135px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--warm-ivory-dim)', fontFamily: 'var(--font-mono)', fontSize: '0.74rem' }}>
+              <div style={{ height: '135px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontSize: '0.74rem' }}>
                 No processed files available to plot.
               </div>
             )}
@@ -900,7 +900,7 @@ export const TrafficAnalyticsView: React.FC<TrafficAnalyticsViewProps> = ({
           <div>
             <div className="command-card-header" style={{ marginBottom: '1rem', paddingBottom: '0.5rem' }}>
               <span className="card-title" style={{ fontSize: '0.82rem' }}>
-                <TrendingUp size={15} style={{ color: 'var(--warm-ivory)' }} />
+                <TrendingUp size={15} style={{ color: 'var(--text-primary)' }} />
                 G. Per-Class Volume Breakdown
               </span>
               <span className="badge badge-charcoal" style={{ fontSize: '0.62rem' }}>
@@ -919,13 +919,13 @@ export const TrafficAnalyticsView: React.FC<TrafficAnalyticsViewProps> = ({
               </thead>
               <tbody>
                 {[
-                  { name: 'Car (Sedan/SUV)', count: classCounts.car, pct: classPercentages.car, color: 'var(--burnt-orange)' },
+                  { name: 'Car (Sedan/SUV)', count: classCounts.car, pct: classPercentages.car, color: 'var(--text-primary)' },
                   { name: 'Van (Commercial/Transit)', count: classCounts.van, pct: classPercentages.van, color: '#D9822B' },
-                  { name: 'Bus (Public Transit)', count: classCounts.bus, pct: classPercentages.bus, color: 'var(--muted-olive)' },
+                  { name: 'Bus (Public Transit)', count: classCounts.bus, pct: classPercentages.bus, color: 'var(--text-secondary)' },
                   { name: 'Others (Trucks/Specialized)', count: classCounts.others, pct: classPercentages.others, color: '#888982' },
                 ].map((item) => (
                   <tr key={item.name}>
-                    <td style={{ color: 'var(--warm-ivory)', fontWeight: 600 }}>{item.name}</td>
+                    <td style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{item.name}</td>
                     <td>{item.count.toLocaleString()}</td>
                     <td>{item.pct}%</td>
                     <td>
@@ -983,15 +983,15 @@ export const TrafficAnalyticsView: React.FC<TrafficAnalyticsViewProps> = ({
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.45rem 0.65rem', backgroundColor: 'var(--charcoal-900)', border: '1px solid var(--border-light)' }}>
                 <span>Failed / Errored Runs:</span>
-                <strong style={{ color: failedRuns > 0 ? '#ef4444' : 'var(--warm-ivory-dim)' }}>{failedRuns} runs ({totalRuns > 0 ? Math.round((failedRuns / totalRuns) * 100) : 0}%)</strong>
+                <strong style={{ color: failedRuns > 0 ? '#ef4444' : 'var(--text-muted)' }}>{failedRuns} runs ({totalRuns > 0 ? Math.round((failedRuns / totalRuns) * 100) : 0}%)</strong>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.45rem 0.65rem', backgroundColor: 'var(--charcoal-900)', border: '1px solid var(--border-light)' }}>
                 <span>Incomplete / Corrupted Files:</span>
-                <strong style={{ color: 'var(--warm-ivory-dim)' }}>{failedRuns} runs ({totalRuns > 0 ? Math.round((failedRuns / totalRuns) * 100) : 0}%)</strong>
+                <strong style={{ color: 'var(--text-muted)' }}>{failedRuns} runs ({totalRuns > 0 ? Math.round((failedRuns / totalRuns) * 100) : 0}%)</strong>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.45rem 0.65rem', backgroundColor: 'var(--charcoal-900)', border: '1px solid var(--border-light)' }}>
                 <span>Explicit Denominator:</span>
-                <strong style={{ color: 'var(--warm-ivory)' }}>{totalRuns} total attempts</strong>
+                <strong style={{ color: 'var(--text-primary)' }}>{totalRuns} total attempts</strong>
               </div>
             </div>
           </div>
@@ -1028,10 +1028,10 @@ export const TrafficAnalyticsView: React.FC<TrafficAnalyticsViewProps> = ({
         <div className="command-card-header" style={{ marginBottom: '1rem', paddingBottom: '0.5rem' }}>
           <div>
             <span className="card-title" style={{ fontSize: '0.88rem' }}>
-              <Compass size={15} style={{ color: 'var(--burnt-orange)' }} />
+              <Compass size={15} style={{ color: 'var(--text-primary)' }} />
               I. Multi-Frame Vehicle Tracking & Spatial Flow Analytics
             </span>
-            <div style={{ fontSize: '0.72rem', color: 'var(--warm-ivory-dim)', fontFamily: 'var(--font-mono)', marginTop: '0.2rem' }}>
+            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', marginTop: '0.2rem' }}>
               Multi-object centroid persistence, trajectory de-duplication, and tripwire crossing counts
             </div>
           </div>
@@ -1044,10 +1044,10 @@ export const TrafficAnalyticsView: React.FC<TrafficAnalyticsViewProps> = ({
         <div className="grid-3" style={{ marginBottom: '1.25rem' }}>
           <div style={{ padding: '0.85rem', backgroundColor: 'var(--charcoal-900)', border: '1px solid var(--border-light)' }}>
             <div className="label-tactical" style={{ fontSize: '0.65rem' }}>UNIQUE TRACKED VEHICLES</div>
-            <div style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--warm-ivory)', fontFamily: 'var(--font-display)', marginTop: '0.25rem' }}>
+            <div style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--text-primary)', fontFamily: 'var(--font-display)', marginTop: '0.25rem' }}>
               {uniqueTrackedVehicles.toLocaleString()}
             </div>
-            <div style={{ fontSize: '0.7rem', color: 'var(--warm-ivory-dim)', marginTop: '0.35rem' }}>
+            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.35rem' }}>
               {videoRuns > 0 ? `De-duplicated across ${videoRuns} video streams via IoU tracking` : 'Requires video input (single-frame on images)'}
             </div>
           </div>
@@ -1057,17 +1057,17 @@ export const TrafficAnalyticsView: React.FC<TrafficAnalyticsViewProps> = ({
             <div style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--status-green)', fontFamily: 'var(--font-display)', marginTop: '0.25rem' }}>
               {lineCrossings}
             </div>
-            <div style={{ fontSize: '0.7rem', color: 'var(--warm-ivory-dim)', marginTop: '0.35rem' }}>
+            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.35rem' }}>
               Counted vehicle trajectory intersections across virtual survey line
             </div>
           </div>
 
           <div style={{ padding: '0.85rem', backgroundColor: 'var(--charcoal-900)', border: '1px solid var(--border-light)' }}>
             <div className="label-tactical" style={{ fontSize: '0.65rem' }}>RAW INSTANTANEOUS DETECTIONS</div>
-            <div style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--burnt-orange)', fontFamily: 'var(--font-display)', marginTop: '0.25rem' }}>
+            <div style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--text-primary)', fontFamily: 'var(--font-display)', marginTop: '0.25rem' }}>
               {totalDetections.toLocaleString()}
             </div>
-            <div style={{ fontSize: '0.7rem', color: 'var(--warm-ivory-dim)', marginTop: '0.35rem' }}>
+            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.35rem' }}>
               Multi-count frame sum before Euclidean trajectory de-duplication
             </div>
           </div>
@@ -1076,7 +1076,7 @@ export const TrafficAnalyticsView: React.FC<TrafficAnalyticsViewProps> = ({
         {/* Video Timeline Table if available */}
         {videoTimeline.length > 0 ? (
           <div>
-            <div className="label-tactical" style={{ fontSize: '0.68rem', marginBottom: '0.5rem', color: 'var(--warm-ivory)' }}>
+            <div className="label-tactical" style={{ fontSize: '0.68rem', marginBottom: '0.5rem', color: 'var(--text-primary)' }}>
               FRAME-BY-FRAME TRAFFIC FLOW TELEMETRY // {videoRunForTracking?.filename}
             </div>
             <div style={{ maxHeight: '180px', overflowY: 'auto', marginBottom: '1rem' }}>
@@ -1095,7 +1095,7 @@ export const TrafficAnalyticsView: React.FC<TrafficAnalyticsViewProps> = ({
                 <tbody>
                   {videoTimeline.slice(0, 20).map((t, idx) => (
                     <tr key={idx}>
-                      <td style={{ color: 'var(--burnt-orange)' }}>#{t.frame}</td>
+                      <td style={{ color: 'var(--text-primary)' }}>#{t.frame}</td>
                       <td>{t.timestamp_sec}s</td>
                       <td style={{ fontWeight: 600 }}>{t.active_detections}</td>
                       <td>{t.unique_vehicles}</td>
@@ -1113,8 +1113,8 @@ export const TrafficAnalyticsView: React.FC<TrafficAnalyticsViewProps> = ({
             </div>
           </div>
         ) : (
-          <div style={{ padding: '1rem', backgroundColor: 'var(--charcoal-900)', border: '1px solid var(--border-light)', fontFamily: 'var(--font-mono)', fontSize: '0.72rem', color: 'var(--warm-ivory-dim)', marginBottom: '1rem' }}>
-            <strong style={{ color: 'var(--burnt-orange)' }}>SURVEILLANCE METHODOLOGY NOTE: </strong>
+          <div style={{ padding: '1rem', backgroundColor: 'var(--charcoal-900)', border: '1px solid var(--border-light)', fontFamily: 'var(--font-mono)', fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
+            <strong style={{ color: 'var(--text-primary)' }}>SURVEILLANCE METHODOLOGY NOTE: </strong>
             In roadway video analysis, counting raw per-frame detections causes multi-counting as each vehicle appears in dozens of consecutive frames. The platform applies Euclidean centroid and IoU tracking to maintain trajectory persistence across frames. Process a video in Detection Studio to populate frame-by-frame flow records.
           </div>
         )}
