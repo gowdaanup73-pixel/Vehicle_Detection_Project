@@ -174,7 +174,9 @@ class MediaProcessor:
                 class_counts["others"] += 1
 
         header_tag = getattr(det, "header_tag", det_result.get("header_tag"))
-        annotated_img = self.draw_industrial_annotation(img_bgr, detections, header_tag=header_tag)
+        annotated_img = det_result.get("annotated_plot")
+        if annotated_img is None:
+            annotated_img = self.draw_industrial_annotation(img_bgr, detections, header_tag=header_tag)
 
         # Save annotated image
         run_id = f"run_{uuid.uuid4().hex[:8]}"
@@ -261,40 +263,76 @@ class MediaProcessor:
 
             t_frame_start = time.perf_counter()
 
-            # Run detection
-            det_res = det.detect(frame, conf_thresh=conf_thresh)
-            dets = det_res["detections"]
-            total_detections_sum += len(dets)
+            # Run detection & tracking
+            if hasattr(det, "track_frame"):
+                track_res = det.track_frame(frame, conf_thresh=conf_thresh, tracker="bytetrack.yaml")
+                dets = track_res["detections"]
+                total_detections_sum += len(dets)
+                tracked = tracker.update(dets, orig_w, orig_h)
+                frame_classes = track_res["live_counts"]
+                for c, count in frame_classes.items():
+                    if c in overall_class_counts:
+                        overall_class_counts[c] += count
+                    else:
+                        overall_class_counts["others"] += count
+                density_info = tracker.compute_density_estimate(orig_w, orig_h)
 
-            # Update tracker
-            tracked = tracker.update(dets, orig_w, orig_h)
+                # Annotated frame with YOLO bounding boxes and track IDs
+                annotated_frame = track_res.get("annotated_frame")
+                if annotated_frame is None:
+                    annotated_frame = frame.copy()
 
-            # Record per-class counts in this frame
-            frame_classes = {"car": 0, "van": 0, "bus": 0, "others": 0}
-            for t in tracked:
-                c = t["class_name"]
-                if c in frame_classes:
-                    frame_classes[c] += 1
-                else:
-                    frame_classes["others"] += 1
-                if c in overall_class_counts:
-                    overall_class_counts[c] += 1
-                else:
-                    overall_class_counts["others"] += 1
+                # Overlay live vehicle counts per class and HUD
+                live_text = " | ".join(f"{k.upper()}: {v}" for k, v in sorted(frame_classes.items()) if v > 0) or "NONE"
+                cv2.putText(
+                    annotated_frame,
+                    f"LIVE COUNTS: {live_text} [UNIQUE: {tracker.total_unique_vehicles}]",
+                    (20, 32),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    0.55,
+                    (0, 255, 0),
+                    2,
+                    cv2.LINE_AA,
+                )
+                header_tag = getattr(det, 'header_tag', "YOLOV11-S // IISC-AIM UVH-26")
+                cv2.putText(
+                    annotated_frame,
+                    f"{header_tag} // FRAME #{frame_idx}",
+                    (20, orig_h - 20),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    0.45,
+                    (212, 226, 233),
+                    1,
+                    cv2.LINE_AA,
+                )
+            else:
+                det_res = det.detect(frame, conf_thresh=conf_thresh)
+                dets = det_res["detections"]
+                total_detections_sum += len(dets)
+                tracked = tracker.update(dets, orig_w, orig_h)
 
-            # Compute estimated density
-            density_info = tracker.compute_density_estimate(orig_w, orig_h)
+                frame_classes = {"car": 0, "van": 0, "bus": 0, "others": 0}
+                for t in tracked:
+                    c = t["class_name"]
+                    if c in frame_classes:
+                        frame_classes[c] += 1
+                    else:
+                        frame_classes["others"] += 1
+                    if c in overall_class_counts:
+                        overall_class_counts[c] += 1
+                    else:
+                        overall_class_counts["others"] += 1
 
-            # Draw tactical HUD annotations
-            header_tag = getattr(det, 'header_tag', None)
-            annotated_frame = self.draw_industrial_annotation(
-                frame,
-                dets,
-                tracked_vehicles=tracked,
-                tripwire_y=tripwire_y,
-                crossings_info=tracker.line_crossings,
-                header_tag=header_tag,
-            )
+                density_info = tracker.compute_density_estimate(orig_w, orig_h)
+                header_tag = getattr(det, 'header_tag', None)
+                annotated_frame = self.draw_industrial_annotation(
+                    frame,
+                    dets,
+                    tracked_vehicles=tracked,
+                    tripwire_y=tripwire_y,
+                    crossings_info=tracker.line_crossings,
+                    header_tag=header_tag,
+                )
 
             out_writer.write(annotated_frame)
 

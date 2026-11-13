@@ -66,7 +66,7 @@ def _secure_destination_path(
     return dest_path, safe_filename
 
 from backend.database.store import RunsDatabase
-from backend.inference.detector import VehicleDetector, get_pretrained_detector
+from backend.inference.detector import VehicleDetector, LegacyCenterNetDetector, get_pretrained_detector
 from backend.services.dataset_service import DatasetService
 from backend.services.experiments_service import ExperimentsService
 from backend.services.media_processor import MediaProcessor
@@ -82,11 +82,12 @@ os.makedirs(os.path.join(MEDIA_ROOT, "outputs"), exist_ok=True)
 # Initialize Services
 db = RunsDatabase()
 detector = VehicleDetector()
+legacy_centernet = LegacyCenterNetDetector()
 media_processor = MediaProcessor(detector=detector, media_root=MEDIA_ROOT)
 
 
 def resolve_detector(detector_name: Optional[str] = None):
-    """Resolves detector instance by name/id. Defaults to CenterNet."""
+    """Resolves detector instance by name/id. Defaults to UVH-26 YOLOv11-S."""
     d_name = (detector_name or "").strip().lower()
     if d_name in ("pretrained", "faster_rcnn", "fasterrcnn", "coco"):
         try:
@@ -96,6 +97,8 @@ def resolve_detector(detector_name: Optional[str] = None):
                 status_code=503,
                 detail=f"Pretrained Faster R-CNN detector unavailable: {str(e)}",
             )
+    if d_name in ("centernet", "improved_centernet"):
+        return legacy_centernet
     return detector
 
 
@@ -147,9 +150,15 @@ def list_detectors():
 
     return [
         {
-            "id": "centernet",
-            "name": "Improved CenterNet (ResNet-18 + CBAM + BiFPN)",
+            "id": "uvh26",
+            "name": "UVH-26 YOLOv11-S (iisc-aim/UVH-26)",
             "available": bool(getattr(detector, "weights_loaded", True)),
+            "active": True,
+        },
+        {
+            "id": "centernet",
+            "name": "Improved CenterNet (UA-DETRAC)",
+            "available": bool(getattr(legacy_centernet, "weights_loaded", True)),
             "active": True,
         },
         {
@@ -239,7 +248,7 @@ async def detect_image(
     file: UploadFile = File(...),
     conf_thresh: float = Form(0.35),
     run_type: Optional[str] = Form(None),
-    detector: Optional[str] = Form("centernet"),
+    detector: Optional[str] = Form("uvh26"),
 ):
     """Processes an uploaded image through Improved CenterNet."""
     conf = _to_float(conf_thresh, 0.35)
@@ -357,8 +366,9 @@ async def detect_video(
     max_frames: int = Form(150),
     frame_stride: int = Form(1),
     run_type: Optional[str] = Form(None),
+    detector: Optional[str] = Form("uvh26"),
 ):
-    """Processes an uploaded video frame-by-frame with CenterNet and Multi-Object Tracking."""
+    """Processes an uploaded video frame-by-frame with UVH-26 YOLOv11-S tracking."""
     conf = _to_float(conf_thresh, 0.35)
     allowed_exts = (".mp4", ".avi", ".mov", ".mkv", ".webm")
     uploads_dir = os.path.join(MEDIA_ROOT, "uploads")
@@ -376,6 +386,7 @@ async def detect_video(
 
     input_url = f"/media/uploads/{upload_filename}"
     actual_run_type = run_type or ("test_run" if file.filename.startswith(("test_", "custom_cam")) else "user_upload")
+    active_det = resolve_detector(detector)
 
     try:
         frames_limit = int(max_frames) if not hasattr(max_frames, "default") else 150
@@ -386,6 +397,7 @@ async def detect_video(
             conf_thresh=conf,
             max_frames=frames_limit,
             frame_stride=stride,
+            detector=active_det,
         )
     except ValueError as e:
         fail_id = f"failed_{uuid.uuid4().hex[:8]}"
@@ -395,7 +407,7 @@ async def detect_video(
             filename=file.filename,
             input_url=input_url,
             annotated_url="",
-            model_name="Improved CenterNet (ResNet-18 + CBAM + BiFPN)",
+            model_name=getattr(active_det, "model_name", "UVH-26 YOLOv11-S (iisc-aim/UVH-26)"),
             weights_status="FAILED",
             latency_ms=0.0,
             fps=0.0,
@@ -415,7 +427,7 @@ async def detect_video(
             filename=file.filename,
             input_url=input_url,
             annotated_url="",
-            model_name="Improved CenterNet (ResNet-18 + CBAM + BiFPN)",
+            model_name=getattr(active_det, "model_name", "UVH-26 YOLOv11-S (iisc-aim/UVH-26)"),
             weights_status="FAILED",
             latency_ms=0.0,
             fps=0.0,

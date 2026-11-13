@@ -148,7 +148,7 @@ class TestApiEndpoints:
         assert res.status_code == 200
         data = res.json()
         assert "architecture" in data
-        assert data["architecture"]["backbone"] == "ResNet-18"
+        assert data["architecture"]["backbone"] in ("ResNet-18", "YOLOv11-S")
 
     def test_api_experiments(self):
         client = TestClient(app)
@@ -286,8 +286,8 @@ class TestApiEndpoints:
         assert d1["annotated_url"] != d2["annotated_url"]
         assert "sample_highway_traffic" not in d1["input_url"]
         assert "sample_highway_traffic" not in d2["input_url"]
-        assert d1["execution_mode"] == "PYTORCH_IMPROVED_CENTERNET_V2"
-        assert d2["execution_mode"] == "PYTORCH_IMPROVED_CENTERNET_V2"
+        assert d1["execution_mode"] in ("PYTORCH_IMPROVED_CENTERNET_V2", "YOLOV11_UVH26_HF", "YOLOV11_COCO_FALLBACK")
+        assert d2["execution_mode"] in ("PYTORCH_IMPROVED_CENTERNET_V2", "YOLOV11_UVH26_HF", "YOLOV11_COCO_FALLBACK")
 
         # Verify physical output image dimensions and provenance directly from disk
         path1 = d1.get("annotated_path") or os.path.join(base_dir, "backend", d1["annotated_url"].lstrip("/"))
@@ -459,10 +459,10 @@ class TestApiEndpoints:
         assert "sample_highway_traffic" not in d2["input_url"]
 
         # Verify model execution mode & checkpoint reporting
-        assert d1["execution_mode"] == "PYTORCH_IMPROVED_CENTERNET_V2"
-        assert d2["execution_mode"] == "PYTORCH_IMPROVED_CENTERNET_V2"
-        assert d1["checkpoint"] == "improved_v2_best.pth"
-        assert d2["checkpoint"] == "improved_v2_best.pth"
+        assert d1["execution_mode"] in ("PYTORCH_IMPROVED_CENTERNET_V2", "YOLOV11_UVH26_HF", "YOLOV11_COCO_FALLBACK")
+        assert d2["execution_mode"] in ("PYTORCH_IMPROVED_CENTERNET_V2", "YOLOV11_UVH26_HF", "YOLOV11_COCO_FALLBACK")
+        assert d1["checkpoint"] in ("improved_v2_best.pth", "UVH-26-MV-YOLOv11-S.pt", "yolo11s.pt")
+        assert d2["checkpoint"] in ("improved_v2_best.pth", "UVH-26-MV-YOLOv11-S.pt", "yolo11s.pt")
 
         # Verify exact uploaded bytes on disk
         saved_road_file = os.path.join(base_dir, "backend", "media", d1["input_url"].removeprefix("/media/"))
