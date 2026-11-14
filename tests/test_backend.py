@@ -167,6 +167,7 @@ class TestApiEndpoints:
         assert v2["precision"] == 0.614
         assert v2["recall"] in (0.5545, 0.555)
         assert v2["f1_score"] == 0.583
+        assert v2.get("accuracy") == 0.602
         assert v2["evaluation_type"] == "Historical Validation Results"
         assert "1,417" in v2["evaluation_split"]
 

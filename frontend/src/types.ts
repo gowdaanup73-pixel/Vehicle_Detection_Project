@@ -153,6 +153,7 @@ export interface ExperimentItem {
   map_50: number | null;
   map_50_95: number | null;
   ap_75?: number | null;
+  accuracy?: number | null;
   precision: number | null;
   recall: number | null;
   f1_score: number | null;
