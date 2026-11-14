@@ -19,8 +19,6 @@ interface SidebarProps {
   modelStatus: ModelStatus | null;
   onRefresh: () => void;
   isBackendHealthy: boolean;
-  isDemoMode?: boolean;
-  onToggleDemo?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -29,8 +27,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
   modelStatus,
   onRefresh,
   isBackendHealthy,
-  isDemoMode: _isDemoMode = false,
-  onToggleDemo: _onToggleDemo,
 }) => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const isWeightsLoaded = Boolean(modelStatus?.weights_loaded);

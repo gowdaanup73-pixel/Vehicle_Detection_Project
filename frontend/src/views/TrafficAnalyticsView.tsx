@@ -22,7 +22,6 @@ import {
   Truck, 
   Zap 
 } from 'lucide-react';
-import { ChartWatermark, DemoChip, DemoSwitch } from '../components/DemoBadge';
 import { RefreshCw } from 'lucide-react';
 import { AnalyticsSummary, RunRecord } from '../types';
 
@@ -30,14 +29,12 @@ interface TrafficAnalyticsViewProps {
   summary: AnalyticsSummary | null;
   latestVideoRun: RunRecord | null;
   allRuns: RunRecord[];
-  demoData?: any;
 }
 
 export const TrafficAnalyticsView: React.FC<TrafficAnalyticsViewProps> = ({
   summary,
   latestVideoRun,
   allRuns,
-  demoData,
 }) => {
   const [selectedRunId, setSelectedRunId] = useState<string>('all');
   const [selectedClass, setSelectedClass] = useState<string>('all');
@@ -193,9 +190,6 @@ export const TrafficAnalyticsView: React.FC<TrafficAnalyticsViewProps> = ({
 
   // Detection volume over time
   const timeSeriesData: Array<{ date: string; detections: number; runs?: number }> = useMemo(() => {
-    if (demoData?.isDemoMode && demoData.rollingHistory?.length > 0) {
-      return demoData.rollingHistory;
-    }
     if (summary?.runs_over_time && summary.runs_over_time.length > 0) {
       return summary.runs_over_time;
     }
@@ -235,9 +229,6 @@ export const TrafficAnalyticsView: React.FC<TrafficAnalyticsViewProps> = ({
   // Export CSV
   const handleExportCsv = () => {
     let csv = 'data:text/csv;charset=utf-8,';
-    if (demoData?.isDemoMode) {
-      csv += encodeURIComponent('# DEMO DATA - SIMULATED (NOT REAL EVALUATION)\n');
-    }
     csv += 'Run_ID,Timestamp,Media_Type,Filename,Total_Detections,Latency_MS,Unique_Vehicles,Line_Crossings,Cars,Vans,Buses,Others\n';
     for (const r of filteredRuns) {
       csv += `${r.id},${r.timestamp},${r.media_type},"${r.filename}",${r.total_detections},${r.latency_ms},${r.unique_vehicles || 0},${r.line_crossings || 0},${r.class_counts?.car || 0},${r.class_counts?.van || 0},${r.class_counts?.bus || 0},${r.class_counts?.others || 0}\n`;
@@ -245,7 +236,7 @@ export const TrafficAnalyticsView: React.FC<TrafficAnalyticsViewProps> = ({
     const uri = encodeURI(csv);
     const link = document.createElement('a');
     link.href = uri;
-    link.download = demoData?.isDemoMode ? `vehicle_analytics_DEMO_${Date.now()}.csv` : `vehicle_analytics_export_${Date.now()}.csv`;
+    link.download = `vehicle_analytics_export_${Date.now()}.csv`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -270,33 +261,15 @@ export const TrafficAnalyticsView: React.FC<TrafficAnalyticsViewProps> = ({
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          {demoData?.isDemoMode && <DemoChip />}
-          {demoData?.setDemoMode && (
-            <DemoSwitch
-              isDemoMode={Boolean(demoData?.isDemoMode)}
-              onToggle={demoData.setDemoMode}
-            />
-          )}
-          {demoData?.isDemoMode && (
-            <button
-              className="btn btn-secondary"
-              style={{ padding: '0.4rem 0.85rem', fontSize: '0.74rem' }}
-              onClick={demoData.refresh}
-              title="Refresh demo dataset (simulated drift)"
-              aria-label="Refresh demo data"
-            >
-              <RefreshCw size={12} /> Refresh
-            </button>
-          )}
           <button 
             className="btn btn-secondary" 
             style={{ padding: '0.4rem 0.85rem', fontSize: '0.74rem' }}
             onClick={handleExportCsv}
-            disabled={allRuns.length === 0 && !demoData?.isDemoMode}
+            disabled={allRuns.length === 0}
           >
-          <Download size={13} />
-          Export Analytics CSV
-        </button>
+            <Download size={13} />
+            Export Analytics CSV
+          </button>
         </div>
       </div>
 
@@ -511,7 +484,6 @@ export const TrafficAnalyticsView: React.FC<TrafficAnalyticsViewProps> = ({
             {timeSeriesData.length > 1 ? (
               <div>
                 <div style={{ height: '135px', width: '100%', marginBottom: '0.5rem', position: 'relative' }}>
-                  {demoData?.isDemoMode && <ChartWatermark />}
                   <svg width="100%" height="100%" viewBox="0 0 500 135" preserveAspectRatio="none">
                     <line x1="0" y1="20" x2="500" y2="20" stroke="rgba(233,226,212,0.06)" strokeDasharray="3 3" />
                     <line x1="0" y1="67" x2="500" y2="67" stroke="rgba(233,226,212,0.06)" strokeDasharray="3 3" />

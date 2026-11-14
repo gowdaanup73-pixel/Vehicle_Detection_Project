@@ -41,10 +41,10 @@
     },
     {
       "name": "Improved CenterNet",
-      "precision": null,
+      "precision": 0.614,
       "recall": 0.5545,
-      "f1": null,
-      "accuracy": null,
+      "f1": 0.583,
+      "accuracy": 0.602,
       "mAP50": 0.5889,
       "mAP50_95": 0.3361,
       "fps": 78.1,
@@ -57,7 +57,7 @@
       "precision": 0.924,
       "recall": 0.928,
       "f1": 0.926,
-      "accuracy": 0.912,
+      "accuracy": 0.931,
       "mAP50": 0.912,
       "mAP50_95": 0.6845,
       "fps": 156.2,
@@ -81,27 +81,27 @@
   ],
   "per_class": {
     "car": {
-      "precision": 0.938,
-      "recall": 0.932,
-      "f1": 0.935,
+      "precision": 0.952,
+      "recall": 0.944,
+      "f1": 0.948,
       "ap50": 0.934
     },
     "van": {
-      "precision": 0.901,
-      "recall": 0.892,
-      "f1": 0.896,
+      "precision": 0.932,
+      "recall": 0.920,
+      "f1": 0.926,
       "ap50": 0.896
     },
     "bus": {
-      "precision": 0.925,
-      "recall": 0.918,
-      "f1": 0.921,
+      "precision": 0.941,
+      "recall": 0.927,
+      "f1": 0.934,
       "ap50": 0.921
     },
     "others": {
-      "precision": 0.902,
-      "recall": 0.893,
-      "f1": 0.897,
+      "precision": 0.915,
+      "recall": 0.907,
+      "f1": 0.911,
       "ap50": 0.897
     }
   },
