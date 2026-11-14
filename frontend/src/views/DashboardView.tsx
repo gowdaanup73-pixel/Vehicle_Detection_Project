@@ -22,7 +22,6 @@ import {
   X,
   Zap
 } from 'lucide-react';
-import { DemoBadge, ChartWatermark, DemoChip, DemoSwitch } from '../components/DemoBadge';
 import {
   AnalyticsSummary,
   DatasetInfo,
@@ -46,7 +45,6 @@ interface DashboardViewProps {
   onRefresh?: () => void;
   isProcessing: boolean;
   isBackendHealthy: boolean;
-  demoData?: any;
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = ({
@@ -61,7 +59,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   onRefresh,
   isProcessing,
   isBackendHealthy,
-  demoData,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
@@ -75,14 +72,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const videoRuns = runs.filter((r) => r.media_type === 'video').length;
 
   const totalDetections = useMemo(() => {
-    if (demoData?.isDemoMode) {
-      return demoData.rollingHistory?.reduce((acc: number, r: any) => acc + (r.detections || 0), 0) || demoData.currentTickData?.detections || 0;
-    }
     if (summary?.total_detections !== undefined && summary.total_detections > 0) {
       return summary.total_detections;
     }
     return runs.reduce((acc, r) => acc + (r.total_detections || 0), 0);
-  }, [summary, runs, demoData]);
+  }, [summary, runs]);
 
   // Real Latency (Mean & Median)
   const latencies = useMemo(() => {
@@ -90,9 +84,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   }, [runs]);
 
   const medianLatency = useMemo(() => {
-    if (demoData?.isDemoMode && demoData.currentTickData?.latency_ms) {
-      return demoData.currentTickData.latency_ms.toFixed(1);
-    }
     if (summary?.median_latency_ms) return summary.median_latency_ms.toFixed(1);
     if (latencies.length === 0) return null;
     const sorted = [...latencies].sort((a, b) => a - b);
@@ -105,9 +96,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
   // Genuine Class Counts Aggregation
   const classCounts = useMemo(() => {
-    if (demoData?.isDemoMode && demoData.currentTickData?.class_counts) {
-      return demoData.currentTickData.class_counts;
-    }
     if (summary?.class_distribution) {
       return summary.class_distribution;
     }
@@ -135,9 +123,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
   // Detection Activity Over Time Series
   const timeSeriesData: Array<{ date: string; detections: number; runs?: number }> = useMemo(() => {
-    if (demoData?.isDemoMode && demoData.rollingHistory?.length > 0) {
-      return demoData.rollingHistory;
-    }
     if (summary?.runs_over_time && summary.runs_over_time.length > 0) {
       return summary.runs_over_time;
     }
@@ -209,9 +194,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-          {demoData?.isDemoMode && <DemoChip />}
-
-          {/* Apple Live Connection Pill */}
+          {/* Live Connection Pill */}
           <div
             style={{
               display: 'flex',
@@ -239,20 +222,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </span>
           </div>
 
-          {demoData?.setDemoMode && (
-            <DemoSwitch
-              isDemoMode={Boolean(demoData?.isDemoMode)}
-              onToggle={demoData.setDemoMode}
-            />
-          )}
-
           {/* Refresh Button */}
           {onRefresh && (
             <button
               className="btn btn-secondary"
               style={{ padding: '6px 14px', fontSize: '0.78rem' }}
-              onClick={demoData?.isDemoMode ? demoData.refresh : onRefresh}
-              title={demoData?.isDemoMode ? 'Refresh demo dataset (simulated drift)' : 'Refresh telemetry from backend'}
+              onClick={onRefresh}
+              title="Refresh telemetry from backend"
               aria-label="Refresh telemetry"
             >
               <RefreshCw size={12} />
@@ -503,7 +479,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             {timeSeriesData.length > 1 ? (
               <div>
                 <div style={{ height: '145px', width: '100%', marginBottom: '8px', position: 'relative' }}>
-                  {demoData?.isDemoMode && <ChartWatermark />}
                   <svg width="100%" height="100%" viewBox="0 0 500 135" preserveAspectRatio="none">
                     <defs>
                       <linearGradient id="titaniumCurveGradient" x1="0" y1="0" x2="0" y2="1">

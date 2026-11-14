@@ -23,7 +23,6 @@ import {
 import { configureModel, uploadCheckpoint } from '../api';
 import { MetricsCharts } from '../components/MetricsCharts';
 import { UVH26EvaluationCharts } from '../components/UVH26EvaluationCharts';
-import { DemoBadge } from '../components/DemoBadge';
 import { DatasetInfo, ExperimentItem, LossPoint, ModelStatus } from '../types';
 
 interface ModelLaboratoryViewProps {
@@ -32,7 +31,6 @@ interface ModelLaboratoryViewProps {
   modelStatus: ModelStatus | null;
   onRefreshStatus: () => void;
   datasetInfo?: DatasetInfo | null;
-  demoData?: any;
 }
 
 export const ModelLaboratoryView: React.FC<ModelLaboratoryViewProps> = ({
@@ -41,7 +39,6 @@ export const ModelLaboratoryView: React.FC<ModelLaboratoryViewProps> = ({
   modelStatus,
   onRefreshStatus,
   datasetInfo,
-  demoData,
 }) => {
   const [selectedExpId, setSelectedExpId] = useState<string>('exp_uvh26_yolov11s');
   const [customPathInput, setCustomPathInput] = useState<string>('');
@@ -109,7 +106,6 @@ export const ModelLaboratoryView: React.FC<ModelLaboratoryViewProps> = ({
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-          {demoData?.isDemoMode && <DemoBadge />}
           <span className="badge badge-charcoal">
             ACTIVE: {modelStatus?.checkpoint_name || 'improved_v2_best.pth'}
           </span>
@@ -723,7 +719,7 @@ export const ModelLaboratoryView: React.FC<ModelLaboratoryViewProps> = ({
       </div>
 
       {/* Metrics Dashboard Visualizations */}
-      <MetricsCharts demoData={demoData} />
+      <MetricsCharts />
 
       {/* UVH-26 Evaluation & Diagnostic Analytics Charts */}
       <UVH26EvaluationCharts />

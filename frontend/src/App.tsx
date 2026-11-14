@@ -11,7 +11,6 @@ import {
   listRuns, 
 } from './api';
 import { Sidebar } from './components/Sidebar';
-import { useDemoData } from './demo/useDemoData';
 import { 
   AnalyticsSummary, 
   DatasetInfo, 
@@ -29,7 +28,6 @@ import { DatasetRunsView } from './views/DatasetRunsView';
 
 export const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<NavigationTab>('overview');
-  const demo = useDemoData();
   const [modelStatus, setModelStatus] = useState<ModelStatus | null>(null);
   const [summary, setSummary] = useState<AnalyticsSummary | null>(null);
   const [runs, setRuns] = useState<RunRecord[]>([]);
@@ -131,8 +129,6 @@ export const App: React.FC = () => {
         modelStatus={modelStatus}
         onRefresh={() => loadData(false)}
         isBackendHealthy={isBackendHealthy}
-        isDemoMode={demo.isDemoMode}
-        onToggleDemo={demo.setDemoMode}
       />
 
       {/* Main Content Area */}
@@ -150,9 +146,9 @@ export const App: React.FC = () => {
               onDeleteRun={handleDeleteRun}
               onRunSample={handleRunSampleFromDashboard}
               onUploadFile={handleUploadFromDashboard}
+              onRefresh={() => loadData(false)}
               isProcessing={isProcessingSample}
               isBackendHealthy={isBackendHealthy}
-              demoData={demo}
             />
           )}
 
@@ -171,7 +167,6 @@ export const App: React.FC = () => {
               summary={summary}
               latestVideoRun={latestVideoRun}
               allRuns={runs}
-              demoData={demo}
             />
           )}
 
@@ -182,7 +177,6 @@ export const App: React.FC = () => {
               modelStatus={modelStatus}
               datasetInfo={datasetInfo}
               onRefreshStatus={() => loadData(false)}
-              demoData={demo}
             />
           )}
 

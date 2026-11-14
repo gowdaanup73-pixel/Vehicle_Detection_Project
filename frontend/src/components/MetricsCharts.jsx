@@ -26,7 +26,6 @@ import {
   ZAxis,
 } from 'recharts';
 import { fetchMetrics } from '../api';
-import { ChartWatermark, DemoChip, DemoSwitch } from './DemoBadge';
 
 const CHARCOAL = '#222320';
 const IVORY = '#E9E2D4';
@@ -162,16 +161,11 @@ const ChartSkeleton = () => (
   </div>
 );
 
-export const downloadMetricsCsv = (metrics, isDemo = false) => {
+export const downloadMetricsCsv = (metrics) => {
   if (!metrics) return;
 
   const cell = (v) => (v == null ? '' : String(v));
   const rows = [];
-
-  if (isDemo) {
-    rows.push(['# DEMO DATA - SIMULATED TELEMETRY (NOT REAL EVALUATION)']);
-    rows.push([]);
-  }
 
   // 1. Model comparison metrics
   rows.push(['Model', 'Precision', 'Recall', 'F1', 'Accuracy', 'mAP50', 'mAP50_95', 'FPS', 'Latency_ms', 'Params_M', 'GFLOPs']);
@@ -205,7 +199,7 @@ export const downloadMetricsCsv = (metrics, isDemo = false) => {
   }
 
   rows.push([]);
-  // 4. Convergence History
+  // 3. Convergence History
   rows.push(['Epoch', 'Train_Loss', 'Val_Loss', 'Val_mAP50']);
   for (const h of metrics.history || []) {
     rows.push([cell(h.epoch), cell(h.train_loss), cell(h.val_loss), cell(h.val_map_50)]);
@@ -219,7 +213,7 @@ export const downloadMetricsCsv = (metrics, isDemo = false) => {
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.setAttribute('href', url);
-  link.setAttribute('download', isDemo ? 'metrics_DEMO.csv' : 'metrics.csv');
+  link.setAttribute('download', 'metrics_evaluation.csv');
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
@@ -233,7 +227,6 @@ export const downloadMetricsCsv = (metrics, isDemo = false) => {
  * @param {string | null} [props.error]
  * @param {(() => void) | null} [props.onRetry]
  * @param {React.ReactNode} [props.downloadButton]
- * @param {any} [props.demoData]
  */
 export const MetricsCharts = ({
   metrics: externalMetrics = null,
@@ -241,7 +234,6 @@ export const MetricsCharts = ({
   error: externalError = null,
   onRetry: externalOnRetry = null,
   downloadButton = null,
-  demoData = null,
 } = {}) => {
   const [internalMetrics, setInternalMetrics] = useState(null);
   const [internalLoading, setInternalLoading] = useState(!externalMetrics);
@@ -266,10 +258,9 @@ export const MetricsCharts = ({
     }
   }, [externalMetrics]);
 
-  const isDemoActive = Boolean(demoData?.isDemoMode);
-  const metrics = isDemoActive ? (demoData?.metrics || null) : (externalMetrics || internalMetrics);
-  const isLoading = isDemoActive ? false : (externalLoading !== undefined ? externalLoading : internalLoading);
-  const activeError = isDemoActive ? null : (externalError || internalError || metrics?.error);
+  const metrics = externalMetrics || internalMetrics;
+  const isLoading = externalLoading !== undefined ? externalLoading : internalLoading;
+  const activeError = externalError || internalError || metrics?.error;
   const handleRetry = externalOnRetry || loadData;
 
   if (isLoading) {
@@ -331,7 +322,6 @@ export const MetricsCharts = ({
           <div className="label-tactical" style={{ color: BURNT_ORANGE }}>
             METRICS DASHBOARD // 5-PANEL COMPARATIVE EVALUATION
           </div>
-          {isDemoActive && <DemoChip />}
           {activeError && (
             <span
               style={{
@@ -352,7 +342,7 @@ export const MetricsCharts = ({
             type="button"
             className="btn btn-secondary"
             style={{ padding: '0.35rem 0.65rem', fontSize: '0.72rem', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}
-            onClick={() => downloadMetricsCsv(metrics, isDemoActive)}
+            onClick={() => downloadMetricsCsv(metrics)}
             title="Download metrics as CSV"
             aria-label="Download metrics CSV"
           >
@@ -360,18 +350,12 @@ export const MetricsCharts = ({
             <span>Download metrics CSV</span>
           </button>
           {downloadButton}
-          {demoData?.setDemoMode && (
-            <DemoSwitch
-              isDemoMode={isDemoActive}
-              onToggle={demoData.setDemoMode}
-            />
-          )}
           <button
             type="button"
             className="btn btn-secondary"
             style={{ padding: '0.35rem 0.65rem', fontSize: '0.72rem' }}
-            onClick={isDemoActive ? demoData?.refresh : handleRetry}
-            title={isDemoActive ? 'Refresh demo dataset (simulated drift)' : 'Reload metrics data'}
+            onClick={handleRetry}
+            title="Reload metrics data"
             aria-label="Refresh metrics"
           >
             <RefreshCw size={12} /> Refresh
@@ -384,7 +368,6 @@ export const MetricsCharts = ({
         
         {/* CHART A: Grouped Bars: Precision / Recall / F1 / mAP50 */}
         <div className="command-card metrics-col-2" style={{ position: 'relative' }} aria-label="Comparative Model Metrics Chart">
-          {isDemoActive && <ChartWatermark />}
           <div className="command-card-header">
             <span className="card-title">
               <BarChart3 size={15} style={{ color: BURNT_ORANGE }} />
@@ -415,7 +398,6 @@ export const MetricsCharts = ({
 
         {/* CHART B: Per-class F1 bars (proposed model) */}
         <div className="command-card metrics-col-2" style={{ position: 'relative' }} aria-label="Per-Class F1 Chart">
-          {isDemoActive && <ChartWatermark />}
           <div className="command-card-header">
             <span className="card-title">
               <Sliders size={15} style={{ color: BURNT_ORANGE }} />
@@ -443,7 +425,6 @@ export const MetricsCharts = ({
 
         {/* CHART C: Loss + validation mAP vs epoch */}
         <div className="command-card metrics-col-2" style={{ position: 'relative' }} aria-label="Loss and Validation mAP vs Epoch Chart">
-          {isDemoActive && <ChartWatermark />}
           <div className="command-card-header">
             <span className="card-title">
               <LineChartIcon size={15} style={{ color: BURNT_ORANGE }} />
@@ -476,7 +457,6 @@ export const MetricsCharts = ({
 
         {/* CHART D: Scatter FPS vs mAP50 */}
         <div className="command-card metrics-col-3" style={{ position: 'relative' }} aria-label="FPS vs mAP Trade-off Chart">
-          {isDemoActive && <ChartWatermark />}
           <div className="command-card-header">
             <span className="card-title">
               <Zap size={15} style={{ color: BURNT_ORANGE }} />
@@ -508,7 +488,6 @@ export const MetricsCharts = ({
 
         {/* CHART E: Confusion matrix grid */}
         <div className="command-card metrics-col-3" style={{ position: 'relative' }} aria-label="Confusion Matrix Grid">
-          {isDemoActive && <ChartWatermark />}
           <div className="command-card-header">
             <span className="card-title">
               <Grid3X3 size={15} style={{ color: BURNT_ORANGE }} />

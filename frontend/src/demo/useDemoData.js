@@ -26,23 +26,6 @@ const ROLLING_WINDOW_SIZE = 30;
  * Priority: 1. VITE_DEMO_MODE env, 2. localStorage, 3. Default false (OFF)
  */
 export function getStoredDemoMode() {
-  try {
-    if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_DEMO_MODE === 'true') {
-      return true;
-    }
-  } catch {
-    // ignore
-  }
-
-  try {
-    const val = localStorage.getItem(STORAGE_KEY);
-    if (val !== null) {
-      return val === 'true';
-    }
-  } catch {
-    // ignore
-  }
-
   return false;
 }
 
