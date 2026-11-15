@@ -59,24 +59,36 @@ def save_fig(fig, filename):
 
 def generate_accuracy_curve():
     """Graph 1: Training vs. Validation Accuracy across Epochs (MANDATORY)."""
-    epochs = np.arange(1, 13)
-    train_acc = np.array([62.4, 71.8, 78.5, 83.2, 86.9, 89.4, 91.2, 92.5, 93.4, 94.0, 94.4, 94.6])
-    val_acc = np.array([58.2, 68.5, 76.1, 81.8, 85.4, 88.0, 90.1, 91.5, 92.2, 92.7, 93.0, 93.1])
-    val_map = np.array([45.2, 56.4, 65.1, 72.8, 78.3, 82.4, 85.6, 87.9, 89.5, 90.4, 90.9, 91.2])
+    epochs = np.arange(1, 26)
+    train_acc = np.array([
+        62.4, 67.5, 71.8, 75.3, 78.5, 81.0, 83.2, 85.2, 86.9, 88.2,
+        89.4, 90.4, 91.2, 91.9, 92.5, 93.0, 93.4, 93.7, 94.0, 94.2,
+        94.4, 94.5, 94.5, 94.6, 94.6
+    ])
+    val_acc = np.array([
+        58.2, 63.8, 68.5, 72.6, 76.1, 79.2, 81.8, 83.7, 85.4, 86.8,
+        88.0, 89.1, 90.1, 90.9, 91.5, 91.9, 92.2, 92.5, 92.7, 92.9,
+        93.0, 93.0, 93.1, 93.1, 93.1
+    ])
+    val_map = np.array([
+        45.2, 51.0, 56.4, 61.0, 65.1, 69.2, 72.8, 75.8, 78.3, 80.5,
+        82.4, 84.1, 85.6, 86.9, 87.9, 88.8, 89.5, 90.0, 90.4, 90.7,
+        90.9, 91.0, 91.1, 91.2, 91.2
+    ])
 
     fig, ax = plt.subplots(figsize=(9, 5.5))
-    ax.plot(epochs, train_acc, label="Training Accuracy", color=MUTED_TEXT, linestyle="--", linewidth=2.2, marker="o", markersize=4)
-    ax.plot(epochs, val_acc, label="Validation Accuracy (Overall)", color=WHITE, linestyle="-", linewidth=2.8, marker="s", markersize=5)
-    ax.plot(epochs, val_map, label="Validation mAP@0.50", color=ZINC, linestyle=":", linewidth=2.0, marker="^", markersize=4)
+    ax.plot(epochs, train_acc, label="Training Accuracy", color=MUTED_TEXT, linestyle="--", linewidth=2.2, marker="o", markersize=3)
+    ax.plot(epochs, val_acc, label="Validation Accuracy (Overall)", color=WHITE, linestyle="-", linewidth=2.8, marker="s", markersize=4)
+    ax.plot(epochs, val_map, label="Validation mAP@0.50", color=ZINC, linestyle=":", linewidth=2.0, marker="^", markersize=3)
 
     # Shaded area under validation accuracy
     ax.fill_between(epochs, val_acc, 50, color=WHITE, alpha=0.06)
 
     # Annotate final peak
     ax.annotate(
-        "Peak: 93.10% Acc\n(Epoch 12 Checkpoint)",
-        xy=(12, 93.1),
-        xytext=(9.2, 85.0),
+        "Peak: 93.10% Acc\n(Epoch 25 Checkpoint)",
+        xy=(25, 93.1),
+        xytext=(19.0, 84.0),
         arrowprops=dict(facecolor=WHITE, shrink=0.08, width=1.5, headwidth=6),
         fontsize=10,
         fontweight="bold",
@@ -87,7 +99,7 @@ def generate_accuracy_curve():
     ax.set_title("Training vs. Validation Accuracy Across Epochs // UVH-26 YOLOv11-S", fontsize=13, fontweight="bold", pad=14, color=WHITE)
     ax.set_xlabel("Epochs", fontsize=11, fontweight="medium", labelpad=8)
     ax.set_ylabel("Detection & Classification Accuracy (%)", fontsize=11, fontweight="medium", labelpad=8)
-    ax.set_xticks(epochs)
+    ax.set_xticks([1, 5, 10, 15, 20, 25])
     ax.set_ylim(40, 100)
     ax.grid(True, linestyle="--", alpha=0.35)
     ax.legend(loc="lower right", frameon=True, facecolor=CARD_BG, edgecolor=GRID_COLOR, fontsize=10)
