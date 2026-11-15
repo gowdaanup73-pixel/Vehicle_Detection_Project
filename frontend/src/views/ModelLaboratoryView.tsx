@@ -279,6 +279,9 @@ export const ModelLaboratoryView: React.FC<ModelLaboratoryViewProps> = ({
         </div>
       </div>
 
+      {/* UVH-26 SOTA Evaluation Diagnostics & Accuracy Suite (Prominent) */}
+      <UVH26EvaluationCharts />
+
       {/* Model Metadata & Verification Notice */}
       <div className="command-card">
         <div 
@@ -720,9 +723,6 @@ export const ModelLaboratoryView: React.FC<ModelLaboratoryViewProps> = ({
 
       {/* Metrics Dashboard Visualizations */}
       <MetricsCharts />
-
-      {/* UVH-26 Evaluation & Diagnostic Analytics Charts */}
-      <UVH26EvaluationCharts />
 
       {/* Ablation Study Comparative Experiment Table */}
       <div className="command-card">
