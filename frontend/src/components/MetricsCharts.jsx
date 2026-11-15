@@ -27,12 +27,12 @@ import {
 } from 'recharts';
 import { fetchMetrics } from '../api';
 
-const CHARCOAL = '#222320';
-const IVORY = '#E9E2D4';
-const BURNT_ORANGE = '#C86B3C';
-const OLIVE = '#85866A';
-const SLATE_TEAL = '#5A7D7C';
-const BORDER_LIGHT = 'rgba(233, 226, 212, 0.12)';
+const CHARCOAL = '#121215';
+const IVORY = '#FAFAFA';
+const BURNT_ORANGE = '#FAFAFA';
+const OLIVE = '#A1A1AA';
+const SLATE_TEAL = '#71717A';
+const BORDER_LIGHT = 'rgba(255, 255, 255, 0.08)';
 
 const CustomTooltip = ({ active, payload, label, unit = '%' }) => {
   if (active && payload && payload.length) {
@@ -267,16 +267,17 @@ export const MetricsCharts = ({
     return <ChartSkeleton />;
   }
 
-  // Grouped Bars across models (Precision, Recall, F1, mAP50)
+  // Grouped Bars across models (Accuracy, Precision, Recall, F1, mAP50)
   const groupedBarData = (metrics?.models || []).map((m) => ({
     name: m.name,
+    Accuracy: m.accuracy != null ? Number((m.accuracy * 100).toFixed(1)) : null,
     Precision: m.precision != null ? Number((m.precision * 100).toFixed(1)) : null,
     Recall: m.recall != null ? Number((m.recall * 100).toFixed(1)) : null,
     F1: m.f1 != null ? Number((m.f1 * 100).toFixed(1)) : null,
     'mAP@0.5': m.mAP50 != null ? Number((m.mAP50 * 100).toFixed(1)) : null,
   }));
   const hasGroupedData = groupedBarData.some(
-    (d) => d.Precision != null || d.Recall != null || d.F1 != null || d['mAP@0.5'] != null
+    (d) => d.Accuracy != null || d.Precision != null || d.Recall != null || d.F1 != null || d['mAP@0.5'] != null
   );
 
   // Per-class F1 bars (proposed model)
@@ -366,12 +367,12 @@ export const MetricsCharts = ({
       {/* Grid of 5 Charts: 3 top row, 2 wide bottom row */}
       <div className="metrics-grid-5">
         
-        {/* CHART A: Grouped Bars: Precision / Recall / F1 / mAP50 */}
+        {/* CHART A: Grouped Bars: Accuracy / Precision / Recall / F1 / mAP50 */}
         <div className="command-card metrics-col-2" style={{ position: 'relative' }} aria-label="Comparative Model Metrics Chart">
           <div className="command-card-header">
             <span className="card-title">
-              <BarChart3 size={15} style={{ color: BURNT_ORANGE }} />
-              Model Precision / Recall / F1 / mAP@0.5
+              <BarChart3 size={15} style={{ color: '#FAFAFA' }} />
+              Model Accuracy / Precision / Recall / F1 / mAP@0.5
             </span>
             <span className="label-tactical">UNITS: %</span>
           </div>
@@ -384,14 +385,15 @@ export const MetricsCharts = ({
                   <YAxis stroke={IVORY} fontSize={10} domain={[0, 100]} unit="%" />
                   <Tooltip content={<CustomTooltip unit="%" />} />
                   <Legend wrapperStyle={{ fontSize: '0.7rem', color: IVORY, paddingTop: '10px' }} />
-                  <Bar dataKey="Precision" fill={OLIVE} />
-                  <Bar dataKey="Recall" fill="#B8A99A" />
-                  <Bar dataKey="F1" fill={SLATE_TEAL} />
-                  <Bar dataKey="mAP@0.5" fill={BURNT_ORANGE} />
+                  <Bar dataKey="Accuracy" fill="#FAFAFA" />
+                  <Bar dataKey="Precision" fill="#E4E4E7" />
+                  <Bar dataKey="Recall" fill="#D4D4D8" />
+                  <Bar dataKey="F1" fill="#A1A1AA" />
+                  <Bar dataKey="mAP@0.5" fill="#71717A" />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
-              <NotEvaluatedState message="No evaluated precision/recall/F1 metrics recorded across comparative models. Unmeasured fields remain null." />
+              <NotEvaluatedState message="No evaluated accuracy/precision/recall/F1 metrics recorded across comparative models. Unmeasured fields remain null." />
             )}
           </div>
         </div>
@@ -462,7 +464,7 @@ export const MetricsCharts = ({
               <Zap size={15} style={{ color: BURNT_ORANGE }} />
               Efficiency Trade-off: Speed (FPS) vs mAP@0.5
             </span>
-            <span className="label-tactical">ORANGE = PROPOSED</span>
+            <span className="label-tactical">WHITE = PROPOSED // SOTA</span>
           </div>
           <div style={{ padding: '1rem', height: '280px' }}>
             {hasScatterData ? (
